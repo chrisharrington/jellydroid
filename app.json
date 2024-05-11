@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "jellydroid",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -28,6 +29,9 @@
       "eas": {
         "projectId": "031f4d0b-bec0-4795-ad9c-115eaedd6007"
       }
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
