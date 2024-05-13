@@ -1,7 +1,21 @@
-import { View, Text } from 'react-native';
+import { useContext, useEffect } from 'react';
+import { View } from 'react-native';
+import { JellyfinContext } from '../data/jellyfin/context';
 
 export default function Home() {
-    return <View>
-        <Text>Home page!</Text>
+    const jellyfin = useContext(JellyfinContext);
+
+    useEffect(() => {
+        (async () => {
+            const views = await jellyfin.getUserViews();
+            await jellyfin.getLatest(views[0].id);
+
+            // const discoveryManager = GoogleCast.getDiscoveryManager();
+            // discoveryManager.onDevicesUpdated(devices => console.log('deviecs', devices));
+            // await discoveryManager.getDevices().then(devices => console.log('devices', devices));
+        })();
+    }, []);
+
+    return <View style={{ paddingTop: 100, paddingLeft: 20 }}>
     </View>;
 }

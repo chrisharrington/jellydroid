@@ -31,7 +31,8 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@config-plugins/react-native-google-cast"
     ]
   }
 }
