@@ -1,0 +1,14 @@
+# Expo Configuration
+expo-env.d.ts
+
+# Dependencies
+node_modules
+
+# Environment Variables
+.env
+.env.development
+.env.production
+
+# Build Artifacts
+dev-build.apk
+prod-build.apk
