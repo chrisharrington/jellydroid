@@ -1,0 +1,8 @@
+{
+    "editor.inlineSuggest.suppressSuggestions": false,
+    "editor.suggest.experimental.insertMode": "insert",
+    "editor.inlineSuggest.enabled": true,
+    "prompt": {
+        "context": "You are helping develop a mobile Jellyfin client using Expo and TypeScript. Follow these guidelines:\n- Use functional components with hooks\n- Follow React Native best practices\n- Use expo-router for navigation\n- Implement proper TypeScript types\n- Use the design system's color tokens from @/constants/colours\n- Prefer custom hooks for business logic\n- Implement proper error handling\n- Add JSDoc comments for complex functions\n- Follow the existing project structure and patterns\n- Use proper naming conventions (lowerCamelCase for components, camelCase for functions/variables)\n- When asked to create comments: avoid inline comments and prefer top level comments; use /** */ syntax; for props use 'Required.' or 'Optional.' based on the prop; and always use periods."
+    }
+}
