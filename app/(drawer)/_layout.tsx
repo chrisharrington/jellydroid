@@ -1,11 +1,11 @@
-import { Drawer } from 'expo-router/drawer';
-import { Colours } from '@/constants/colours';
 import { CustomDrawer } from '@/components/drawer/customDrawer';
+import { Colours } from '@/constants/colours';
+import { Drawer } from 'expo-router/drawer';
 
 export default function DrawerLayout() {
     return (
         <Drawer
-            drawerContent={(props) => <CustomDrawer {...props} />}
+            drawerContent={props => <CustomDrawer {...props} />}
             screenOptions={{
                 headerStyle: {
                     backgroundColor: Colours.background2,
@@ -14,7 +14,7 @@ export default function DrawerLayout() {
             }}
         >
             <Drawer.Screen
-                name='(home)/index'
+                name='index'
                 options={{
                     title: 'Home',
                 }}
