@@ -8,7 +8,7 @@ export default function DrawerLayout() {
             drawerContent={props => <CustomDrawer {...props} />}
             screenOptions={{
                 headerStyle: {
-                    backgroundColor: Colours.background2,
+                    backgroundColor: Colours.background3,
                 },
                 headerTintColor: Colours.text,
             }}

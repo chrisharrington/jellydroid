@@ -1,4 +1,4 @@
-import { ExpoConfig, ConfigContext } from '@expo/config';
+import { ConfigContext, ExpoConfig } from '@expo/config';
 import 'dotenv/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -28,6 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         favicon: './assets/images/favicon.png',
     },
     plugins: [
+        'expo-font',
         'expo-router',
         [
             'expo-splash-screen',
