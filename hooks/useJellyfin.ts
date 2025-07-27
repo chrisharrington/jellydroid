@@ -1,4 +1,5 @@
 import { Jellyfin } from '@jellyfin/sdk';
+import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
 import * as Application from 'expo-application';
@@ -14,7 +15,6 @@ import { useCallback, useMemo } from 'react';
  * @returns An object containing utility methods for interacting with Jellyfin.
  */
 export function useJellyfin() {
-    // Memoize the API instance so it's not recreated on every render.
     const api = useMemo(createApi, []);
 
     /**
@@ -23,10 +23,11 @@ export function useJellyfin() {
      * @returns The first matching movie item, or undefined if not found.
      */
     const findMovieByName = useCallback(
-        async (name: string) => {
+        async (year: number, name: string) => {
             const itemsApi = getItemsApi(api);
             const response = await itemsApi.getItems({
                 searchTerm: name,
+                years: [year],
                 includeItemTypes: ['Movie'],
                 recursive: true,
                 limit: 1,
@@ -71,7 +72,23 @@ export function useJellyfin() {
         return response.data.Items;
     }, [api]);
 
-    return { findMovieByName, getMediaInfo, getRecentlyAddedMovies };
+    /**
+     * Retrieves detailed information about a movie item from the Jellyfin API.
+     *
+     * @param id - The unique identifier of the movie item to fetch.
+     * @returns A promise that resolves to the movie item's data.
+     */
+    const getMovieDetails = useCallback(
+        async (id: string) => {
+            const itemsApi = getItemsApi(api);
+            const response = await itemsApi.getItems({ ids: [id] });
+            if (!response.data.Items || response.data.Items.length === 0) throw new Error('Movie not found');
+            return response.data.Items[0] as BaseItemDto;
+        },
+        [api]
+    );
+
+    return { findMovieByName, getMediaInfo, getRecentlyAddedMovies, getMovieDetails };
 
     /**
      * Creates and configures a Jellyfin API instance using environment variables.

@@ -8,8 +8,6 @@ export function useHome() {
         [recentlyAddedMovies, setRecentlyAddedMovies] = useState<BaseItemDto[]>([]);
 
     useAsyncEffect(async () => {
-        // const movie = await findMovieByName('Game Night');
-        // console.log('Found movie:', movie);
         setRecentlyAddedMovies(await getRecentlyAddedMovies());
     }, []);
 

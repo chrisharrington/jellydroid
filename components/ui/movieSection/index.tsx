@@ -1,7 +1,8 @@
 import { Section, SectionProps } from '@/screens/home/section';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Pressable, Text } from 'react-native';
 import Poster from '../poster';
+import { useMovieSection } from './hook';
 import styles from './style';
 
 type MovieSectionProps = Omit<SectionProps, 'children'> & {
@@ -9,6 +10,8 @@ type MovieSectionProps = Omit<SectionProps, 'children'> & {
 };
 
 export function MovieSection(props: MovieSectionProps) {
+    const { navigateToMovieDetails } = useMovieSection();
+
     return (
         <Section {...props}>
             <FlatList
@@ -17,7 +20,10 @@ export function MovieSection(props: MovieSectionProps) {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 renderItem={({ item, index }) => (
-                    <View style={[styles.item, { marginRight: index === props.movies.length - 1 ? 0 : 18 }]}>
+                    <Pressable
+                        style={[styles.item, { marginRight: index === props.movies.length - 1 ? 0 : 18 }]}
+                        onPress={() => navigateToMovieDetails(item)}
+                    >
                         <Poster
                             url={`${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${item.Id}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`}
                         />
@@ -27,7 +33,7 @@ export function MovieSection(props: MovieSectionProps) {
                         </Text>
 
                         <Text style={styles.year}>{item.ProductionYear}</Text>
-                    </View>
+                    </Pressable>
                 )}
             />
         </Section>

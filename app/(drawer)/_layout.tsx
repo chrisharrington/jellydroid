@@ -9,6 +9,7 @@ export default function DrawerLayout() {
         <Drawer
             drawerContent={props => <CustomDrawer {...props} />}
             screenOptions={{
+                title: '',
                 headerStyle: {
                     backgroundColor: Colours.background3,
                 },
@@ -16,12 +17,7 @@ export default function DrawerLayout() {
                 headerRight: () => <CastButton style={{ width: 56, height: 56 }} />,
             }}
         >
-            <Drawer.Screen
-                name='index'
-                options={{
-                    title: 'Home',
-                }}
-            />
+            <Drawer.Screen name='index' />
         </Drawer>
     );
 }
