@@ -17,6 +17,6 @@ export default StyleSheet.create({
         alignItems: 'center',
         width: 48,
         backgroundColor: 'rgba(0,0,0,0.2)',
-        borderRadius: 24,
+        borderRadius: 6,
     },
 });

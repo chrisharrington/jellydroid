@@ -1,9 +1,10 @@
+import { Button } from '@/components/button';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { FontAwesome } from '@expo/vector-icons';
 import { Image, Text, View } from 'react-native';
 import { useMovieDetails } from './hook';
-import styles from './style';
+import style from './style';
 
 export function MovieDetailsScreen() {
     const { isBusy, movie, backdrop, duration } = useMovieDetails();
@@ -17,36 +18,41 @@ export function MovieDetailsScreen() {
             ) : (
                 movie && (
                     <>
-                        <Image source={{ uri: backdrop }} style={styles.backdrop} resizeMode='cover' />
+                        <Image source={{ uri: backdrop }} style={style.backdrop} resizeMode='cover' />
                         <View style={{ padding: 16 }}>
-                            <View style={styles.infoContainer}>
+                            <View style={style.infoContainer}>
                                 {movie.ProductionYear && (
                                     <>
-                                        <Text style={styles.info}>{movie.ProductionYear}</Text>
-                                        <Text style={styles.divider}>/</Text>
+                                        <Text style={style.info}>{movie.ProductionYear}</Text>
+                                        <Text style={style.divider}>/</Text>
                                     </>
                                 )}
                                 {duration && (
                                     <>
-                                        <Text style={styles.info}>{duration}</Text>
-                                        <Text style={styles.divider}>/</Text>
+                                        <Text style={style.info}>{duration}</Text>
+                                        <Text style={style.divider}>/</Text>
                                     </>
                                 )}
                                 {movie.Genres && movie.Genres.length > 0 && (
                                     <>
-                                        <Text style={styles.info}>{movie.Genres.slice(0, 2).join(', ')}</Text>
-                                        <Text style={styles.divider}>/</Text>
+                                        <Text style={style.info}>{movie.Genres.slice(0, 2).join(', ')}</Text>
+                                        <Text style={style.divider}>/</Text>
                                     </>
                                 )}
                                 {movie.CommunityRating && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <FontAwesome name='star' size={16} color='#FFD700' style={{ marginRight: 4 }} />
-                                        <Text style={styles.info}>{movie.CommunityRating.toFixed(1)}</Text>
+                                        <Text style={style.info}>{movie.CommunityRating.toFixed(1)}</Text>
                                     </View>
                                 )}
                             </View>
-                            <Text style={styles.title}>{movie.Name}</Text>
-                            <Text style={styles.overview}>{movie.Overview}</Text>
+                            <Text style={style.title}>{movie.Name}</Text>
+                            <View style={style.buttonContainer}>
+                                <Button>
+                                    <FontAwesome name='play' size={18} color='white' />
+                                </Button>
+                            </View>
+                            <Text style={style.overview}>{movie.Overview}</Text>
                         </View>
                     </>
                 )

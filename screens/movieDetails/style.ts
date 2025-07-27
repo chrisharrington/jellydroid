@@ -30,6 +30,10 @@ export default StyleSheet.create({
         color: Colours.text,
     },
 
+    buttonContainer: {
+        marginTop: 16,
+    },
+
     overview: {
         fontSize: 18,
         color: Colours.subtext,
