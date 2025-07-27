@@ -1,6 +1,8 @@
 import { CustomDrawer } from '@/components/drawer/customDrawer';
 import { Colours } from '@/constants/colours';
 import { Drawer } from 'expo-router/drawer';
+import React from 'react';
+import { CastButton } from 'react-native-google-cast';
 
 export default function DrawerLayout() {
     return (
@@ -11,6 +13,7 @@ export default function DrawerLayout() {
                     backgroundColor: Colours.background3,
                 },
                 headerTintColor: Colours.text,
+                headerRight: () => <CastButton style={{ width: 56, height: 56 }} />,
             }}
         >
             <Drawer.Screen
