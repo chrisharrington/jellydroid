@@ -1,7 +1,11 @@
-import Spinner from '@/components/ui/spinner';
+import Spinner from '@/components/spinner';
+import { TransparentHeader } from '@/components/transparentHeader';
+import { Colours } from '@/constants/colours';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { View } from 'react-native';
+import { CastButton } from 'react-native-google-cast';
 
 export default function RootLayout() {
     const [fontsLoaded] = useFonts({
@@ -18,7 +22,31 @@ export default function RootLayout() {
     });
 
     return fontsLoaded ? (
-        <Slot />
+        <Stack>
+            <Stack.Screen
+                name='index'
+                options={{
+                    title: 'Jellydroid',
+                    headerStyle: {
+                        backgroundColor: Colours.background2,
+                    },
+                    headerTintColor: Colours.text,
+                    headerLeft: () => (
+                        <MaterialIcons name='home' size={24} color={Colours.text} style={{ marginRight: 16 }} />
+                    ),
+                    headerRight: () => (
+                        <View>
+                            <CastButton style={{ width: 48, height: 48 }} />
+                        </View>
+                    ),
+                }}
+            />
+
+            <Stack.Screen
+                name='movie/[name]/[id]'
+                options={{ title: 'Movie Details', header: () => <TransparentHeader />, headerTransparent: true }}
+            />
+        </Stack>
     ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Spinner size='md' />

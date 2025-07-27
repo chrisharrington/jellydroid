@@ -1,4 +1,4 @@
-import { MovieSection } from '@/components/ui/movieSection';
+import { MovieSection } from '@/components/movieSection';
 import { Colours } from '@/constants/colours';
 import { ScrollView } from 'react-native';
 import { useHome } from './hook';

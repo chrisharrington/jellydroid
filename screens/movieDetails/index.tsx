@@ -1,4 +1,4 @@
-import Spinner from '@/components/ui/spinner';
+import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { FontAwesome } from '@expo/vector-icons';
 import { Image, Text, View } from 'react-native';
