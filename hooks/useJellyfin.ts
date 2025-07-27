@@ -1,10 +1,11 @@
 import { Jellyfin } from '@jellyfin/sdk';
-import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
+import { BaseItemDto, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
+import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 
 /**
  * React hook for interacting with the Jellyfin API.
@@ -15,7 +16,24 @@ import { useCallback, useMemo } from 'react';
  * @returns An object containing utility methods for interacting with Jellyfin.
  */
 export function useJellyfin() {
-    const api = useMemo(createApi, []);
+    const api = useMemo(createApi, []),
+        user = useRef<UserDto | null>(null);
+
+    /**
+     * Authenticates a user with the provided username and password.
+     * On successful authentication, updates the user state with the response data.
+     *
+     * @param username - The username of the user to authenticate.
+     * @param password - The password of the user to authenticate.
+     * @returns A promise that resolves when the authentication process is complete.
+     */
+    const login = useCallback(async () => {
+        const response = await api.authenticateUserByName(
+            process.env.EXPO_PUBLIC_JELLYFIN_USERNAME || '',
+            process.env.EXPO_PUBLIC_JELLYFIN_PASSWORD || ''
+        );
+        user.current = response.data.User || null;
+    }, [api]);
 
     /**
      * Finds a movie by its name (title).
@@ -80,15 +98,16 @@ export function useJellyfin() {
      */
     const getMovieDetails = useCallback(
         async (id: string) => {
-            const itemsApi = getItemsApi(api);
-            const response = await itemsApi.getItems({ ids: [id] });
-            if (!response.data.Items || response.data.Items.length === 0) throw new Error('Movie not found');
-            return response.data.Items[0] as BaseItemDto;
+            if (!user.current) await login();
+
+            const userLibraryApi = getUserLibraryApi(api);
+            const item = await userLibraryApi.getItem({ itemId: id, userId: user.current!.Id });
+            return item.data as BaseItemDto;
         },
-        [api]
+        [api, user]
     );
 
-    return { findMovieByName, getMediaInfo, getRecentlyAddedMovies, getMovieDetails };
+    return { login, findMovieByName, getMediaInfo, getRecentlyAddedMovies, getMovieDetails };
 
     /**
      * Creates and configures a Jellyfin API instance using environment variables.

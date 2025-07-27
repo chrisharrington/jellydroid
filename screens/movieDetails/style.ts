@@ -7,22 +7,31 @@ export default StyleSheet.create({
         height: 200,
     },
 
+    infoContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 8,
+    },
+
     title: {
         fontSize: 32,
         fontWeight: 'bold',
         color: Colours.text,
-        marginTop: 8,
     },
 
-    year: {
-        fontSize: 16,
-        color: Colours.subtext,
-        marginTop: 4,
+    info: {
+        fontSize: 14,
+        color: Colours.icon,
+    },
+
+    divider: {
+        fontSize: 14,
+        color: Colours.text,
     },
 
     overview: {
-        fontSize: 16,
+        fontSize: 18,
         color: Colours.subtext,
-        marginTop: 8,
+        marginTop: 16,
     },
 });

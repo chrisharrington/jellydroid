@@ -15,6 +15,7 @@ export default function DrawerLayout() {
                 },
                 headerTintColor: Colours.text,
                 headerRight: () => <CastButton style={{ width: 56, height: 56 }} />,
+                swipeEnabled: false,
             }}
         >
             <Drawer.Screen name='index' />
