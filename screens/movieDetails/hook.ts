@@ -17,6 +17,7 @@ export function useMovieDetails() {
 
             const localMovie = await getMovieDetails(id);
             if (!localMovie) throw new Error('Movie not found.');
+
             setMovie(localMovie);
         } catch (error) {
             console.error('Failed to fetch movie details:', error);
