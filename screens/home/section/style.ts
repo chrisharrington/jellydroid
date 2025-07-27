@@ -6,9 +6,11 @@ export default StyleSheet.create({
         flexDirection: 'column',
         padding: 16,
     },
+
     labelContainer: {
         marginBottom: 8,
     },
+
     label: {
         color: Colours.text,
         letterSpacing: 0.5,
@@ -18,7 +20,9 @@ export default StyleSheet.create({
         borderBottomWidth: 2,
         borderBottomColor: Colours.icon,
     },
+
     childrenContainer: {
         flex: 1,
+        marginTop: 12,
     },
 });

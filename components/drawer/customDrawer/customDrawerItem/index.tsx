@@ -1,4 +1,4 @@
-import { AnimatedPressable } from '@/components/ui/AnimatedPressable/index';
+import { AnimatedPressable } from '@/components/ui/animatedPressable/index';
 import { Text } from 'react-native';
 import { useCustomDrawerItem } from './hook';
 import styles from './style';

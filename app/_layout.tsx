@@ -1,4 +1,4 @@
-import Spinner from '@/components/ui/Spinner';
+import Spinner from '@/components/ui/spinner';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import { View } from 'react-native';

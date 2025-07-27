@@ -1,10 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { Jellyfin } from '@jellyfin/sdk';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
-import { Jellyfin } from '@jellyfin/sdk';
-import * as Device from 'expo-device';
 import * as Application from 'expo-application';
-import type { MediaStream as JellyfinMediaStream } from '@jellyfin/sdk/lib/generated-client/models/media-stream';
+import * as Device from 'expo-device';
+import { useCallback, useMemo } from 'react';
 
 /**
  * React hook for interacting with the Jellyfin API.
@@ -39,32 +38,40 @@ export function useJellyfin() {
         [api]
     );
 
+    /**
+     * Retrieves playback information for a specific media item from the Jellyfin API.
+     *
+     * @param itemId - The unique identifier of the media item to fetch playback info for.
+     * @returns A promise that resolves to the playback information data of the requested media item.
+     */
     const getMediaInfo = useCallback(
-        async (itemId: string) => (
-            (await getMediaInfoApi(api).getPlaybackInfo({ itemId })).data
-        ),
+        async (itemId: string) => (await getMediaInfoApi(api).getPlaybackInfo({ itemId })).data,
         [api]
     );
 
-    // Import the correct type from the Jellyfin SDK
+    /**
+     * Retrieves the 10 most recently added movies from the Jellyfin server.
+     *
+     * Uses the Items API to fetch movies sorted by their creation date in descending order.
+     *
+     * @returns {Promise<Item[]>} A promise that resolves to an array of recently added movie items.
+     */
+    const getRecentlyAddedMovies = useCallback(async () => {
+        const itemsApi = getItemsApi(api);
+        const response = await itemsApi.getItems({
+            sortBy: ['DateCreated'],
+            sortOrder: ['Descending'],
+            includeItemTypes: ['Movie'],
+            recursive: true,
+            limit: 30,
+        });
 
-    const getMediaStreams = useCallback(
-        async (itemId: string, type?: string): Promise<JellyfinMediaStream[]> => {
-            let mediaInfo = await getMediaInfo(itemId),
-                mediaSources = mediaInfo.MediaSources || [];
+        if (!response.data.Items) throw new Error('No items found in response.');
 
+        return response.data.Items;
+    }, [api]);
 
-            if (!mediaInfo.MediaSources || mediaInfo.MediaSources.length === 0) return [];
-
-            let mediaStreams = mediaSources[0]?.MediaStreams || [];
-            if (type) mediaStreams = mediaStreams.filter(stream => stream.Type === type);
-
-            return mediaStreams;
-        },
-        [api]
-    );
-
-    return { findMovieByName, getMediaInfo, getMediaStreams };
+    return { findMovieByName, getMediaInfo, getRecentlyAddedMovies };
 
     /**
      * Creates and configures a Jellyfin API instance using environment variables.
@@ -82,14 +89,10 @@ export function useJellyfin() {
             jellyfinUrl = process.env.EXPO_PUBLIC_JELLYFIN_URL,
             jellyfinApiKey = process.env.EXPO_PUBLIC_JELLYFIN_API_KEY;
 
-        if (!appName)
-            throw new Error('Missing required environment variable: APP_NAME.');
-        if (!appVersion)
-            throw new Error('Missing required environment variable: APP_VERSION.');
-        if (!jellyfinUrl)
-            throw new Error('Missing required environment variable: JELLYFIN_URL.');
-        if (!jellyfinApiKey)
-            throw new Error('Missing required environment variable: JELLYFIN_API_KEY.');
+        if (!appName) throw new Error('Missing required environment variable: APP_NAME.');
+        if (!appVersion) throw new Error('Missing required environment variable: APP_VERSION.');
+        if (!jellyfinUrl) throw new Error('Missing required environment variable: JELLYFIN_URL.');
+        if (!jellyfinApiKey) throw new Error('Missing required environment variable: JELLYFIN_API_KEY.');
 
         const jellyfin = new Jellyfin({
             clientInfo: {
