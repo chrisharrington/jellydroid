@@ -1,5 +1,6 @@
 # Expo Configuration
 expo-env.d.ts
+.expo/devices.json
 
 # Dependencies
 node_modules

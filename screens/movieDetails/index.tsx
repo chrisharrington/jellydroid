@@ -1,4 +1,4 @@
-import { Button } from '@/components/button';
+import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { FontAwesome } from '@expo/vector-icons';
@@ -48,9 +48,9 @@ export function MovieDetailsScreen() {
                             </View>
                             <Text style={style.title}>{movie.Name}</Text>
                             <View style={style.buttonContainer}>
-                                <Button>
+                                <PlayButton item={movie}>
                                     <FontAwesome name='play' size={18} color='white' />
-                                </Button>
+                                </PlayButton>
                             </View>
                             <Text style={style.overview}>{movie.Overview}</Text>
                         </View>

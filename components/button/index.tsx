@@ -9,7 +9,7 @@ export type ButtonProps = PropsWithChildren & {
 
 export function Button({ children, onPress, isDisabled }: ButtonProps) {
     return (
-        <TouchableOpacity disabled={isDisabled} onPress={onPress} style={style.button}>
+        <TouchableOpacity activeOpacity={0.7} disabled={isDisabled} onPress={onPress} style={style.button}>
             {children}
         </TouchableOpacity>
     );
