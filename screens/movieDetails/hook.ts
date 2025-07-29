@@ -9,7 +9,7 @@ export function useMovieDetails() {
     const { id, name } = useRoute().params as { id: string; name: string },
         [movie, setMovie] = useState<BaseItemDto | null>(null),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getMovieDetails } = useJellyfin();
+        { getItemDetails: getMovieDetails } = useJellyfin();
 
     useAsyncEffect(async () => {
         try {

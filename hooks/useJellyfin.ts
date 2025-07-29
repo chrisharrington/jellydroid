@@ -96,7 +96,7 @@ export function useJellyfin() {
      * @param id - The unique identifier of the movie item to fetch.
      * @returns A promise that resolves to the movie item's data.
      */
-    const getMovieDetails = useCallback(
+    const getItemDetails = useCallback(
         async (id: string) => {
             if (!user.current) await login();
 
@@ -107,7 +107,19 @@ export function useJellyfin() {
         [api, user]
     );
 
-    return { login, findMovieByName, getMediaInfo, getRecentlyAddedMovies, getMovieDetails };
+    /**
+     * Generates the URL for the primary poster image of a given Jellyfin item.
+     *
+     * @param item - The Jellyfin item for which to retrieve the poster image.
+     * @returns The URL string pointing to the item's primary poster image, including the API key for authentication.
+     */
+    const getPosterForItem = useCallback(
+        (item: BaseItemDto) =>
+            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${item.Id}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+        []
+    );
+
+    return { login, findMovieByName, getMediaInfo, getRecentlyAddedMovies, getItemDetails, getPosterForItem };
 
     /**
      * Creates and configures a Jellyfin API instance using environment variables.

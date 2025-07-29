@@ -44,7 +44,20 @@ export default function RootLayout() {
 
             <Stack.Screen
                 name='movie/[name]/[id]'
-                options={{ title: 'Movie Details', header: () => <TransparentHeader />, headerTransparent: true }}
+                options={{
+                    title: 'Movie Details',
+                    header: () => <TransparentHeader withBackButton withCastButton />,
+                    headerTransparent: true,
+                }}
+            />
+
+            <Stack.Screen
+                name='remote/[id]'
+                options={{
+                    title: 'Remote',
+                    header: () => <TransparentHeader withBackButton />,
+                    headerTransparent: true,
+                }}
             />
         </Stack>
     ) : (
