@@ -1,11 +1,22 @@
 import { Colours } from '@/constants/colours';
 import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import { Picker } from '@react-native-picker/picker';
 import { ImageBackground, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRemoteScreen } from './hook';
 
 export function RemoteScreen() {
-    const { poster, status, item } = useRemoteScreen();
+    const {
+        poster,
+        status,
+        item,
+        selectedSubtitle,
+        subtitleOptions,
+        changeSubtitle,
+        selectedAudio,
+        audioOptions,
+        changeAudio,
+    } = useRemoteScreen();
 
     return (
         <View style={styles.container}>
@@ -22,7 +33,48 @@ export function RemoteScreen() {
             <View style={styles.titleContainer}>
                 <Text style={styles.title}>{item?.Name || ''}</Text>
                 <Text style={styles.year}>{item?.ProductionYear || ''}</Text>
-                <Text style={styles.overview}>{item?.Overview || 'No overview available.'}</Text>
+            </View>
+
+            <View style={styles.audioContainer}>
+                <Text style={styles.audioLabel}>Audio</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={selectedAudio}
+                        onValueChange={(itemValue: string) => changeAudio(itemValue)}
+                        style={styles.picker}
+                        dropdownIconColor={Colours.text}
+                    >
+                        {audioOptions.map(option => (
+                            <Picker.Item
+                                key={option.value}
+                                label={option.label}
+                                value={option.value}
+                                color={Colours.text}
+                            />
+                        ))}
+                    </Picker>
+                </View>
+            </View>
+
+            <View style={styles.subtitleContainer}>
+                <Text style={styles.subtitleLabel}>Subtitles</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={selectedSubtitle}
+                        onValueChange={(itemValue: string) => changeSubtitle(itemValue)}
+                        style={styles.picker}
+                        dropdownIconColor={Colours.text}
+                    >
+                        {subtitleOptions.map(option => (
+                            <Picker.Item
+                                key={option.value}
+                                label={option.label}
+                                value={option.value}
+                                color={Colours.text}
+                            />
+                        ))}
+                    </Picker>
+                </View>
             </View>
 
             <View style={styles.progressControl}>
@@ -99,7 +151,7 @@ const styles = StyleSheet.create({
         right: 0,
         width: '100%',
         aspectRatio: 27 / 40, // Standard aspect ratio for movie posters.
-        backgroundColor: Colours.background2,
+        backgroundColor: Colours.background,
     },
 
     controlBar: {
@@ -185,5 +237,50 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Lato-Regular',
         marginTop: 16,
+    },
+
+    subtitleContainer: {
+        position: 'absolute',
+        bottom: 200,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 32,
+        marginVertical: 16,
+    },
+
+    audioContainer: {
+        position: 'absolute',
+        bottom: 320,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 32,
+        marginBottom: 16,
+    },
+
+    subtitleLabel: {
+        color: Colours.text,
+        fontSize: 16,
+        fontFamily: 'Lato-Bold',
+        marginBottom: 8,
+    },
+
+    audioLabel: {
+        color: Colours.text,
+        fontSize: 16,
+        fontFamily: 'Lato-Bold',
+        marginBottom: 8,
+    },
+
+    pickerContainer: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 8,
+    },
+
+    picker: {
+        color: Colours.text,
+        height: 60,
     },
 });

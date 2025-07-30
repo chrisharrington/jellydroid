@@ -5,6 +5,16 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useRemoteMediaClient } from 'react-native-google-cast';
 
+type SubtitleOption = {
+    label: string;
+    value: string;
+};
+
+type AudioOption = {
+    label: string;
+    value: string;
+};
+
 type PlayStatus = {
     isPlaying: boolean;
     streamPosition: number;
@@ -19,7 +29,31 @@ export function useRemoteScreen() {
         [isBusy, setBusy] = useState<boolean>(false),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
+        [selectedSubtitle, setSelectedSubtitle] = useState<string>('none'),
+        [selectedAudio, setSelectedAudio] = useState<string>('en'),
         params = useLocalSearchParams<{ id: string }>();
+
+    const subtitleOptions: SubtitleOption[] = [
+        { label: 'None', value: 'none' },
+        { label: 'English', value: 'en' },
+        { label: 'Spanish', value: 'es' },
+        { label: 'French', value: 'fr' },
+        { label: 'German', value: 'de' },
+        { label: 'Italian', value: 'it' },
+        { label: 'Portuguese', value: 'pt' },
+        { label: 'Japanese', value: 'ja' },
+    ];
+
+    const audioOptions: AudioOption[] = [
+        { label: 'English', value: 'en' },
+        { label: 'Spanish', value: 'es' },
+        { label: 'French', value: 'fr' },
+        { label: 'German', value: 'de' },
+        { label: 'Italian', value: 'it' },
+        { label: 'Portuguese', value: 'pt' },
+        { label: 'Japanese', value: 'ja' },
+        { label: 'Russian', value: 'ru' },
+    ];
 
     useAsyncEffect(async () => {
         if (!params.id) return;
@@ -146,14 +180,70 @@ export function useRemoteScreen() {
         }
     }, [client]);
 
+    /**
+     * Changes the subtitle track for the current media playback.
+     *
+     * @param subtitleValue - The value of the subtitle track to switch to.
+     * @remarks
+     * - If the client is not available, the function exits early.
+     * - Updates the selected subtitle state when successful.
+     * - Any errors encountered during the operation are logged to the console.
+     */
+    const changeSubtitle = useCallback(
+        async (subtitleValue: string) => {
+            try {
+                if (!client) return;
+
+                // TODO: Implement actual subtitle switching logic with Google Cast
+                // await client.setActiveTrackIds([subtitleTrackId]);
+
+                setSelectedSubtitle(subtitleValue);
+            } catch (error) {
+                console.error('Failed to change subtitle:', error);
+            }
+        },
+        [client]
+    );
+
+    /**
+     * Changes the audio track for the current media playback.
+     *
+     * @param audioValue - The value of the audio track to switch to.
+     * @remarks
+     * - If the client is not available, the function exits early.
+     * - Updates the selected audio state when successful.
+     * - Any errors encountered during the operation are logged to the console.
+     */
+    const changeAudio = useCallback(
+        async (audioValue: string) => {
+            try {
+                if (!client) return;
+
+                // TODO: Implement actual audio track switching logic with Google Cast
+                // await client.setActiveTrackIds([audioTrackId]);
+
+                setSelectedAudio(audioValue);
+            } catch (error) {
+                console.error('Failed to change audio track:', error);
+            }
+        },
+        [client]
+    );
+
     return {
         pause,
         resume,
         seekForward,
         seekBackward,
         stop,
+        changeSubtitle,
+        changeAudio,
         item,
         poster,
+        selectedSubtitle,
+        subtitleOptions,
+        selectedAudio,
+        audioOptions,
         status: {
             isPlaying: false,
             streamPosition: 0,

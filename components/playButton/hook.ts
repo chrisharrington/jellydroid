@@ -39,7 +39,6 @@ export function usePlayButton(props: PlayButtonProps) {
         //     },
         // });
 
-        console.log('Navigating to remote screen for item:', props.item.Id);
         push(`/remote/${props.item.Id}`);
     }
 }
