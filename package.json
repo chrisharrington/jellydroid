@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "bunx expo start",
-    "build:dev": "bunx dotenv -- eas build --profile development --platform android --local --output dev-build.apk"
+    "build:dev": "bunx dotenv -- eas build --profile development --platform android --local --output dev-build.apk && qrcp dev-build.apk"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -41,7 +41,8 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

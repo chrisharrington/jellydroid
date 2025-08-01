@@ -1,9 +1,11 @@
+import { Spinner } from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { Picker } from '@react-native-picker/picker';
-import { ImageBackground, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AudioModal } from './audioModal';
 import { useRemoteScreen } from './hook';
+import { SubtitleModal } from './subtitleModal';
 
 export function RemoteScreen() {
     const {
@@ -16,104 +18,114 @@ export function RemoteScreen() {
         selectedAudio,
         audioOptions,
         changeAudio,
+        showAudioPopover,
+        setShowAudioPopover,
+        showSubtitlePopover,
+        setShowSubtitlePopover,
+        isBusy,
     } = useRemoteScreen();
 
-    return (
+    return isBusy ? (
+        <View style={styles.loadingContainer}>
+            <Spinner />
+        </View>
+    ) : (
         <View style={styles.container}>
-            {poster ? (
+            <View style={styles.content}>
                 <View style={styles.posterContainer}>
-                    <ImageBackground source={{ uri: poster }} style={styles.posterBackground} blurRadius={10}>
-                        <View style={styles.posterOverlay} />
-                    </ImageBackground>
+                    {poster && <Image source={{ uri: poster }} style={styles.poster} />}
                 </View>
-            ) : (
-                <View style={[styles.poster, { backgroundColor: Colours.background2 }]} />
-            )}
 
-            <View style={styles.titleContainer}>
-                <Text style={styles.title}>{item?.Name || ''}</Text>
-                <Text style={styles.year}>{item?.ProductionYear || ''}</Text>
-            </View>
+                <View style={styles.selectorsContainer}>
+                    <View style={styles.selectorWrapper}>
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => setShowAudioPopover(true)}>
+                            <View style={styles.selectorButton}>
+                                <MaterialIcons
+                                    name='volume-up'
+                                    size={20}
+                                    color={Colours.text}
+                                    style={styles.selectorIcon}
+                                />
+                                <Text style={styles.selectorText}>
+                                    {audioOptions.find(option => option.value === selectedAudio)?.label || 'English'}
+                                </Text>
+                                <MaterialIcons name='keyboard-arrow-down' size={20} color={Colours.text} />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
 
-            <View style={styles.audioContainer}>
-                <Text style={styles.audioLabel}>Audio</Text>
-                <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={selectedAudio}
-                        onValueChange={(itemValue: string) => changeAudio(itemValue)}
-                        style={styles.picker}
-                        dropdownIconColor={Colours.text}
-                    >
-                        {audioOptions.map(option => (
-                            <Picker.Item
-                                key={option.value}
-                                label={option.label}
-                                value={option.value}
-                                color={Colours.text}
-                            />
-                        ))}
-                    </Picker>
+                    <View style={styles.selectorWrapper}>
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => setShowSubtitlePopover(true)}>
+                            <View style={styles.selectorButton}>
+                                <MaterialIcons
+                                    name='subtitles'
+                                    size={20}
+                                    color={Colours.text}
+                                    style={styles.selectorIcon}
+                                />
+                                <Text style={styles.selectorText}>
+                                    {subtitleOptions.find(option => option.value === selectedSubtitle)?.label || 'None'}
+                                </Text>
+                                <MaterialIcons name='keyboard-arrow-down' size={20} color={Colours.text} />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.progressControl}>
+                    <View style={styles.timeContainer}>
+                        <Text style={styles.timeText}>{status.currentTime}</Text>
+                        <Text style={[styles.timeText, styles.timeRight]}>{status.maxTime}</Text>
+                    </View>
+                    <Slider
+                        style={styles.slider}
+                        minimumValue={0}
+                        maximumValue={1}
+                        value={0.3}
+                        minimumTrackTintColor={Colours.icon}
+                        maximumTrackTintColor={Colours.text}
+                        thumbTintColor={Colours.icon}
+                    />
+                </View>
+
+                <View style={styles.controlBar}>
+                    <TouchableOpacity style={styles.button} activeOpacity={0.7}>
+                        <MaterialIcons name='skip-previous' size={36} color='white' />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.button} activeOpacity={0.7}>
+                        <MaterialIcons name='replay-30' size={36} color='white' />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.button, styles.playButton]} activeOpacity={0.7}>
+                        <MaterialIcons name={status.isPlaying ? 'pause' : 'play-arrow'} size={48} color='white' />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.button} activeOpacity={0.7}>
+                        <MaterialIcons name='forward-10' size={36} color='white' />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.button} activeOpacity={0.7}>
+                        <MaterialIcons name='skip-next' size={36} color='white' />
+                    </TouchableOpacity>
                 </View>
             </View>
 
-            <View style={styles.subtitleContainer}>
-                <Text style={styles.subtitleLabel}>Subtitles</Text>
-                <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={selectedSubtitle}
-                        onValueChange={(itemValue: string) => changeSubtitle(itemValue)}
-                        style={styles.picker}
-                        dropdownIconColor={Colours.text}
-                    >
-                        {subtitleOptions.map(option => (
-                            <Picker.Item
-                                key={option.value}
-                                label={option.label}
-                                value={option.value}
-                                color={Colours.text}
-                            />
-                        ))}
-                    </Picker>
-                </View>
-            </View>
+            <AudioModal
+                visible={showAudioPopover}
+                onClose={() => setShowAudioPopover(false)}
+                audioOptions={audioOptions}
+                selectedAudio={selectedAudio}
+                onSelectAudio={changeAudio}
+            />
 
-            <View style={styles.progressControl}>
-                <View style={styles.timeContainer}>
-                    <Text style={styles.timeText}>{status.currentTime}</Text>
-                    <Text style={[styles.timeText, styles.timeRight]}>{status.maxTime}</Text>
-                </View>
-                <Slider
-                    style={styles.slider}
-                    minimumValue={0}
-                    maximumValue={1}
-                    value={0.3}
-                    minimumTrackTintColor={Colours.icon}
-                    maximumTrackTintColor={Colours.text}
-                    thumbTintColor={Colours.icon}
-                />
-            </View>
-
-            <View style={styles.controlBar}>
-                <TouchableOpacity style={styles.button} activeOpacity={0.7}>
-                    <MaterialIcons name='skip-previous' size={36} color='white' />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.button} activeOpacity={0.7}>
-                    <MaterialIcons name='replay-30' size={36} color='white' />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.button, styles.playButton]} activeOpacity={0.7}>
-                    <MaterialIcons name={status.isPlaying ? 'pause' : 'play-arrow'} size={48} color='white' />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.button} activeOpacity={0.7}>
-                    <MaterialIcons name='forward-10' size={36} color='white' />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.button} activeOpacity={0.7}>
-                    <MaterialIcons name='skip-next' size={36} color='white' />
-                </TouchableOpacity>
-            </View>
+            <SubtitleModal
+                visible={showSubtitlePopover}
+                onClose={() => setShowSubtitlePopover(false)}
+                subtitleOptions={subtitleOptions}
+                selectedSubtitle={selectedSubtitle}
+                onSelectSubtitle={changeSubtitle}
+            />
         </View>
     );
 }
@@ -122,49 +134,61 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colours.background,
-        position: 'relative',
+    },
+
+    content: {
+        flex: 1,
+        paddingHorizontal: 32,
+    },
+
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: Colours.background,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 
     posterContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
-
-    posterBackground: {
         flex: 1,
-        width: '100%',
-    },
-
-    posterOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: Colours.background,
-        opacity: 0.7,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 12,
+        paddingBottom: 16,
     },
 
     poster: {
-        position: 'absolute',
-        top: (StatusBar.currentHeight ?? 0) + 56,
-        left: 0,
-        right: 0,
-        width: '100%',
-        aspectRatio: 27 / 40, // Standard aspect ratio for movie posters.
-        backgroundColor: Colours.background,
+        width: 320,
+        maxHeight: '100%',
+        aspectRatio: 300 / 515,
+        borderRadius: 6,
+        backgroundColor: Colours.background2,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 8,
+    },
+
+    selectorsContainer: {
+        flexDirection: 'row',
+        gap: 16,
+        paddingVertical: 8,
+        marginBottom: 12,
+    },
+
+    progressControl: {
+        paddingVertical: 16,
     },
 
     controlBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 100,
+        height: 120,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-evenly',
-        paddingHorizontal: 16,
-        paddingBottom: 64,
+        justifyContent: 'space-around',
+        paddingBottom: 32,
     },
 
     button: {
@@ -184,14 +208,6 @@ const styles = StyleSheet.create({
         height: 40,
     },
 
-    progressControl: {
-        position: 'absolute',
-        bottom: 120,
-        left: 0,
-        right: 0,
-        paddingHorizontal: 32,
-    },
-
     timeContainer: {
         flex: 1,
         flexDirection: 'row',
@@ -209,78 +225,37 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
 
-    titleContainer: {
-        position: 'absolute',
-        top: StatusBar.currentHeight ? StatusBar.currentHeight + 72 : 88,
-        left: 0,
-        right: 0,
-        paddingHorizontal: 32,
+    selectorWrapper: {
+        flex: 1,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 3,
     },
 
-    title: {
-        color: Colours.text,
-        fontSize: 36,
-        fontFamily: 'Lato-Bold',
-        marginBottom: 4,
-        fontWeight: 'bold',
-    },
-
-    year: {
-        color: Colours.subtext,
-        fontSize: 18,
-        fontFamily: 'Lato-Regular',
-        fontWeight: 'bold',
-    },
-
-    overview: {
-        color: Colours.text,
-        fontSize: 16,
-        fontFamily: 'Lato-Regular',
-        marginTop: 16,
-    },
-
-    subtitleContainer: {
-        position: 'absolute',
-        bottom: 200,
-        left: 0,
-        right: 0,
-        paddingHorizontal: 32,
-        marginVertical: 16,
-    },
-
-    audioContainer: {
-        position: 'absolute',
-        bottom: 320,
-        left: 0,
-        right: 0,
-        paddingHorizontal: 32,
-        marginBottom: 16,
-    },
-
-    subtitleLabel: {
-        color: Colours.text,
-        fontSize: 16,
-        fontFamily: 'Lato-Bold',
-        marginBottom: 8,
-    },
-
-    audioLabel: {
-        color: Colours.text,
-        fontSize: 16,
-        fontFamily: 'Lato-Bold',
-        marginBottom: 8,
-    },
-
-    pickerContainer: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+    selectorButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-        paddingHorizontal: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        minHeight: 48,
     },
 
-    picker: {
+    selectorText: {
         color: Colours.text,
-        height: 60,
+        fontSize: 16,
+        fontFamily: 'Lato-Regular',
+        flex: 1,
+    },
+
+    selectorIcon: {
+        marginRight: 12,
     },
 });

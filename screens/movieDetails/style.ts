@@ -1,10 +1,9 @@
 import { Colours } from '@/constants/colours';
-import { Platform, StatusBar, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
     backdrop: {
         width: '100%',
-        marginTop: Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
         height: 200,
     },
 

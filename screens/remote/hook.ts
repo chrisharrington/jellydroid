@@ -1,19 +1,10 @@
+import { SelectorOption } from '@/components/selector';
 import { useAsyncEffect } from '@/hooks/useAsyncEffect';
 import { useJellyfin } from '@/hooks/useJellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useRemoteMediaClient } from 'react-native-google-cast';
-
-type SubtitleOption = {
-    label: string;
-    value: string;
-};
-
-type AudioOption = {
-    label: string;
-    value: string;
-};
 
 type PlayStatus = {
     isPlaying: boolean;
@@ -31,9 +22,11 @@ export function useRemoteScreen() {
         [poster, setPoster] = useState<string | null>(null),
         [selectedSubtitle, setSelectedSubtitle] = useState<string>('none'),
         [selectedAudio, setSelectedAudio] = useState<string>('en'),
+        [showAudioPopover, setShowAudioPopover] = useState<boolean>(false),
+        [showSubtitlePopover, setShowSubtitlePopover] = useState<boolean>(false),
         params = useLocalSearchParams<{ id: string }>();
 
-    const subtitleOptions: SubtitleOption[] = [
+    const subtitleOptions: SelectorOption[] = [
         { label: 'None', value: 'none' },
         { label: 'English', value: 'en' },
         { label: 'Spanish', value: 'es' },
@@ -44,7 +37,7 @@ export function useRemoteScreen() {
         { label: 'Japanese', value: 'ja' },
     ];
 
-    const audioOptions: AudioOption[] = [
+    const audioOptions: SelectorOption[] = [
         { label: 'English', value: 'en' },
         { label: 'Spanish', value: 'es' },
         { label: 'French', value: 'fr' },
@@ -60,6 +53,7 @@ export function useRemoteScreen() {
 
         try {
             setBusy(true);
+
             const item = await getItemDetails(params.id);
             if (!item) throw new Error('Item not found.');
 
@@ -244,6 +238,10 @@ export function useRemoteScreen() {
         subtitleOptions,
         selectedAudio,
         audioOptions,
+        showAudioPopover,
+        setShowAudioPopover,
+        showSubtitlePopover,
+        setShowSubtitlePopover,
         status: {
             isPlaying: false,
             streamPosition: 0,

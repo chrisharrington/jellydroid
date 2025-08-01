@@ -1,3 +1,4 @@
+import { useJellyfinStore } from '@/stores/useJellyfinStore';
 import { Jellyfin } from '@jellyfin/sdk';
 import { BaseItemDto, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
@@ -6,6 +7,7 @@ import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api'
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import { useCallback, useMemo, useRef } from 'react';
+import { useAsyncEffect } from './useAsyncEffect';
 
 /**
  * React hook for interacting with the Jellyfin API.
@@ -17,7 +19,32 @@ import { useCallback, useMemo, useRef } from 'react';
  */
 export function useJellyfin() {
     const api = useMemo(createApi, []),
-        user = useRef<UserDto | null>(null);
+        user = useRef<UserDto | null>(null),
+        { setItems, setLoading } = useJellyfinStore();
+
+    // Retrieve all items from the Jellyfin API and store them in a zustand store.
+    useAsyncEffect(async () => {
+        try {
+            setLoading(true);
+
+            const time = new Date().getTime();
+            console.log('Retrieving items from Jellyfin API...');
+            const itemsApi = getItemsApi(api),
+                response = await itemsApi.getItems({
+                    includeItemTypes: ['Movie', 'Series'],
+                    recursive: true,
+                });
+
+            const items = response.data.Items || [];
+            setItems(items);
+            console.log('Retrieved items from Jellyfin API:', items.length);
+            console.log('Time taken:', new Date().getTime() - time, 'ms');
+        } catch (error) {
+            console.error('Failed to retrieve items from Jellyfin API:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     /**
      * Authenticates a user with the provided username and password.
