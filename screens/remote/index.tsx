@@ -157,7 +157,8 @@ const styles = StyleSheet.create({
     },
 
     poster: {
-        width: 320,
+        width: 300,
+        marginTop: 12,
         maxHeight: '100%',
         aspectRatio: 300 / 515,
         borderRadius: 6,

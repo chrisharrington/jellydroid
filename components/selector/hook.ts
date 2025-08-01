@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
 
-export function useSelector(visible: boolean) {
+export function useSelector(visible: boolean, onSelectValue?: (value: string) => void, onClose?: () => void) {
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isVisible, setIsVisible] = useState(false);
@@ -41,9 +41,22 @@ export function useSelector(visible: boolean) {
         }
     }, [visible, slideAnim, fadeAnim, isVisible]);
 
+    const handleSelectValue = useCallback(
+        (value: string) => {
+            if (onSelectValue) {
+                onSelectValue(value);
+            }
+            if (onClose) {
+                onClose();
+            }
+        },
+        [onSelectValue, onClose]
+    );
+
     return {
         slideAnim,
         fadeAnim,
         isVisible,
+        handleSelectValue,
     };
 }

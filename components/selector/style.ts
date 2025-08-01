@@ -15,8 +15,8 @@ export const styles = StyleSheet.create({
 
     slideUpContainer: {
         backgroundColor: Colours.background2,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        borderTopLeftRadius: 6,
+        borderTopRightRadius: 6,
         maxHeight: '70%',
         shadowColor: '#000',
         shadowOffset: {
@@ -48,6 +48,7 @@ export const styles = StyleSheet.create({
 
     content: {
         maxHeight: 300,
+        marginBottom: 48,
     },
 
     option: {

@@ -1,9 +1,11 @@
+import { CastSelector } from '@/components/castSelector';
+import { useCastSelector } from '@/components/castSelector/hook';
+import { CustomCastButton } from '@/components/customCastButton';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
-import { CastButton } from 'react-native-google-cast';
 
 export default function RootLayout() {
     const [fontsLoaded] = useFonts({
@@ -19,25 +21,32 @@ export default function RootLayout() {
         'Lato-ThinItalic': require('../fonts/Lato-ThinItalic.ttf'),
     });
 
+    const { isVisible, selectedDevice, showSelector, hideSelector, handleDeviceSelect } = useCastSelector();
+
     return fontsLoaded ? (
-        <Stack
-            screenOptions={{
-                title: 'Jellydroid',
-                headerStyle: {
-                    backgroundColor: Colours.background2,
-                },
-                headerTintColor: Colours.text,
-                headerRight: () => (
-                    <View>
-                        <CastButton style={{ width: 48, height: 48 }} />
-                    </View>
-                ),
-            }}
-        >
-            <Stack.Screen name='index' />
-            <Stack.Screen name='movie/[name]/[id]' />
-            <Stack.Screen name='remote/[id]' />
-        </Stack>
+        <>
+            <Stack
+                screenOptions={{
+                    title: 'Jellydroid',
+                    headerStyle: {
+                        backgroundColor: Colours.background2,
+                    },
+                    headerTintColor: Colours.text,
+                    headerRight: () => <CustomCastButton tintColor={Colours.text} onPress={showSelector} />,
+                }}
+            >
+                <Stack.Screen name='index' />
+                <Stack.Screen name='movie/[name]/[id]' />
+                <Stack.Screen name='remote/[id]' />
+            </Stack>
+
+            <CastSelector
+                isVisible={isVisible}
+                selectedDevice={selectedDevice}
+                onClose={hideSelector}
+                onDeviceSelect={handleDeviceSelect}
+            />
+        </>
     ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Spinner size='md' />

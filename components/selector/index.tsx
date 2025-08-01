@@ -20,18 +20,9 @@ type SelectorProps = {
 };
 
 export function Selector({ visible, onClose, title, icon, options, selectedValue, onSelectValue }: SelectorProps) {
-    const { slideAnim, fadeAnim, isVisible } = useSelector(visible);
+    const { slideAnim, fadeAnim, isVisible, handleSelectValue } = useSelector(visible, onSelectValue, onClose);
 
-    const handleSelectValue = (value: string) => {
-        onSelectValue(value);
-        onClose();
-    };
-
-    if (!isVisible) {
-        return null;
-    }
-
-    return (
+    return !isVisible ? null : (
         <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
             <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
             <Animated.View
@@ -45,7 +36,14 @@ export function Selector({ visible, onClose, title, icon, options, selectedValue
                 <View style={styles.header}>
                     <MaterialIcons name={icon} size={24} color={Colours.text} />
                     <Text style={styles.title}>{title}</Text>
-                    <TouchableOpacity onPress={onClose}>
+                    <TouchableOpacity
+                        onPress={onClose}
+                        style={{
+                            padding: 8,
+                            margin: -8,
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
                         <MaterialIcons name='close' size={24} color={Colours.text} />
                     </TouchableOpacity>
                 </View>
