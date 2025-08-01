@@ -1,4 +1,4 @@
-import { Selector, SelectorOption } from '@/components/selector';
+import { Selector } from '@/components/selector';
 import { useCastSelector } from './hook';
 
 export type CastSelectorProps = {
@@ -11,16 +11,11 @@ export type CastSelectorProps = {
 export function CastSelector({ isVisible, selectedDevice, onClose, onDeviceSelect }: CastSelectorProps) {
     const { devices } = useCastSelector();
 
-    const deviceOptions: SelectorOption[] = devices.map(device => ({
-        label: device.friendlyName,
-        value: device.deviceId,
-    }));
-
     return (
         <Selector
             visible={isVisible}
             onClose={onClose}
-            options={deviceOptions}
+            options={devices}
             selectedValue={selectedDevice}
             onSelectValue={onDeviceSelect}
             title='Cast to Device'

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { CastContext, CastState, useCastDevice, useCastState, useDevices } from 'react-native-google-cast';
 
 export function useCastSelector() {
@@ -7,16 +7,6 @@ export function useCastSelector() {
         devices = useDevices(),
         castDevice = useCastDevice(),
         castState = useCastState();
-
-    useEffect(() => {
-        console.log(
-            'Devices changed:',
-            devices
-                // .filter(device => !device.friendlyName.includes('Speaker'))
-                .map(device => device.friendlyName)
-                .sort()
-        );
-    }, [devices]);
 
     /**
      * Handles the selection of a cast device by its ID.
@@ -74,7 +64,18 @@ export function useCastSelector() {
     return {
         isVisible,
         selectedDevice,
-        devices,
+        devices: useMemo(
+            () =>
+                devices
+                    .filter(device => !device.friendlyName.toLowerCase().includes('group'))
+                    .filter(device => !device.friendlyName.toLowerCase().includes('speaker'))
+                    .sort((a, b) => a.friendlyName.toLowerCase().localeCompare(b.friendlyName.toLowerCase()))
+                    .map(device => ({
+                        label: device.friendlyName.replace(/\b\w/g, char => char.toUpperCase()),
+                        value: device.deviceId,
+                    })),
+            [devices]
+        ),
         isConnected: castState === CastState.CONNECTED,
         connectedDevice: castDevice,
         showSelector: () => setIsVisible(true),
