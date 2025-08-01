@@ -21,7 +21,7 @@ export default function RootLayout() {
         'Lato-ThinItalic': require('../fonts/Lato-ThinItalic.ttf'),
     });
 
-    const { isVisible, selectedDevice, showSelector, hideSelector, handleDeviceSelect } = useCastSelector();
+    const { isVisible, selectedDevice, handleCastButtonPress, hideSelector, handleDeviceSelect } = useCastSelector();
 
     return fontsLoaded ? (
         <>
@@ -32,7 +32,7 @@ export default function RootLayout() {
                         backgroundColor: Colours.background2,
                     },
                     headerTintColor: Colours.text,
-                    headerRight: () => <CustomCastButton tintColor={Colours.text} onPress={showSelector} />,
+                    headerRight: () => <CustomCastButton tintColor={Colours.text} onPress={handleCastButtonPress} />,
                 }}
             >
                 <Stack.Screen name='index' />

@@ -1,12 +1,14 @@
+import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { CastContext, CastState, useCastDevice, useCastState, useDevices } from 'react-native-google-cast';
 
 export function useCastSelector() {
-    const [isVisible, setIsVisible] = useState(false),
+    const [isVisible, setVisible] = useState(false),
         [selectedDevice, setSelectedDevice] = useState(''),
         devices = useDevices(),
         castDevice = useCastDevice(),
-        castState = useCastState();
+        castState = useCastState(),
+        { push } = useRouter();
 
     /**
      * Handles the selection of a cast device by its ID.
@@ -35,7 +37,7 @@ export function useCastSelector() {
                 await CastContext.getSessionManager().startSession(device.deviceId);
 
                 setSelectedDevice(deviceId);
-                setIsVisible(false);
+                setVisible(false);
 
                 console.log('Successfully connected to:', device.friendlyName);
             } catch (error) {
@@ -78,8 +80,8 @@ export function useCastSelector() {
         ),
         isConnected: castState === CastState.CONNECTED,
         connectedDevice: castDevice,
-        showSelector: () => setIsVisible(true),
-        hideSelector: () => setIsVisible(false),
+        handleCastButtonPress: () => setVisible(true),
+        hideSelector: () => setVisible(false),
         handleDeviceSelect,
         handleDisconnect,
     };
