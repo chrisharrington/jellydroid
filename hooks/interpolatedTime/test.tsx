@@ -1,28 +1,25 @@
-/**
- * Test file for useInterpolatedTime hook
- *
- * To run these tests, you'll need to set up Jest with React Native:
- * 1. Install dependencies: npm install --save-dev jest @testing-library/react-native @types/jest
- * 2. Configure Jest in package.json or jest.config.js
- * 3. Set up jest globals in tsconfig.json
- *
- * These tests verify:
- * - Basic functionality (returning initial time, respecting isEnabled flag)
- * - Time interpolation when enabled
- * - Proper cleanup of intervals
- * - State changes and edge cases
- */
-
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, renderHook } from '@testing-library/react-native';
 import { useInterpolatedTime } from './index';
 
-// Mock Date.now() for consistent testing
-const mockDateNow = jest.fn();
-const originalDateNow = Date.now;
+const mockDateNow = jest.fn(),
+    originalDateNow = Date.now;
 
-// Mock timers
 jest.useFakeTimers();
+
+beforeAll(() => {
+    const originalError = console.error;
+    console.error = jest.fn((...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return; // Suppress act warnings - expected for timer-based hooks
+        }
+        originalError(...args);
+    });
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
+});
 
 describe('useInterpolatedTime', () => {
     beforeEach(() => {
@@ -109,10 +106,12 @@ describe('useInterpolatedTime', () => {
         // Simulate time passing and update localTime
         mockDateNow.mockReturnValue(startTime + 300);
 
-        rerender({
-            localTime: 200,
-            isEnabled: true,
-            lastUpdateTime: startTime + 300,
+        act(() => {
+            rerender({
+                localTime: 200,
+                isEnabled: true,
+                lastUpdateTime: startTime + 300,
+            });
         });
 
         expect(result.current).toBe(200);
@@ -142,10 +141,12 @@ describe('useInterpolatedTime', () => {
         expect(result.current).toBe(100.2);
 
         // Disable interpolation
-        rerender({
-            localTime: 150,
-            isEnabled: false,
-            lastUpdateTime: startTime,
+        act(() => {
+            rerender({
+                localTime: 150,
+                isEnabled: false,
+                lastUpdateTime: startTime,
+            });
         });
 
         // Should reset to the new localTime

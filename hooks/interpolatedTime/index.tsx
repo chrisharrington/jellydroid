@@ -7,6 +7,11 @@ export function useInterpolatedTime(localTime: number, isEnabled: boolean, lastU
     const [interpolatedTime, setInterpolatedTime] = useState(localTime);
 
     useEffect(() => {
+        // Always update to the new localTime immediately when it changes
+        setInterpolatedTime(localTime);
+    }, [localTime]);
+
+    useEffect(() => {
         if (!isEnabled) {
             setInterpolatedTime(localTime);
             return;
