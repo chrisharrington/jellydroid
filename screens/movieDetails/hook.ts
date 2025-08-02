@@ -1,5 +1,5 @@
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { useJellyfin } from '@/hooks/useJellyfin';
+import { useJellyfin } from '@/hooks/jellyfin';
 import { formatDuration } from '@/shared/formatDuration';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useRoute } from '@react-navigation/native';

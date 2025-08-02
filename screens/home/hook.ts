@@ -1,5 +1,5 @@
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { useJellyfin } from '@/hooks/useJellyfin';
+import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useState } from 'react';
 
