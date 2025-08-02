@@ -27,10 +27,10 @@ export function CustomCastButton({ style, tintColor = 'white', size = 24, onPres
             onPress={onPress}
             activeOpacity={0.7}
         >
-            {!state ||
-                (state === CastState.NOT_CONNECTED && <MaterialIcons name='cast' size={size} color={tintColor} />)}
-            {(state === CastState.CONNECTING || state === CastState.CONNECTED) && (
+            {state === CastState.CONNECTING || state === CastState.CONNECTED ? (
                 <MaterialIcons name='cast-connected' size={size} color={tintColor} />
+            ) : (
+                <MaterialIcons name='cast' size={size} color={tintColor} />
             )}
         </TouchableOpacity>
     );
