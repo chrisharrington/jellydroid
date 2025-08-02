@@ -16,8 +16,8 @@ export function AudioSelector({ audioOptions, selectedAudio, onSelectAudio }: Au
 
     return (
         <>
-            <View style={styles.selectorWrapper}>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => setShowModal(true)}>
+            <View style={styles.selectorWrapper} testID='audio-selector-wrapper'>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => setShowModal(true)} testID='audio-selector-button'>
                     <View style={styles.selectorButton}>
                         <MaterialIcons name='volume-up' size={20} color={Colours.text} style={styles.selectorIcon} />
                         <Text style={styles.selectorText}>

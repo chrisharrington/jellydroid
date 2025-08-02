@@ -16,8 +16,12 @@ export function SubtitleSelector({ subtitleOptions, selectedSubtitle, onSelectSu
 
     return (
         <>
-            <View style={styles.selectorWrapper}>
-                <TouchableOpacity activeOpacity={0.7} onPress={() => setShowModal(true)}>
+            <View style={styles.selectorWrapper} testID='subtitle-selector-wrapper'>
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setShowModal(true)}
+                    testID='subtitle-selector-button'
+                >
                     <View style={styles.selectorButton}>
                         <MaterialIcons name='subtitles' size={20} color={Colours.text} style={styles.selectorIcon} />
                         <Text style={styles.selectorText}>
