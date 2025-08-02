@@ -12,6 +12,7 @@ export default StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 3,
         elevation: 3,
+        overflow: 'visible',
     },
     selectorButton: {
         flexDirection: 'row',

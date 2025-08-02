@@ -6,44 +6,52 @@
         "context": "You are helping develop a mobile Jellyfin client using Expo and TypeScript. Follow these guidelines:\n- Use functional components with hooks\n- Follow React Native best practices\n- Use expo-router for navigation\n- Implement proper TypeScript types\n- Use the design system's color tokens from @/constants/colours\n- Prefer custom hooks for business logic\n- Implement proper error handling\n- Add JSDoc comments for complex functions\n- Follow the existing project structure and patterns\n- Use proper naming conventions (lowerCamelCase for components, camelCase for functions/variables)\n- When asked to create comments: avoid inline comments and prefer top level comments; use /** */ syntax; for props use 'Required.' or 'Optional.' based on the prop; and always use periods."
     },
     "files.autoSave": "off",
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "javascript.preferences.quoteStyle": "single",
-        "typescript.preferences.quoteStyle": "single",
-        "prettier.useEditorConfig": false,
-        "javascript.updateImportsOnFileMove.enabled": "always",
-        "typescript.updateImportsOnFileMove.enabled": "always",
-        "workbench.editor.labelFormat": "short",
-        "typescript.referencesCodeLens.enabled": true,
-        "typescript.referencesCodeLens.showOnAllFunctions": true,
-        "typescript.implementationsCodeLens.enabled": true,
-        "typescript.implementationsCodeLens.showOnInterfaceMethods": true,
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.addMissingImports.ts": "always",
-            "source.organizeImports": "always"
-        },
-        "prettier.singleQuote": true,
-        "prettier.jsxSingleQuote": true,
-        "prettier.tabWidth": 4,
-        "prettier.printWidth": 120,
-        "prettier.arrowParens": "avoid",
-        "prettier.experimentalTernaries": true,
-        "prettier.useTabs": false,
-        "editor.tabSize": 4,
-        "window.autoDetectColorScheme": true,
-        "files.associations": {
-            "*.css": "tailwindcss"
-        },
-        "[scss]": {
-            "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[typescriptreact]": {
-            "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[sql]": {
-            "editor.defaultFormatter": "ms-mssql.mssql"
-        },
-        "[typescript]": {
-            "editor.defaultFormatter": "esbenp.prettier-vscode"
-        }
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "javascript.preferences.quoteStyle": "single",
+    "typescript.preferences.quoteStyle": "single",
+    "prettier.useEditorConfig": false,
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "workbench.editor.labelFormat": "short",
+    "typescript.referencesCodeLens.enabled": true,
+    "typescript.referencesCodeLens.showOnAllFunctions": true,
+    "typescript.implementationsCodeLens.enabled": true,
+    "typescript.implementationsCodeLens.showOnInterfaceMethods": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.addMissingImports.ts": "always",
+        "source.organizeImports": "always"
+    },
+    "prettier.singleQuote": true,
+    "prettier.jsxSingleQuote": true,
+    "prettier.tabWidth": 4,
+    "prettier.printWidth": 120,
+    "prettier.arrowParens": "avoid",
+    "prettier.experimentalTernaries": true,
+    "prettier.useTabs": false,
+    "editor.tabSize": 4,
+    "window.autoDetectColorScheme": true,
+    "files.associations": {
+        "*.css": "tailwindcss"
+    },
+    "[scss]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[sql]": {
+        "editor.defaultFormatter": "ms-mssql.mssql"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "jest.jestCommandLine": "npm test",
+    "jest.autoRun": {
+        "watch": false,
+        "onStartup": ["all-tests"]
+    },
+    "jest.testExplorer": {
+        "enabled": true
+    }
 }

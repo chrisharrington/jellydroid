@@ -5,11 +5,13 @@ export default StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colours.background,
+        overflow: 'visible',
     },
 
     content: {
         flex: 1,
         paddingHorizontal: 32,
+        overflow: 'visible',
     },
 
     loadingContainer: {
@@ -49,6 +51,7 @@ export default StyleSheet.create({
         gap: 16,
         paddingVertical: 8,
         marginBottom: 12,
+        overflow: 'visible',
     },
 
     progressControl: {

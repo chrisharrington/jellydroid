@@ -6,6 +6,7 @@ import { Colours } from '@/constants/colours';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
+import { Host } from 'react-native-portalize';
 
 export default function RootLayout() {
     const [fontsLoaded] = useFonts({
@@ -24,7 +25,7 @@ export default function RootLayout() {
     const { isVisible, selectedDevice, handleCastButtonPress, hideSelector, handleDeviceSelect } = useCastSelector();
 
     return fontsLoaded ? (
-        <>
+        <Host>
             <Stack
                 screenOptions={{
                     title: 'Jellydroid',
@@ -46,7 +47,7 @@ export default function RootLayout() {
                 onClose={hideSelector}
                 onDeviceSelect={handleDeviceSelect}
             />
-        </>
+        </Host>
     ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Spinner size='md' />
