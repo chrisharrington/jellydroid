@@ -48,8 +48,6 @@ export function useRemoteScreen() {
         [poster, setPoster] = useState<string | null>(null),
         [selectedSubtitle, setSelectedSubtitle] = useState<string>('none'),
         [selectedAudio, setSelectedAudio] = useState<string>('en'),
-        [showAudioPopover, setShowAudioPopover] = useState<boolean>(false),
-        [showSubtitlePopover, setShowSubtitlePopover] = useState<boolean>(false),
         [status, setStatus] = useState<PlayStatus>({
             isPlaying: false,
             isLoading: false,
@@ -449,10 +447,6 @@ export function useRemoteScreen() {
         subtitleOptions,
         selectedAudio,
         audioOptions,
-        showAudioPopover,
-        setShowAudioPopover,
-        showSubtitlePopover,
-        setShowSubtitlePopover,
         status: {
             ...status,
             // Use interpolated time for smoother display

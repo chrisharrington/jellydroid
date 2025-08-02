@@ -56,26 +56,6 @@ export default StyleSheet.create({
         paddingVertical: 16,
     },
 
-    controlBar: {
-        height: 120,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        paddingBottom: 32,
-    },
-
-    button: {
-        width: 56,
-        height: 56,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 28,
-    },
-
-    playButton: {
-        transform: [{ scale: 1.2 }],
-    },
-
     slider: {
         flex: 1,
         height: 40,
@@ -96,39 +76,5 @@ export default StyleSheet.create({
 
     timeRight: {
         textAlign: 'right',
-    },
-
-    selectorWrapper: {
-        flex: 1,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-
-    selectorButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 6,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        minHeight: 48,
-    },
-
-    selectorText: {
-        color: Colours.text,
-        fontSize: 16,
-        fontFamily: 'Lato-Regular',
-        flex: 1,
-    },
-
-    selectorIcon: {
-        marginRight: 12,
     },
 });
