@@ -1,4 +1,4 @@
-import { useAsyncEffect } from '@/hooks/useAsyncEffect';
+import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useJellyfin } from '@/hooks/useJellyfin';
 import { PlaybackInfoResponse } from '@jellyfin/sdk/lib/generated-client/models';
 import { useRouter } from 'expo-router';

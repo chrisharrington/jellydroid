@@ -7,7 +7,7 @@ import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api'
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import { useCallback, useMemo, useRef } from 'react';
-import { useAsyncEffect } from './useAsyncEffect';
+import { useAsyncEffect } from './asyncEffect';
 
 /**
  * React hook for interacting with the Jellyfin API.
