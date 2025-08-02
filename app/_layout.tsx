@@ -1,6 +1,6 @@
-import { CastSelector } from '@/components/castSelector';
-import { useCastSelector } from '@/components/castSelector/hook';
 import { CustomCastButton } from '@/components/customCastButton';
+import { CastSelector } from '@/components/deviceSelector';
+import { useCastSelector } from '@/components/deviceSelector/hook';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { useFonts } from 'expo-font';
@@ -37,7 +37,7 @@ export default function RootLayout() {
             >
                 <Stack.Screen name='index' />
                 <Stack.Screen name='movie/[name]/[id]' />
-                <Stack.Screen name='remote/[id]' />
+                <Stack.Screen name='remote/[id]' options={{ headerRight: () => null }} />
             </Stack>
 
             <CastSelector

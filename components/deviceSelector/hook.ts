@@ -1,14 +1,12 @@
-import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { CastContext, CastState, useCastDevice, useCastState, useDevices } from 'react-native-google-cast';
+import { CastContext, CastState, useCastState, useDevices, useRemoteMediaClient } from 'react-native-google-cast';
 
 export function useCastSelector() {
     const [isVisible, setVisible] = useState(false),
         [selectedDevice, setSelectedDevice] = useState('local'), // Default to local device
         devices = useDevices(),
-        castDevice = useCastDevice(),
         castState = useCastState(),
-        { push } = useRouter();
+        remoteMediaClient = useRemoteMediaClient();
 
     /**
      * Handles the selection of a cast device by its ID.
@@ -22,70 +20,46 @@ export function useCastSelector() {
     const handleDeviceSelect = useCallback(
         async (deviceId: string) => {
             try {
-                console.log('Selected device ID:', deviceId);
-
-                // Handle "This Device" selection - disconnect from cast
+                // Handle "This Device" selection - disconnect from cast.
                 if (deviceId === 'local') {
-                    console.log('Selecting local device, disconnecting from cast...');
                     if (castState === CastState.CONNECTED) {
+                        if (remoteMediaClient) await remoteMediaClient.stop();
                         await CastContext.getSessionManager().endCurrentSession();
                     }
+
                     setSelectedDevice('local');
                     setVisible(false);
-                    console.log('Successfully selected local device');
                     return;
                 }
 
-                // Find the device object by ID
+                // Find the device object by ID.
                 const device = devices.find(d => d.deviceId === deviceId);
                 if (!device) {
                     console.error('Device not found:', deviceId);
                     return;
                 }
 
-                console.log('Connecting to device:', device.friendlyName);
-
-                // Connect to the selected device using the session manager
+                // Connect to the selected device using the session manager.
                 await CastContext.getSessionManager().startSession(device.deviceId);
 
                 setSelectedDevice(deviceId);
                 setVisible(false);
-
-                console.log('Successfully connected to:', device.friendlyName);
             } catch (error) {
                 console.error('Failed to connect to device:', error);
             }
         },
-        [devices, castState]
+        [devices, castState, remoteMediaClient]
     );
-
-    /**
-     * Disconnects from the currently connected cast device.
-     *
-     * @returns A promise that resolves when the device has been disconnected
-     */
-    const handleDisconnect = useCallback(async () => {
-        try {
-            console.log('Disconnecting from cast device...');
-            await CastContext.getSessionManager().endCurrentSession();
-            setSelectedDevice('local'); // Set back to local device
-            console.log('Successfully disconnected from cast device');
-        } catch (error) {
-            console.error('Failed to disconnect from device:', error);
-        }
-    }, []);
 
     return {
         isVisible,
         selectedDevice,
         devices: useMemo(
             () => [
-                // Add "This Device" option at the top
                 {
                     label: 'This Device',
                     value: 'local',
                 },
-                // Add cast devices
                 ...devices
                     .filter(device => !device.friendlyName.toLowerCase().includes('group'))
                     .filter(device => !device.friendlyName.toLowerCase().includes('speaker'))
@@ -97,11 +71,8 @@ export function useCastSelector() {
             ],
             [devices]
         ),
-        isConnected: castState === CastState.CONNECTED,
-        connectedDevice: castDevice,
         handleCastButtonPress: () => setVisible(true),
         hideSelector: () => setVisible(false),
         handleDeviceSelect,
-        handleDisconnect,
     };
 }

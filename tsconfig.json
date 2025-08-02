@@ -2,20 +2,11 @@
     "extends": "expo/tsconfig.base",
     "compilerOptions": {
         "strict": true,
+        "types": ["jest", "@types/jest"],
         "paths": {
-            "@/*": [
-                "./*"
-            ]
+            "@/*": ["./*"]
         }
     },
-    "exclude": [
-        "node_modules"
-    ],
-    "include": [
-        "**/*.ts",
-        "**/*.tsx",
-        ".expo/types/**/*.ts",
-        "env.d.ts",
-        "expo-env.d.ts"
-    ]
+    "exclude": ["node_modules"],
+    "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "env.d.ts", "expo-env.d.ts", "jest-globals.d.ts"]
 }

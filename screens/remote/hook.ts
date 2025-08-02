@@ -1,52 +1,68 @@
 import { SelectorOption } from '@/components/selector';
+import { useInterpolatedTime } from '@/hooks/interpolatedTime';
 import { useAsyncEffect } from '@/hooks/useAsyncEffect';
 import { useJellyfin } from '@/hooks/useJellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { useRemoteMediaClient } from 'react-native-google-cast';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MediaPlayerState, useRemoteMediaClient } from 'react-native-google-cast';
 
 type PlayStatus = {
     isPlaying: boolean;
+    isLoading: boolean;
     streamPosition: number;
     maxPosition: number;
     currentTime: string;
     maxTime: string;
 };
 
+const subtitleOptions: SelectorOption[] = [
+    { label: 'None', value: 'none' },
+    { label: 'English', value: 'en' },
+    { label: 'Spanish', value: 'es' },
+    { label: 'French', value: 'fr' },
+    { label: 'German', value: 'de' },
+    { label: 'Italian', value: 'it' },
+    { label: 'Portuguese', value: 'pt' },
+    { label: 'Japanese', value: 'ja' },
+];
+
+const audioOptions: SelectorOption[] = [
+    { label: 'English', value: 'en' },
+    { label: 'Spanish', value: 'es' },
+    { label: 'French', value: 'fr' },
+    { label: 'German', value: 'de' },
+    { label: 'Italian', value: 'it' },
+    { label: 'Portuguese', value: 'pt' },
+    { label: 'Japanese', value: 'ja' },
+    { label: 'Russian', value: 'ru' },
+];
+
 export function useRemoteScreen() {
     const client = useRemoteMediaClient(),
         { getItemDetails, getPosterForItem } = useJellyfin(),
         [isBusy, setBusy] = useState<boolean>(false),
+        [isDragging, setDragging] = useState<boolean>(false),
+        [dragPosition, setDragPosition] = useState<number>(0),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
         [selectedSubtitle, setSelectedSubtitle] = useState<string>('none'),
         [selectedAudio, setSelectedAudio] = useState<string>('en'),
         [showAudioPopover, setShowAudioPopover] = useState<boolean>(false),
         [showSubtitlePopover, setShowSubtitlePopover] = useState<boolean>(false),
-        params = useLocalSearchParams<{ id: string }>();
-
-    const subtitleOptions: SelectorOption[] = [
-        { label: 'None', value: 'none' },
-        { label: 'English', value: 'en' },
-        { label: 'Spanish', value: 'es' },
-        { label: 'French', value: 'fr' },
-        { label: 'German', value: 'de' },
-        { label: 'Italian', value: 'it' },
-        { label: 'Portuguese', value: 'pt' },
-        { label: 'Japanese', value: 'ja' },
-    ];
-
-    const audioOptions: SelectorOption[] = [
-        { label: 'English', value: 'en' },
-        { label: 'Spanish', value: 'es' },
-        { label: 'French', value: 'fr' },
-        { label: 'German', value: 'de' },
-        { label: 'Italian', value: 'it' },
-        { label: 'Portuguese', value: 'pt' },
-        { label: 'Japanese', value: 'ja' },
-        { label: 'Russian', value: 'ru' },
-    ];
+        [status, setStatus] = useState<PlayStatus>({
+            isPlaying: false,
+            isLoading: false,
+            streamPosition: 0,
+            maxPosition: 0,
+            currentTime: '00:00',
+            maxTime: '00:00',
+        }),
+        [localTime, setLocalTime] = useState<number>(0),
+        [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now()),
+        params = useLocalSearchParams<{ id: string }>(),
+        navigation = useNavigation(),
+        currentInterpolatedTime = useInterpolatedTime(localTime, status.isPlaying, lastUpdateTime);
 
     useAsyncEffect(async () => {
         if (!params.id) return;
@@ -67,6 +83,83 @@ export function useRemoteScreen() {
     }, []);
 
     /**
+     * Formats seconds into MM:SS or HH:MM:SS format.
+     */
+    const formatTimeFromSeconds = useCallback((seconds: number): string => {
+        if (!seconds || seconds < 0) return '00:00';
+
+        const hours = Math.floor(seconds / 3600),
+            minutes = Math.floor((seconds % 3600) / 60),
+            secs = Math.floor(seconds % 60);
+
+        return hours > 0
+            ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
+                  .toString()
+                  .padStart(2, '0')}`
+            : `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, []);
+
+    /**
+     * Updates the media status by fetching current playback information from the remote media client.
+     * This includes play state, stream position, duration, and formatted time strings.
+     */
+    const updateMediaStatus = useCallback(async () => {
+        try {
+            if (!client) return;
+
+            const mediaStatus = await client.getMediaStatus();
+            if (!mediaStatus) return;
+
+            const mediaInfo = mediaStatus.mediaInfo,
+                duration = mediaInfo?.streamDuration || 0,
+                position = (await client.getStreamPosition()) || 0,
+                playerState = mediaStatus.playerState;
+
+            const now = Date.now();
+            setLastUpdateTime(now);
+            setLocalTime(position);
+
+            setStatus({
+                isPlaying: playerState === MediaPlayerState.PLAYING,
+                isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
+                streamPosition: position,
+                maxPosition: duration,
+                currentTime: formatTimeFromSeconds(position),
+                maxTime: formatTimeFromSeconds(duration),
+            });
+        } catch (error) {
+            console.error('Failed to update media status:', error);
+        }
+    }, [client, formatTimeFromSeconds]);
+
+    // Listen for media status changes and poll at different frequencies
+    useEffect(() => {
+        if (!client) return;
+
+        // Initial status update
+        updateMediaStatus();
+
+        // Set up event listeners for immediate updates
+        const statusListener = client.onMediaStatusUpdated?.(status => {
+            updateMediaStatus();
+        });
+
+        const progressListener = client.onMediaProgressUpdated?.(progress => {
+            updateMediaStatus();
+        });
+
+        // Use shorter interval for more responsive time updates during playback
+        const interval = setInterval(updateMediaStatus, 250); // 4 times per second
+
+        return () => {
+            clearInterval(interval);
+            // Clean up listeners if they exist
+            statusListener?.remove?.();
+            progressListener?.remove?.();
+        };
+    }, [client, updateMediaStatus]);
+
+    /**
      * Pauses the current client operation asynchronously.
      *
      * This function attempts to call the `pause` method on the `client` object if it exists.
@@ -79,9 +172,18 @@ export function useRemoteScreen() {
     const pause = useCallback(async () => {
         try {
             if (!client) return;
+
+            // Immediately update UI state for responsive feedback
+            setStatus(prev => ({ ...prev, isPlaying: false, isLoading: true }));
+
             await client.pause();
+
+            // Clear loading state after successful pause
+            setStatus(prev => ({ ...prev, isLoading: false }));
         } catch (error) {
             console.error('Failed to pause:', error);
+            // Revert the optimistic update on error
+            setStatus(prev => ({ ...prev, isPlaying: true, isLoading: false }));
         }
     }, [client]);
 
@@ -96,9 +198,18 @@ export function useRemoteScreen() {
     const resume = useCallback(async () => {
         try {
             if (!client) return;
+
+            // Immediately update UI state for responsive feedback
+            setStatus(prev => ({ ...prev, isPlaying: true, isLoading: true }));
+
             await client.play();
+
+            // Clear loading state after successful resume
+            setStatus(prev => ({ ...prev, isLoading: false }));
         } catch (error) {
             console.error('Failed to resume:', error);
+            // Revert the optimistic update on error
+            setStatus(prev => ({ ...prev, isPlaying: false, isLoading: false }));
         }
     }, [client]);
 
@@ -117,13 +228,24 @@ export function useRemoteScreen() {
             try {
                 if (!client) return;
 
+                // Immediately update UI state for responsive feedback
+                setStatus(prev => ({ ...prev, isLoading: true }));
+
                 const status = await client.getMediaStatus();
-                if (!status) return;
+                if (!status) {
+                    setStatus(prev => ({ ...prev, isLoading: false }));
+                    return;
+                }
 
                 const newPosition = status.streamPosition + seconds;
                 await client.seek({ position: newPosition });
+
+                // Clear loading state after successful seek
+                setStatus(prev => ({ ...prev, isLoading: false }));
             } catch (error) {
                 console.error('Failed to seek forward:', error);
+                // Clear loading state on error
+                setStatus(prev => ({ ...prev, isLoading: false }));
             }
         },
         [client]
@@ -143,13 +265,24 @@ export function useRemoteScreen() {
             try {
                 if (!client) return;
 
+                // Immediately update UI state for responsive feedback
+                setStatus(prev => ({ ...prev, isLoading: true }));
+
                 const status = await client.getMediaStatus();
-                if (!status) return;
+                if (!status) {
+                    setStatus(prev => ({ ...prev, isLoading: false }));
+                    return;
+                }
 
                 const newPosition = Math.max(0, status.streamPosition - seconds);
                 await client.seek({ position: newPosition });
+
+                // Clear loading state after successful seek
+                setStatus(prev => ({ ...prev, isLoading: false }));
             } catch (error) {
                 console.error('Failed to seek backward:', error);
+                // Clear loading state on error
+                setStatus(prev => ({ ...prev, isLoading: false }));
             }
         },
         [client]
@@ -160,7 +293,8 @@ export function useRemoteScreen() {
      *
      * This function attempts to stop the provided `client` instance by calling its `stop` method.
      * If the `client` is not available, the function returns early. Any errors encountered during
-     * the stop operation are caught and logged to the console.
+     * the stop operation are caught and logged to the console. Once the media has stopped, the user
+     * is navigated back.
      *
      * @returns {Promise<void>} A promise that resolves when the client has been stopped or if no client exists.
      * @throws Logs an error to the console if stopping the client fails.
@@ -169,10 +303,43 @@ export function useRemoteScreen() {
         try {
             if (!client) return;
             await client.stop();
+            navigation.goBack();
         } catch (error) {
             console.error('Failed to stop:', error);
         }
     }, [client]);
+
+    /**
+     * Seeks to a specific position in the media playback.
+     *
+     * @param position - The position in seconds to seek to.
+     * @returns A promise that resolves when the seek operation is complete.
+     */
+    const seekToPosition = useCallback(
+        async (position: number) => {
+            try {
+                if (!client) return;
+
+                // Immediately update UI state for responsive feedback
+                setStatus(prev => ({
+                    ...prev,
+                    isLoading: true,
+                    streamPosition: position,
+                    currentTime: formatTimeFromSeconds(position),
+                }));
+
+                await client.seek({ position });
+
+                // Clear loading state after successful seek
+                setStatus(prev => ({ ...prev, isLoading: false }));
+            } catch (error) {
+                console.error('Failed to seek to position:', error);
+                // Clear loading state on error
+                setStatus(prev => ({ ...prev, isLoading: false }));
+            }
+        },
+        [client, formatTimeFromSeconds]
+    );
 
     /**
      * Changes the subtitle track for the current media playback.
@@ -224,6 +391,50 @@ export function useRemoteScreen() {
         [client]
     );
 
+    /**
+     * Handles the completion of slider movement by updating dragging state and seeking to a new position.
+     * @param value - The position value to seek to, represented as a number
+     * @returns void
+     */
+    const handleSliderComplete = useCallback(
+        (value: number) => {
+            setDragging(false);
+            seekToPosition(value);
+        },
+        [seekToPosition]
+    );
+
+    /**
+     * Formats a time duration in seconds into a human-readable string format.
+     * Returns time in either "MM:SS" or "HH:MM:SS" format depending on the duration.
+     *
+     * @param seconds - The number of seconds to format
+     * @returns A formatted string representation of the time duration
+     * - Returns "00:00" if seconds is null or negative
+     * - Returns "HH:MM:SS" format if hours > 0
+     * - Returns "MM:SS" format if hours = 0
+     *
+     * @example
+     * formatTimeForDrag(3661) // returns "01:01:01"
+     * formatTimeForDrag(61) // returns "01:01"
+     * formatTimeForDrag(-1) // returns "00:00"
+     */
+    const formatTimeForDrag = useCallback((seconds: number): string => {
+        if (seconds == null || seconds < 0) return '00:00';
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
+                .toString()
+                .padStart(2, '0')}`;
+        }
+
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, []);
+
     return {
         pause,
         resume,
@@ -243,12 +454,22 @@ export function useRemoteScreen() {
         showSubtitlePopover,
         setShowSubtitlePopover,
         status: {
-            isPlaying: false,
-            streamPosition: 0,
-            maxPosition: 0,
-            currentTime: '00:00',
-            maxTime: '2:07:12',
-        } as PlayStatus,
+            ...status,
+            // Use interpolated time for smoother display
+            currentTime: isDragging ? formatTimeForDrag(dragPosition) : formatTimeFromSeconds(currentInterpolatedTime),
+            streamPosition: isDragging ? dragPosition : currentInterpolatedTime,
+        },
+        handleSliderStart: () => setDragging(true),
+        handleSliderChange: setDragPosition,
+        handleSliderComplete,
+        currentTime: useMemo(
+            () => (isDragging ? formatTimeForDrag(dragPosition) : formatTimeFromSeconds(currentInterpolatedTime)),
+            [dragPosition, isDragging, currentInterpolatedTime, formatTimeForDrag, formatTimeFromSeconds]
+        ),
+        streamPosition: useMemo(
+            () => (isDragging ? dragPosition : currentInterpolatedTime),
+            [isDragging, dragPosition, currentInterpolatedTime]
+        ),
         isBusy,
     };
 }
