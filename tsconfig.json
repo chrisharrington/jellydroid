@@ -5,8 +5,9 @@
         "types": ["jest", "@types/jest"],
         "paths": {
             "@/*": ["./*"]
-        }
+        },
+        "skipLibCheck": true
     },
-    "exclude": ["node_modules"],
+    "exclude": ["node_modules", "**/node_modules", "**/*.js.map", "dist", "build", ".expo"],
     "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "env.d.ts", "expo-env.d.ts", "jest-globals.d.ts"]
 }
