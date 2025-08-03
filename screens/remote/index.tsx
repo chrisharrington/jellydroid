@@ -72,6 +72,7 @@ export function RemoteScreen() {
                         minimumTrackTintColor={Colours.icon}
                         maximumTrackTintColor={Colours.text}
                         thumbTintColor={Colours.icon}
+                        testID='slider'
                     />
                 </View>
 
