@@ -2,6 +2,7 @@ import { Jellyfin } from '@jellyfin/sdk';
 import { BaseItemDto, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
+import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
@@ -119,7 +120,92 @@ export function useJellyfin() {
         []
     );
 
-    return { login, findMovieByName, getMediaInfo, getRecentlyAddedMovies, getItemDetails, getPosterForItem };
+    /**
+     * Updates the playback progress for a media item, allowing Jellyfin to track viewing position.
+     * This should be called periodically during playback to sync the current position.
+     *
+     * @param itemId - The unique identifier of the media item being played.
+     * @param positionTicks - The current playback position in ticks (1 second = 10,000,000 ticks).
+     * @param isPaused - Whether playback is currently paused. Defaults to false.
+     * @returns A promise that resolves when the progress has been reported.
+     */
+    const updatePlaybackProgress = useCallback(
+        async (itemId: string, positionTicks: number, isPaused: boolean = false) => {
+            if (!user.current) await login();
+
+            const playstateApi = getPlaystateApi(api);
+
+            await playstateApi.reportPlaybackProgress({
+                playbackProgressInfo: {
+                    ItemId: itemId,
+                    PositionTicks: positionTicks,
+                    IsPaused: isPaused,
+                },
+            });
+        },
+        [api, login]
+    );
+
+    /**
+     * Reports the start of a playback session to Jellyfin.
+     * This should be called when media playback begins.
+     *
+     * @param itemId - The unique identifier of the media item being played.
+     * @returns A promise that resolves when the playback start has been reported.
+     */
+    const startPlaybackSession = useCallback(
+        async (itemId: string) => {
+            if (!user.current) await login();
+
+            const playstateApi = getPlaystateApi(api);
+
+            await playstateApi.reportPlaybackStart({
+                playbackStartInfo: {
+                    ItemId: itemId,
+                    PlayMethod: 'DirectStream',
+                    PlaySessionId: `jellydroid-${Date.now()}`,
+                },
+            });
+        },
+        [api, login]
+    );
+
+    /**
+     * Reports the end of a playback session to Jellyfin.
+     * This should be called when media playback stops or ends.
+     *
+     * @param itemId - The unique identifier of the media item that was played.
+     * @param positionTicks - The final playback position in ticks when stopping.
+     * @returns A promise that resolves when the playback stop has been reported.
+     */
+    const stopPlaybackSession = useCallback(
+        async (itemId: string, positionTicks: number) => {
+            if (!user.current) await login();
+
+            const playstateApi = getPlaystateApi(api);
+
+            await playstateApi.reportPlaybackStopped({
+                playbackStopInfo: {
+                    ItemId: itemId,
+                    PositionTicks: positionTicks,
+                    PlaySessionId: `jellydroid-${Date.now()}`,
+                },
+            });
+        },
+        [api, login]
+    );
+
+    return {
+        login,
+        findMovieByName,
+        getMediaInfo,
+        getRecentlyAddedMovies,
+        getItemDetails,
+        getPosterForItem,
+        updatePlaybackProgress,
+        startPlaybackSession,
+        stopPlaybackSession,
+    };
 
     /**
      * Creates and configures a Jellyfin API instance using environment variables.

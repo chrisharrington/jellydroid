@@ -34,7 +34,10 @@ jest.mock('@jellyfin/sdk/lib/utils/api/user-library-api', () => ({
     getUserLibraryApi: jest.fn(),
 }));
 
-// Mock Expo modules
+jest.mock('@jellyfin/sdk/lib/utils/api/playstate-api', () => ({
+    getPlaystateApi: jest.fn(),
+}));
+
 jest.mock('expo-application', () => ({
     getAndroidId: jest.fn(() => 'mock-device-id'),
 }));
@@ -43,7 +46,6 @@ jest.mock('expo-device', () => ({
     deviceName: 'Mock Device',
 }));
 
-// Now import the hook after mocks are set up
 import { useJellyfin } from './index';
 
 afterAll(() => {
