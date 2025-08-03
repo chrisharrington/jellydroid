@@ -7,11 +7,6 @@
     "settings": {
         "github.copilot.enable": {
             "*": true
-        },
-        "github.copilot.editor.enableAutoCompletions": true,
-        "github.copilot.inlineSuggest.enable": true,
-        "github.copilot.advanced": {
-            "context": "You are helping develop a mobile Jellyfin client using Expo and TypeScript. Follow these guidelines:\n- Use functional components with hooks\n- Follow React Native best practices\n- Use expo-router for navigation\n- Implement proper TypeScript types\n- Use the design system's color tokens from @/constants/colours\n- Prefer custom hooks for business logic\n- Implement proper error handling\n- Follow the existing project structure and patterns\n- Use proper naming conventions (lowerCamelCase for components, camelCase for functions/variables)\n- When asked to create comments: avoid inline comments and prefer top level comments; use /** */ syntax; for props use 'Required.' or 'Optional.' based on the prop; and always use periods.\n- When asked to create a new screen or component the file structure should include index.tsx (for the main JSX component), hook.ts (for any backing logic, with no logic in index.tsx) and style.ts (where an empty Stylesheet is created and exported as default)"
         }
     },
     "extensions": {

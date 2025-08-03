@@ -27,7 +27,13 @@ jest.mock('expo-router', () => ({
 
 jest.mock('react-native-google-cast', () => ({
     useRemoteMediaClient: jest.fn(() => ({})),
-    MediaPlayerState: {},
+    MediaPlayerState: {
+        IDLE: 'IDLE',
+        PLAYING: 'PLAYING',
+        PAUSED: 'PAUSED',
+        BUFFERING: 'BUFFERING',
+        LOADING: 'LOADING',
+    },
 }));
 
 jest.mock('react-native-portalize', () => ({
@@ -165,8 +171,11 @@ describe('RemoteScreen', () => {
             const mockSeek = jest.fn();
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PLAYING',
+                    streamPosition: 50, // Add this for the playback hook
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: jest.fn(),
@@ -189,9 +198,10 @@ describe('RemoteScreen', () => {
             const mockPause = jest.fn();
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    isPlaying: true,
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PLAYING',
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: jest.fn(),
@@ -215,9 +225,10 @@ describe('RemoteScreen', () => {
         it('should show play button when video is paused', () => {
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    isPlaying: false,
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PAUSED',
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: jest.fn(),
@@ -237,9 +248,10 @@ describe('RemoteScreen', () => {
             const mockPlay = jest.fn();
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    isPlaying: false,
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PAUSED',
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: mockPlay,
@@ -259,9 +271,10 @@ describe('RemoteScreen', () => {
         it('should show pause button when video is playing', async () => {
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    isPlaying: true,
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PLAYING',
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: jest.fn(),
@@ -282,9 +295,10 @@ describe('RemoteScreen', () => {
 
         it('should show spinner in place of play/pause buttons when loading', async () => {
             const mockGetMediaStatus = jest.fn().mockResolvedValue({
-                isPlaying: false,
-                streamPosition: 50,
-                duration: 100,
+                playerState: 'BUFFERING', // This will trigger isLoading: true
+                mediaInfo: {
+                    streamDuration: 100,
+                },
             });
 
             mockUseRemoteMediaClient.mockReturnValue({
@@ -296,12 +310,10 @@ describe('RemoteScreen', () => {
                 seek: jest.fn(),
             });
 
-            const { getByTestId, queryByTestId } = render(<RemoteScreen />);
+            const { queryByTestId } = render(<RemoteScreen />);
 
-            // Trigger a state change that causes loading
-            const playPauseButton = getByTestId('play-pause-button');
-
-            fireEvent.press(playPauseButton);
+            // Wait a bit for the status update to occur
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // Should show spinner when loading state is triggered
             expect(queryByTestId('play-pause-spinner')).toBeTruthy();
@@ -311,8 +323,11 @@ describe('RemoteScreen', () => {
             const mockSeek = jest.fn();
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PLAYING',
+                    streamPosition: 50, // Add this for the playback hook
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: jest.fn(),
@@ -349,9 +364,10 @@ describe('RemoteScreen', () => {
             const mockSeek = jest.fn();
             mockUseRemoteMediaClient.mockReturnValue({
                 getMediaStatus: jest.fn().mockResolvedValue({
-                    isPlaying: true,
-                    streamPosition: 50,
-                    duration: 100,
+                    playerState: 'PLAYING',
+                    mediaInfo: {
+                        streamDuration: 100,
+                    },
                 }),
                 getStreamPosition: jest.fn().mockResolvedValue(50),
                 play: jest.fn(),
