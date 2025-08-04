@@ -66,81 +66,22 @@ export function useRemoteScreen() {
 
     useAsyncEffect(async () => {
         try {
+            // Initialize the remote media client and fetch item details.
             setBusy(true);
 
+            // Ensure the client is available before proceeding.
             const item = await getItemDetails(params.itemId);
             if (!item) throw new Error('Item not found.');
 
+            // Set the item and poster for the current playback.
             setItem(item);
             setPoster(getPosterForItem(item));
         } catch (e) {
-            console.error('Failed to initialize remote media client:', e);
+            console.error('Error retrieving item details:', e);
         } finally {
             setBusy(false);
         }
     }, []);
-
-    /**
-     * Formats seconds into MM:SS or HH:MM:SS format.
-     */
-    const formatTimeFromSeconds = useCallback((seconds: number): string => {
-        if (!seconds || seconds < 0) return '00:00';
-
-        const hours = Math.floor(seconds / 3600),
-            minutes = Math.floor((seconds % 3600) / 60),
-            secs = Math.floor(seconds % 60);
-
-        return hours > 0
-            ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
-                  .toString()
-                  .padStart(2, '0')}`
-            : `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }, []);
-
-    /**
-     * Updates the media status by fetching current playback information from the remote media client.
-     * This includes play state, stream position, duration, and formatted time strings.
-     */
-    const updateMediaStatus = useCallback(async () => {
-        try {
-            if (!client) return;
-
-            // Retrieve the current media status from the client.
-            const mediaStatus = await client.getMediaStatus();
-            if (!mediaStatus) return;
-
-            // Extract media info and current position.
-            const mediaInfo = mediaStatus.mediaInfo,
-                duration = mediaInfo?.streamDuration || 0,
-                position = (await client.getStreamPosition()) || 0,
-                playerState = mediaStatus.playerState;
-
-            // Update local time and last update timestamp.
-            const now = Date.now();
-            setLastUpdateTime(now);
-            setLocalTime(position);
-
-            // Update playback status based on media state.
-            setStatus({
-                isPlaying: playerState === MediaPlayerState.PLAYING,
-                isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
-                streamPosition: position,
-                maxPosition: duration,
-                currentTime: formatTimeFromSeconds(position),
-                maxTime: formatTimeFromSeconds(duration),
-            });
-
-            // Update playback progress with Jellyfin every 10 updates to prevent
-            // bombarding the server.
-            progressCounter.current += 1;
-            if (progressCounter.current >= 10) {
-                updatePlaybackProgress(params.itemId, params.mediaSourceId, position, status.isPlaying);
-                progressCounter.current = 0;
-            }
-        } catch (error) {
-            console.error('Failed to update media status:', error);
-        }
-    }, [client, formatTimeFromSeconds]);
 
     // Listen for media status changes and poll at different frequencies
     useEffect(() => {
@@ -165,6 +106,23 @@ export function useRemoteScreen() {
             progressListener?.remove?.();
         };
     }, [client, updateMediaStatus]);
+
+    /**
+     * Formats seconds into MM:SS or HH:MM:SS format.
+     */
+    const formatTimeFromSeconds = useCallback((seconds: number): string => {
+        if (!seconds || seconds < 0) return '00:00';
+
+        const hours = Math.floor(seconds / 3600),
+            minutes = Math.floor((seconds % 3600) / 60),
+            secs = Math.floor(seconds % 60);
+
+        return hours > 0
+            ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
+                  .toString()
+                  .padStart(2, '0')}`
+            : `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, []);
 
     /**
      * Changes the subtitle track for the current media playback.
@@ -229,37 +187,6 @@ export function useRemoteScreen() {
         [playback]
     );
 
-    /**
-     * Formats a time duration in seconds into a human-readable string format.
-     * Returns time in either "MM:SS" or "HH:MM:SS" format depending on the duration.
-     *
-     * @param seconds - The number of seconds to format
-     * @returns A formatted string representation of the time duration
-     * - Returns "00:00" if seconds is null or negative
-     * - Returns "HH:MM:SS" format if hours > 0
-     * - Returns "MM:SS" format if hours = 0
-     *
-     * @example
-     * formatTimeForDrag(3661) // returns "01:01:01"
-     * formatTimeForDrag(61) // returns "01:01"
-     * formatTimeForDrag(-1) // returns "00:00"
-     */
-    const formatTimeForDrag = useCallback((seconds: number): string => {
-        if (seconds == null || seconds < 0) return '00:00';
-
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-
-        if (hours > 0) {
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
-                .toString()
-                .padStart(2, '0')}`;
-        }
-
-        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }, []);
-
     return {
         ...playback,
         changeSubtitle,
@@ -289,4 +216,86 @@ export function useRemoteScreen() {
         ),
         isBusy,
     };
+
+    /**
+     * Updates the media status by fetching current playback information from the remote media client.
+     * This includes play state, stream position, duration, and formatted time strings.
+     */
+    async function updateMediaStatus() {
+        try {
+            if (!client) return;
+
+            // Retrieve the current media status from the client.
+            const mediaStatus = await client.getMediaStatus();
+            if (!mediaStatus) return;
+
+            // Extract media info and current position.
+            const mediaInfo = mediaStatus.mediaInfo,
+                duration = mediaInfo?.streamDuration || 0,
+                position = (await client.getStreamPosition()) || 0,
+                playerState = mediaStatus.playerState;
+
+            // Update local time and last update timestamp.
+            const now = Date.now();
+            setLastUpdateTime(now);
+            setLocalTime(position);
+
+            // Update playback status based on media state.
+            setStatus({
+                isPlaying: playerState === MediaPlayerState.PLAYING,
+                isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
+                streamPosition: position,
+                maxPosition: duration,
+                currentTime: formatTimeFromSeconds(position),
+                maxTime: formatTimeFromSeconds(duration),
+            });
+
+            // Update playback progress with Jellyfin every 10 updates to prevent
+            // bombarding the server.
+            progressCounter.current += 1;
+            if (progressCounter.current >= 10) {
+                updatePlaybackProgress(
+                    params.itemId,
+                    params.mediaSourceId,
+                    playback.playbackSessionId,
+                    position,
+                    status.isPlaying
+                );
+                progressCounter.current = 0;
+            }
+        } catch (error) {
+            console.error('Failed to update media status:', error);
+        }
+    }
+
+    /**
+     * Formats a time duration in seconds into a human-readable string format.
+     * Returns time in either "MM:SS" or "HH:MM:SS" format depending on the duration.
+     *
+     * @param seconds - The number of seconds to format
+     * @returns A formatted string representation of the time duration
+     * - Returns "00:00" if seconds is null or negative
+     * - Returns "HH:MM:SS" format if hours > 0
+     * - Returns "MM:SS" format if hours = 0
+     *
+     * @example
+     * formatTimeForDrag(3661) // returns "01:01:01"
+     * formatTimeForDrag(61) // returns "01:01"
+     * formatTimeForDrag(-1) // returns "00:00"
+     */
+    function formatTimeForDrag(seconds: number | null): string {
+        if (seconds == null || seconds < 0) return '00:00';
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
+                .toString()
+                .padStart(2, '0')}`;
+        }
+
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
 }

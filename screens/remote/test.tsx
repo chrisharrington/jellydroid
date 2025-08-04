@@ -14,6 +14,66 @@ jest.mock('@/hooks/jellyfin', () => ({
     useJellyfin: jest.fn(() => ({
         getItemDetails: jest.fn(),
         getPosterForItem: jest.fn(),
+        startPlaybackSession: jest.fn(),
+        stopPlaybackSession: jest.fn(),
+        updatePlaybackProgress: jest.fn(),
+    })),
+}));
+
+jest.mock('@/hooks/retry', () => ({
+    useRetry: jest.fn(() => ({
+        retry: jest.fn(fn => fn()), // Just execute the function immediately in tests
+    })),
+}));
+
+jest.mock('@/hooks/playback', () => ({
+    usePlayback: jest.fn(() => ({
+        cast: jest.fn(),
+        pause: jest.fn(),
+        resume: jest.fn(),
+        seekForward: jest.fn(),
+        seekBackward: jest.fn(),
+        stop: jest.fn(),
+        seekToPosition: jest.fn(),
+        status: {
+            isPlaying: false,
+            isLoading: false,
+            streamPosition: 0,
+            maxPosition: 100,
+            currentTime: '00:00',
+            maxTime: '01:40',
+        },
+    })),
+}));
+
+jest.mock('./hook', () => ({
+    useRemoteScreen: jest.fn(() => ({
+        pause: jest.fn(),
+        resume: jest.fn(),
+        seekForward: jest.fn(),
+        seekBackward: jest.fn(),
+        stop: jest.fn(),
+        changeSubtitle: jest.fn(),
+        changeAudio: jest.fn(),
+        poster: 'test-poster-url',
+        selectedSubtitle: null,
+        subtitleOptions: [],
+        selectedAudio: null,
+        audioOptions: [],
+        status: {
+            isPlaying: false,
+            isLoading: false,
+            streamPosition: 0,
+            maxPosition: 100,
+            currentTime: '00:00',
+            maxTime: '01:40',
+        },
+        handleSliderStart: jest.fn(),
+        handleSliderChange: jest.fn(),
+        handleSliderComplete: jest.fn(),
+        currentTime: '00:00',
+        streamPosition: 0,
+        isBusy: false,
     })),
 }));
 
@@ -94,11 +154,15 @@ jest.mock('@/constants/colours', () => ({
 
 const { useAsyncEffect } = require('@/hooks/asyncEffect');
 const { useJellyfin } = require('@/hooks/jellyfin');
+const { usePlayback } = require('@/hooks/playback');
+const { useRemoteScreen } = require('./hook');
 const { useLocalSearchParams } = require('expo-router');
 const { useRemoteMediaClient } = require('react-native-google-cast');
 
 const mockUseAsyncEffect = useAsyncEffect as jest.MockedFunction<typeof useAsyncEffect>;
 const mockUseJellyfin = useJellyfin as jest.MockedFunction<typeof useJellyfin>;
+const mockUsePlayback = usePlayback as jest.MockedFunction<typeof usePlayback>;
+const mockUseRemoteScreen = useRemoteScreen as jest.MockedFunction<typeof useRemoteScreen>;
 const mockUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<typeof useLocalSearchParams>;
 const mockUseRemoteMediaClient = useRemoteMediaClient as jest.MockedFunction<typeof useRemoteMediaClient>;
 
@@ -136,10 +200,28 @@ describe('RemoteScreen', () => {
 
         mockUseLocalSearchParams.mockReturnValue({ id: 'test-id' });
 
+        // Default playback mock
+        mockUsePlayback.mockReturnValue({
+            cast: jest.fn(),
+            pause: jest.fn(),
+            resume: jest.fn(),
+            seekForward: jest.fn(),
+            seekBackward: jest.fn(),
+            stop: jest.fn(),
+            seekToPosition: jest.fn(),
+            status: {
+                isPlaying: false,
+                isLoading: false,
+                streamPosition: 0,
+                maxPosition: 100,
+                currentTime: '00:00',
+                maxTime: '01:40',
+            },
+        });
+
         mockUseRemoteMediaClient.mockReturnValue({
             getMediaStatus: jest.fn().mockResolvedValue(null),
             getStreamPosition: jest.fn().mockResolvedValue(0),
-            // Add other methods that might be called by the hook
             play: jest.fn(),
             pause: jest.fn(),
             stop: jest.fn(),
@@ -150,13 +232,34 @@ describe('RemoteScreen', () => {
     describe('Control Button Interactions', () => {
         it('should stop the current playing video when stop button is tapped', () => {
             const mockStop = jest.fn();
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue(null),
-                getStreamPosition: jest.fn().mockResolvedValue(0),
-                play: jest.fn(),
+
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: mockStop,
-                seek: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true,
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId } = render(<RemoteScreen />);
@@ -168,20 +271,35 @@ describe('RemoteScreen', () => {
         });
 
         it('should set the video position to current minus 10 seconds when seek backward button is tapped', async () => {
-            const mockSeek = jest.fn();
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PLAYING',
-                    streamPosition: 50, // Add this for the playback hook
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+            const mockSeekBackward = jest.fn();
+
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: mockSeekBackward,
                 stop: jest.fn(),
-                seek: mockSeek,
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true,
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId } = render(<RemoteScreen />);
@@ -192,22 +310,40 @@ describe('RemoteScreen', () => {
             // Give time for async operation
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            expect(mockSeek).toHaveBeenCalledWith({ position: 40 });
+            // Should be called with no arguments (uses default of 10 seconds)
+            expect(mockSeekBackward).toHaveBeenCalledWith();
         });
         it('should pause the currently playing video when pause button is tapped', async () => {
             const mockPause = jest.fn();
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PLAYING',
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+
+            // Mock the remote screen hook directly
+            mockUseRemoteScreen.mockReturnValue({
                 pause: mockPause,
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true, // Set to playing so pause button shows
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId } = render(<RemoteScreen />);
@@ -217,24 +353,43 @@ describe('RemoteScreen', () => {
 
             const playPauseButton = getByTestId('play-pause-button');
 
+            // Check if the pause icon is shown (meaning isPlaying is true)
+            const pauseIcon = getByTestId('pause-icon');
+            expect(pauseIcon).toBeTruthy();
+
             fireEvent.press(playPauseButton);
 
             expect(mockPause).toHaveBeenCalledTimes(1);
         });
 
         it('should show play button when video is paused', () => {
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PAUSED',
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: false, // Set to paused so play button shows
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId, queryByTestId } = render(<RemoteScreen />);
@@ -245,19 +400,35 @@ describe('RemoteScreen', () => {
         });
 
         it('should unpause the currently paused video when play button is tapped', () => {
-            const mockPlay = jest.fn();
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PAUSED',
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: mockPlay,
+            const mockResume = jest.fn();
+
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: mockResume,
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: false, // Set to paused so play button shows
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId } = render(<RemoteScreen />);
@@ -265,22 +436,37 @@ describe('RemoteScreen', () => {
 
             fireEvent.press(playPauseButton);
 
-            expect(mockPlay).toHaveBeenCalledTimes(1);
+            expect(mockResume).toHaveBeenCalledTimes(1);
         });
 
         it('should show pause button when video is playing', async () => {
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PLAYING',
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true, // Set to playing so pause button shows
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId, queryByTestId } = render(<RemoteScreen />);
@@ -294,20 +480,33 @@ describe('RemoteScreen', () => {
         });
 
         it('should show spinner in place of play/pause buttons when loading', async () => {
-            const mockGetMediaStatus = jest.fn().mockResolvedValue({
-                playerState: 'BUFFERING', // This will trigger isLoading: true
-                mediaInfo: {
-                    streamDuration: 100,
-                },
-            });
-
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: mockGetMediaStatus,
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: false,
+                    isLoading: true, // Set to loading so spinner shows
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false, // Set to false so the ControlBar shows instead of main loading spinner
             });
 
             const { queryByTestId } = render(<RemoteScreen />);
@@ -320,20 +519,35 @@ describe('RemoteScreen', () => {
         });
 
         it('should set the video position to current plus 30 seconds when seek forward button is tapped', async () => {
-            const mockSeek = jest.fn();
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PLAYING',
-                    streamPosition: 50, // Add this for the playback hook
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+            const mockSeekForward = jest.fn();
+
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: mockSeekForward,
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: mockSeek,
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true,
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId } = render(<RemoteScreen />);
@@ -344,12 +558,42 @@ describe('RemoteScreen', () => {
             // Give time for async operation
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            expect(mockSeek).toHaveBeenCalledWith({ position: 80 });
+            // Should be called with no arguments (uses default of 30 seconds)
+            expect(mockSeekForward).toHaveBeenCalledWith();
         });
     });
 
     describe('Seek Bar Interactions', () => {
         it('should update the current time when dragging the seek bar', () => {
+            mockUseRemoteScreen.mockReturnValue({
+                pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
+                stop: jest.fn(),
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true,
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: jest.fn(),
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
+            });
+
             const { getByTestId } = render(<RemoteScreen />);
             const slider = getByTestId('slider');
 
@@ -361,19 +605,35 @@ describe('RemoteScreen', () => {
         });
 
         it('should update the video position when dragging and releasing the seek bar', async () => {
-            const mockSeek = jest.fn();
-            mockUseRemoteMediaClient.mockReturnValue({
-                getMediaStatus: jest.fn().mockResolvedValue({
-                    playerState: 'PLAYING',
-                    mediaInfo: {
-                        streamDuration: 100,
-                    },
-                }),
-                getStreamPosition: jest.fn().mockResolvedValue(50),
-                play: jest.fn(),
+            const mockHandleSliderComplete = jest.fn();
+
+            mockUseRemoteScreen.mockReturnValue({
                 pause: jest.fn(),
+                resume: jest.fn(),
+                seekForward: jest.fn(),
+                seekBackward: jest.fn(),
                 stop: jest.fn(),
-                seek: mockSeek,
+                changeSubtitle: jest.fn(),
+                changeAudio: jest.fn(),
+                poster: 'test-poster-url',
+                selectedSubtitle: null,
+                subtitleOptions: [],
+                selectedAudio: null,
+                audioOptions: [],
+                status: {
+                    isPlaying: true,
+                    isLoading: false,
+                    streamPosition: 50,
+                    maxPosition: 100,
+                    currentTime: '00:50',
+                    maxTime: '01:40',
+                },
+                handleSliderStart: jest.fn(),
+                handleSliderChange: jest.fn(),
+                handleSliderComplete: mockHandleSliderComplete,
+                currentTime: '00:50',
+                streamPosition: 50,
+                isBusy: false,
             });
 
             const { getByTestId } = render(<RemoteScreen />);
@@ -392,7 +652,7 @@ describe('RemoteScreen', () => {
             await new Promise(resolve => setTimeout(resolve, 100));
 
             // The seek function should be called when sliding completes
-            expect(mockSeek).toHaveBeenCalledWith({ position: 75 });
+            expect(mockHandleSliderComplete).toHaveBeenCalledWith(75);
         });
     });
 

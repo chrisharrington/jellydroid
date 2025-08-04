@@ -353,5 +353,15 @@ export function usePlayback(itemId: string, mediaSourceId: string) {
         });
     }
 
-    return { cast, pause, resume, stop, seekBackward, seekForward, seekToPosition, status };
+    return {
+        cast,
+        pause,
+        resume,
+        stop,
+        seekBackward,
+        seekForward,
+        seekToPosition,
+        status,
+        playbackSessionId: playbackSessionId.current,
+    };
 }
