@@ -1,6 +1,8 @@
 import { useNavigation } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRemoteMediaClient } from 'react-native-google-cast';
+import { useJellyfin } from '../jellyfin';
+import { useRetry } from '../retry';
 
 type PlayStatus = {
     isPlaying: boolean;
@@ -11,8 +13,12 @@ type PlayStatus = {
     maxTime: string;
 };
 
-export function usePlayback() {
+export function usePlayback(itemId: string, mediaSourceId: string) {
+    const playbackSessionId = useRef<string | null>(null);
+
     const client = useRemoteMediaClient(),
+        { startPlaybackSession, stopPlaybackSession, updatePlaybackProgress, getItemDetails } = useJellyfin(),
+        { retry } = useRetry(),
         navigation = useNavigation(),
         [status, setStatus] = useState<PlayStatus>({
             isPlaying: false,
@@ -22,6 +28,78 @@ export function usePlayback() {
             currentTime: '00:00',
             maxTime: '00:00',
         });
+
+    // Initialize playback session ID on first render or when the user changes the item or media source.
+    useEffect(() => {
+        console.log('Initializing playback session ID:', itemId);
+        if (!itemId) return;
+
+        // playbackSessionId.current = getRandomValues(new Uint8Array(16)).reduce(
+        //     (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
+        //     ''
+        // );
+        playbackSessionId.current = 'blah';
+
+        // Cast the media to the connected device.
+        cast();
+
+        console.log('Created new playback session ID:', playbackSessionId.current);
+    }, [itemId]);
+
+    /**
+     * Initiates casting of media content to a connected Google Cast device.
+     *
+     * This function performs the following steps:
+     * 1. Verifies connection to a Google Cast client
+     * 2. Generates necessary streaming and poster URLs
+     * 3. Retrieves item details from Jellyfin
+     * 4. Configures and starts media playback on the Cast device
+     * 5. Initiates a playback session in Jellyfin
+     *
+     * @throws {Error} When no Google Cast client is available
+     * @throws {Error} When the requested item cannot be found
+     *
+     * @requires client - A connected Google Cast client instance
+     * @requires itemId - The Jellyfin item ID to cast
+     * @requires mediaSourceId - The media source ID for the item
+     * @requires process.env.EXPO_PUBLIC_JELLYFIN_URL - Base URL for Jellyfin server
+     * @requires process.env.EXPO_PUBLIC_JELLYFIN_API_KEY - API key for Jellyfin authentication
+     */
+    const cast = useCallback(async () => {
+        try {
+            console.log('Casting item:', itemId);
+
+            // Use retry to wait for Google Cast client to become available.
+            const availableClient = await getCastClient();
+
+            // Generate stream and poster URLs.
+            const streamUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${itemId}/master.m3u8?MediaSourceId=${mediaSourceId}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
+                posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+                item = await getItemDetails(itemId);
+
+            // Ensure item exists before proceeding.
+            if (!item) throw new Error('Item not found: ' + itemId);
+
+            // Cast media to the connected device.
+            availableClient.loadMedia({
+                autoplay: true,
+                mediaInfo: {
+                    contentUrl: streamUrl,
+                    contentType: 'video/mp4',
+                    metadata: {
+                        type: 'movie',
+                        title: item.Name || 'Unknown Movie',
+                        images: [{ url: posterUrl }],
+                    },
+                },
+            });
+
+            // Start playback session in Jellyfin.
+            startPlaybackSession(itemId, mediaSourceId, playbackSessionId.current);
+        } catch (e) {
+            console.error('Failed to cast.', e);
+        }
+    }, [client, retry, itemId, mediaSourceId, getItemDetails, startPlaybackSession]);
 
     /**
      * Pauses the current client operation asynchronously.
@@ -35,21 +113,29 @@ export function usePlayback() {
      */
     const pause = useCallback(async () => {
         try {
-            if (!client) return;
+            // Use retry to wait for Google Cast client to become available.
+            const availableClient = await getCastClient();
 
-            // Immediately update UI state for responsive feedback
-            setStatus(prev => ({ ...prev, isPlaying: false, isLoading: true }));
+            // Retrieve the current stream position.
+            const position = (await availableClient.getStreamPosition()) || 0;
 
-            await client.pause();
+            // Update the playback progress.
+            updateProgress(position, true);
 
-            // Clear loading state after successful pause
+            // Immediately update UI state for responsive feedback.
+            setStatus(prev => ({ ...prev, streamPosition: position, isPlaying: false, isLoading: true }));
+
+            // Pause playback.
+            await availableClient.pause();
+
+            // Clear loading state after successful pause.
             setStatus(prev => ({ ...prev, isLoading: false }));
         } catch (error) {
             console.error('Failed to pause:', error);
-            // Revert the optimistic update on error
+            // Revert the optimistic update on error.
             setStatus(prev => ({ ...prev, isPlaying: true, isLoading: false }));
         }
-    }, [client]);
+    }, [client, retry]);
 
     /**
      * Attempts to resume playback by invoking the `play` method on the provided `client`.
@@ -61,21 +147,29 @@ export function usePlayback() {
      */
     const resume = useCallback(async () => {
         try {
-            if (!client) return;
+            // Use retry to wait for Google Cast client to become available.
+            const availableClient = await getCastClient();
 
-            // Immediately update UI state for responsive feedback
-            setStatus(prev => ({ ...prev, isPlaying: true, isLoading: true }));
+            // Retrieve the current stream position.
+            const position = (await availableClient.getStreamPosition()) || 0;
 
-            await client.play();
+            // Update the playback progress.
+            updateProgress(position, false);
 
-            // Clear loading state after successful resume
+            // Immediately update UI state for responsive feedback.
+            setStatus(prev => ({ ...prev, streamPosition: position, isPlaying: true, isLoading: true }));
+
+            // Resume playback.
+            await availableClient.play();
+
+            // Clear loading state after successful resume.
             setStatus(prev => ({ ...prev, isLoading: false }));
         } catch (error) {
             console.error('Failed to resume:', error);
-            // Revert the optimistic update on error
+            // Revert the optimistic update on error.
             setStatus(prev => ({ ...prev, isPlaying: false, isLoading: false }));
         }
-    }, [client]);
+    }, [client, retry]);
 
     /**
      * Seeks the media playback forward by a specified number of seconds.
@@ -90,29 +184,34 @@ export function usePlayback() {
     const seekForward = useCallback(
         async (seconds: number = 30) => {
             try {
-                if (!client) return;
+                // Use retry to wait for Google Cast client to become available.
+                const availableClient = await getCastClient();
 
-                // Immediately update UI state for responsive feedback
+                // Immediately update UI state for responsive feedback.
                 setStatus(prev => ({ ...prev, isLoading: true }));
 
-                const status = await client.getMediaStatus();
-                if (!status) {
+                const mediaStatus = await availableClient.getMediaStatus();
+                if (!mediaStatus) {
                     setStatus(prev => ({ ...prev, isLoading: false }));
                     return;
                 }
 
-                const newPosition = status.streamPosition + seconds;
-                await client.seek({ position: newPosition });
+                // Seek to the new position.
+                const newPosition = mediaStatus.streamPosition + seconds;
+                await availableClient.seek({ position: newPosition });
 
-                // Clear loading state after successful seek
+                // Update the playback progress.
+                updateProgress(newPosition, !status.isPlaying);
+
+                // Clear loading state after successful seek.
                 setStatus(prev => ({ ...prev, isLoading: false }));
             } catch (error) {
                 console.error('Failed to seek forward:', error);
-                // Clear loading state on error
+                // Clear loading state on error.
                 setStatus(prev => ({ ...prev, isLoading: false }));
             }
         },
-        [client]
+        [client, retry]
     );
 
     /**
@@ -127,29 +226,34 @@ export function usePlayback() {
     const seekBackward = useCallback(
         async (seconds: number = 10) => {
             try {
-                if (!client) return;
+                // Use retry to wait for Google Cast client to become available.
+                const availableClient = await getCastClient();
 
-                // Immediately update UI state for responsive feedback
+                // Immediately update UI state for responsive feedback.
                 setStatus(prev => ({ ...prev, isLoading: true }));
 
-                const status = await client.getMediaStatus();
-                if (!status) {
+                const mediaStatus = await availableClient.getMediaStatus();
+                if (!mediaStatus) {
                     setStatus(prev => ({ ...prev, isLoading: false }));
                     return;
                 }
 
-                const newPosition = Math.max(0, status.streamPosition - seconds);
-                await client.seek({ position: newPosition });
+                // Seek to the new position.
+                const newPosition = Math.max(0, mediaStatus.streamPosition - seconds);
+                await availableClient.seek({ position: newPosition });
 
-                // Clear loading state after successful seek
+                // Update the playback progress.
+                updateProgress(newPosition, !status.isPlaying);
+
+                // Clear loading state after successful seek.
                 setStatus(prev => ({ ...prev, isLoading: false }));
             } catch (error) {
                 console.error('Failed to seek backward:', error);
-                // Clear loading state on error
+                // Clear loading state on error.
                 setStatus(prev => ({ ...prev, isLoading: false }));
             }
         },
-        [client]
+        [client, retry]
     );
 
     /**
@@ -165,13 +269,21 @@ export function usePlayback() {
      */
     const stop = useCallback(async () => {
         try {
-            if (!client) return;
-            await client.stop();
+            // Use retry to wait for Google Cast client to become available.
+            const availableClient = await getCastClient();
+
+            // Stop playback.
+            await availableClient.stop();
+
+            // Update the playback progress.
+            stopPlaybackSession(itemId, mediaSourceId, playbackSessionId.current, status.streamPosition);
+
+            // Navigate back to the previous screen after stopping.
             navigation.goBack();
         } catch (error) {
             console.error('Failed to stop:', error);
         }
-    }, [client]);
+    }, [client, retry]);
 
     /**
      * Seeks to a specific position in the media playback.
@@ -182,9 +294,10 @@ export function usePlayback() {
     const seekToPosition = useCallback(
         async (position: number) => {
             try {
-                if (!client) return;
+                // Use retry to wait for Google Cast client to become available.
+                const availableClient = await getCastClient();
 
-                // Immediately update UI state for responsive feedback
+                // Immediately update UI state for responsive feedback.
                 setStatus(prev => ({
                     ...prev,
                     isLoading: true,
@@ -192,17 +305,21 @@ export function usePlayback() {
                     currentTime: formatTimeFromSeconds(position),
                 }));
 
-                await client.seek({ position });
+                // Seek to the new position.
+                await availableClient.seek({ position });
 
-                // Clear loading state after successful seek
+                // Update the playback progress.
+                updateProgress(position, !status.isPlaying);
+
+                // Clear loading state after successful seek.
                 setStatus(prev => ({ ...prev, isLoading: false }));
             } catch (error) {
                 console.error('Failed to seek to position:', error);
-                // Clear loading state on error
+                // Clear loading state on error.
                 setStatus(prev => ({ ...prev, isLoading: false }));
             }
         },
-        [client, formatTimeFromSeconds]
+        [client, retry, formatTimeFromSeconds]
     );
 
     /**
@@ -222,5 +339,19 @@ export function usePlayback() {
             : `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    return { pause, resume, stop, seekBackward, seekForward, seekToPosition, status };
+    /**
+     * Updates the playback progress in Jellyfin.
+     */
+    function updateProgress(position: number, isPaused: boolean) {
+        updatePlaybackProgress(itemId, mediaSourceId, playbackSessionId.current, position, isPaused);
+    }
+
+    async function getCastClient() {
+        return await retry(() => {
+            if (!client) throw new Error('Google Cast client not available.');
+            return client;
+        });
+    }
+
+    return { cast, pause, resume, stop, seekBackward, seekForward, seekToPosition, status };
 }

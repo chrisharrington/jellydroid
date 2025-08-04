@@ -6,7 +6,8 @@ export function useCastSelector() {
         [selectedDevice, setSelectedDevice] = useState('local'), // Default to local device
         devices = useDevices(),
         castState = useCastState(),
-        remoteMediaClient = useRemoteMediaClient();
+        remoteMediaClient = useRemoteMediaClient(),
+        sessionManager = useMemo(() => CastContext.getSessionManager(), []);
 
     /**
      * Handles the selection of a cast device by its ID.
@@ -20,27 +21,25 @@ export function useCastSelector() {
     const handleDeviceSelect = useCallback(
         async (deviceId: string) => {
             try {
+                console.log('Selected device ID:', deviceId);
                 // Handle "This Device" selection - disconnect from cast.
                 if (deviceId === 'local') {
                     if (castState === CastState.CONNECTED) {
+                        console.log('Selecting local device, disconnecting from cast...');
                         if (remoteMediaClient) await remoteMediaClient.stop();
-                        await CastContext.getSessionManager().endCurrentSession();
+                        await sessionManager.endCurrentSession();
+                    }
+                } else {
+                    const device = devices.find(d => d.deviceId === deviceId);
+                    if (!device) {
+                        console.error('Device not found:', deviceId);
+                        return;
                     }
 
-                    setSelectedDevice('local');
-                    setVisible(false);
-                    return;
+                    // Connect to the selected device using the session manager.
+                    console.log('Starting session on device:', device.friendlyName);
+                    await sessionManager.startSession(device.deviceId);
                 }
-
-                // Find the device object by ID.
-                const device = devices.find(d => d.deviceId === deviceId);
-                if (!device) {
-                    console.error('Device not found:', deviceId);
-                    return;
-                }
-
-                // Connect to the selected device using the session manager.
-                await CastContext.getSessionManager().startSession(device.deviceId);
 
                 setSelectedDevice(deviceId);
                 setVisible(false);

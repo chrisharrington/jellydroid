@@ -125,21 +125,30 @@ export function useJellyfin() {
      * This should be called periodically during playback to sync the current position.
      *
      * @param itemId - The unique identifier of the media item being played.
-     * @param positionTicks - The current playback position in ticks (1 second = 10,000,000 ticks).
+     * @param position - The current playback position in seconds.
      * @param isPaused - Whether playback is currently paused. Defaults to false.
      * @returns A promise that resolves when the progress has been reported.
      */
     const updatePlaybackProgress = useCallback(
-        async (itemId: string, positionTicks: number, isPaused: boolean = false) => {
+        async (
+            itemId: string,
+            mediaSourceId: string,
+            playSessionId: string | null,
+            position: number,
+            isPaused: boolean = false
+        ) => {
             if (!user.current) await login();
 
-            const playstateApi = getPlaystateApi(api);
+            console.log('Updating playback progress:', playSessionId, position);
 
+            const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackProgress({
                 playbackProgressInfo: {
                     ItemId: itemId,
-                    PositionTicks: positionTicks,
+                    MediaSourceId: mediaSourceId,
+                    PositionTicks: position * 10_000_000,
                     IsPaused: isPaused,
+                    PlaySessionId: playSessionId,
                 },
             });
         },
@@ -154,16 +163,19 @@ export function useJellyfin() {
      * @returns A promise that resolves when the playback start has been reported.
      */
     const startPlaybackSession = useCallback(
-        async (itemId: string) => {
+        async (itemId: string, mediaSourceId: string, playSessionId: string | null) => {
             if (!user.current) await login();
 
-            const playstateApi = getPlaystateApi(api);
+            console.log('Starting playback session for item:', itemId, mediaSourceId, playSessionId);
 
+            const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStart({
                 playbackStartInfo: {
                     ItemId: itemId,
-                    PlayMethod: 'DirectStream',
-                    PlaySessionId: `jellydroid-${Date.now()}`,
+                    IsPaused: false,
+                    MediaSourceId: mediaSourceId,
+                    PlayMethod: 'Transcode',
+                    PlaySessionId: playSessionId,
                 },
             });
         },
@@ -179,16 +191,18 @@ export function useJellyfin() {
      * @returns A promise that resolves when the playback stop has been reported.
      */
     const stopPlaybackSession = useCallback(
-        async (itemId: string, positionTicks: number) => {
+        async (itemId: string, mediaSourceId: string, playSessionId: string | null, positionTicks: number) => {
             if (!user.current) await login();
 
-            const playstateApi = getPlaystateApi(api);
+            console.log('Stopping playback session for item:', itemId, mediaSourceId, playSessionId, positionTicks);
 
+            const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStopped({
                 playbackStopInfo: {
                     ItemId: itemId,
+                    MediaSourceId: mediaSourceId,
                     PositionTicks: positionTicks,
-                    PlaySessionId: `jellydroid-${Date.now()}`,
+                    PlaySessionId: playSessionId,
                 },
             });
         },

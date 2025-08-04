@@ -1,8 +1,7 @@
-import { useCastState, useDevices } from 'react-native-google-cast';
+import { useCastState } from 'react-native-google-cast';
 
 export function useCustomCastButton() {
-    const castState = useCastState(),
-        devices = useDevices();
+    const castState = useCastState();
 
     return {
         state: castState,

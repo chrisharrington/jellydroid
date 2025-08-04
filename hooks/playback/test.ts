@@ -23,7 +23,9 @@ import { useRemoteMediaClient } from 'react-native-google-cast';
 import { usePlayback } from './index';
 
 // Get the mocked function
-const mockUseRemoteMediaClient = useRemoteMediaClient as jest.MockedFunction<typeof useRemoteMediaClient>;
+const mockUseRemoteMediaClient = useRemoteMediaClient as jest.MockedFunction<typeof useRemoteMediaClient>,
+    itemId = 'test-item-id',
+    mediaSourceId = 'test-media-source-id';
 
 describe('usePlayback', () => {
     beforeEach(() => {
@@ -46,7 +48,7 @@ describe('usePlayback', () => {
 
     describe('initialization', () => {
         it('should initialize with default status', () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             expect(result.current.status).toEqual({
                 isPlaying: false,
@@ -59,7 +61,7 @@ describe('usePlayback', () => {
         });
 
         it('should return all expected methods', () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             expect(result.current).toHaveProperty('pause');
             expect(result.current).toHaveProperty('resume');
@@ -74,7 +76,7 @@ describe('usePlayback', () => {
     describe('pause', () => {
         it('should pause successfully and update status', async () => {
             mockPause.mockResolvedValue(undefined);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.pause();
@@ -88,7 +90,7 @@ describe('usePlayback', () => {
         it('should handle pause error and revert status', async () => {
             const error = new Error('Pause failed');
             mockPause.mockRejectedValue(error);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.pause();
@@ -102,7 +104,7 @@ describe('usePlayback', () => {
 
         it('should not call pause if client is not available', async () => {
             mockUseRemoteMediaClient.mockReturnValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.pause();
@@ -115,7 +117,7 @@ describe('usePlayback', () => {
     describe('resume', () => {
         it('should resume successfully and update status', async () => {
             mockPlay.mockResolvedValue(undefined);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.resume();
@@ -129,7 +131,7 @@ describe('usePlayback', () => {
         it('should handle resume error and revert status', async () => {
             const error = new Error('Resume failed');
             mockPlay.mockRejectedValue(error);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.resume();
@@ -143,7 +145,7 @@ describe('usePlayback', () => {
 
         it('should not call play if client is not available', async () => {
             mockUseRemoteMediaClient.mockReturnValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.resume();
@@ -162,7 +164,7 @@ describe('usePlayback', () => {
         });
 
         it('should seek forward with default 30 seconds', async () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekForward();
@@ -174,7 +176,7 @@ describe('usePlayback', () => {
         });
 
         it('should seek forward with custom seconds', async () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekForward(15);
@@ -188,7 +190,7 @@ describe('usePlayback', () => {
         it('should handle error during seek forward', async () => {
             const error = new Error('Seek failed');
             mockSeek.mockRejectedValue(error);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekForward();
@@ -200,7 +202,7 @@ describe('usePlayback', () => {
 
         it('should exit early if no media status is available', async () => {
             mockGetMediaStatus.mockResolvedValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekForward();
@@ -212,7 +214,7 @@ describe('usePlayback', () => {
 
         it('should not seek if client is not available', async () => {
             mockUseRemoteMediaClient.mockReturnValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekForward();
@@ -232,7 +234,7 @@ describe('usePlayback', () => {
         });
 
         it('should seek backward with default 10 seconds', async () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekBackward();
@@ -244,7 +246,7 @@ describe('usePlayback', () => {
         });
 
         it('should seek backward with custom seconds', async () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekBackward(20);
@@ -259,7 +261,7 @@ describe('usePlayback', () => {
             mockGetMediaStatus.mockResolvedValue({
                 streamPosition: 5,
             });
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekBackward(10);
@@ -271,7 +273,7 @@ describe('usePlayback', () => {
         it('should handle error during seek backward', async () => {
             const error = new Error('Seek backward failed');
             mockSeek.mockRejectedValue(error);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekBackward();
@@ -283,7 +285,7 @@ describe('usePlayback', () => {
 
         it('should exit early if no media status is available', async () => {
             mockGetMediaStatus.mockResolvedValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekBackward();
@@ -295,7 +297,7 @@ describe('usePlayback', () => {
 
         it('should not seek if client is not available', async () => {
             mockUseRemoteMediaClient.mockReturnValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekBackward();
@@ -309,7 +311,7 @@ describe('usePlayback', () => {
     describe('stop', () => {
         it('should stop successfully and navigate back', async () => {
             mockStop.mockResolvedValue(undefined);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.stop();
@@ -322,7 +324,7 @@ describe('usePlayback', () => {
         it('should handle stop error', async () => {
             const error = new Error('Stop failed');
             mockStop.mockRejectedValue(error);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.stop();
@@ -334,7 +336,7 @@ describe('usePlayback', () => {
 
         it('should not call stop if client is not available', async () => {
             mockUseRemoteMediaClient.mockReturnValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.stop();
@@ -351,7 +353,7 @@ describe('usePlayback', () => {
         });
 
         it('should seek to specific position and update status', async () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
             const targetPosition = 120;
 
             await act(async () => {
@@ -367,7 +369,7 @@ describe('usePlayback', () => {
         it('should handle seek to position error', async () => {
             const error = new Error('Seek to position failed');
             mockSeek.mockRejectedValue(error);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekToPosition(60);
@@ -379,7 +381,7 @@ describe('usePlayback', () => {
 
         it('should not seek if client is not available', async () => {
             mockUseRemoteMediaClient.mockReturnValue(null);
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             await act(async () => {
                 await result.current.seekToPosition(60);
@@ -391,7 +393,7 @@ describe('usePlayback', () => {
 
     describe('formatTimeFromSeconds utility', () => {
         it('should format time correctly for various durations', () => {
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             // Test with seekToPosition to access the formatTimeFromSeconds function indirectly
             act(() => {
@@ -439,7 +441,7 @@ describe('usePlayback', () => {
             });
             mockPause.mockReturnValue(promise);
 
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             // Start pause operation
             act(() => {
@@ -468,7 +470,7 @@ describe('usePlayback', () => {
             mockPause.mockResolvedValue(undefined);
             mockPlay.mockResolvedValue(undefined);
 
-            const { result } = renderHook(() => usePlayback());
+            const { result } = renderHook(() => usePlayback(itemId, mediaSourceId));
 
             // Initial state
             expect(result.current.status.isPlaying).toBe(false);

@@ -5,7 +5,7 @@ import { useJellyfin } from '@/hooks/jellyfin';
 import { usePlayback } from '@/hooks/playback';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MediaPlayerState, useRemoteMediaClient } from 'react-native-google-cast';
 
 type PlayStatus = {
@@ -41,8 +41,7 @@ const audioOptions: SelectorOption[] = [
 
 export function useRemoteScreen() {
     const client = useRemoteMediaClient(),
-        { getItemDetails, getPosterForItem, startPlaybackSession, stopPlaybackSession, updatePlaybackProgress } =
-            useJellyfin(),
+        { getItemDetails, getPosterForItem, updatePlaybackProgress } = useJellyfin(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
         [dragPosition, setDragPosition] = useState<number>(0),
@@ -60,17 +59,16 @@ export function useRemoteScreen() {
         }),
         [localTime, setLocalTime] = useState<number>(0),
         [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now()),
-        params = useLocalSearchParams<{ id: string }>(),
+        params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         currentInterpolatedTime = useInterpolatedTime(localTime, status.isPlaying, lastUpdateTime),
-        playback = usePlayback();
+        playback = usePlayback(params.itemId, params.mediaSourceId),
+        progressCounter = useRef<number>(0);
 
     useAsyncEffect(async () => {
-        if (!params.id) return;
-
         try {
             setBusy(true);
 
-            const item = await getItemDetails(params.id);
+            const item = await getItemDetails(params.itemId);
             if (!item) throw new Error('Item not found.');
 
             setItem(item);
@@ -107,18 +105,22 @@ export function useRemoteScreen() {
         try {
             if (!client) return;
 
+            // Retrieve the current media status from the client.
             const mediaStatus = await client.getMediaStatus();
             if (!mediaStatus) return;
 
+            // Extract media info and current position.
             const mediaInfo = mediaStatus.mediaInfo,
                 duration = mediaInfo?.streamDuration || 0,
                 position = (await client.getStreamPosition()) || 0,
                 playerState = mediaStatus.playerState;
 
+            // Update local time and last update timestamp.
             const now = Date.now();
             setLastUpdateTime(now);
             setLocalTime(position);
 
+            // Update playback status based on media state.
             setStatus({
                 isPlaying: playerState === MediaPlayerState.PLAYING,
                 isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
@@ -127,6 +129,14 @@ export function useRemoteScreen() {
                 currentTime: formatTimeFromSeconds(position),
                 maxTime: formatTimeFromSeconds(duration),
             });
+
+            // Update playback progress with Jellyfin every 10 updates to prevent
+            // bombarding the server.
+            progressCounter.current += 1;
+            if (progressCounter.current >= 10) {
+                updatePlaybackProgress(params.itemId, params.mediaSourceId, position, status.isPlaying);
+                progressCounter.current = 0;
+            }
         } catch (error) {
             console.error('Failed to update media status:', error);
         }
@@ -136,24 +146,21 @@ export function useRemoteScreen() {
     useEffect(() => {
         if (!client) return;
 
-        // Initial status update
+        // Initial status update.
         updateMediaStatus();
 
-        // Set up event listeners for immediate updates
-        const statusListener = client.onMediaStatusUpdated?.(status => {
-            updateMediaStatus();
-        });
+        // Set up event listeners for immediate updates.
+        const statusListener = client.onMediaStatusUpdated?.(updateMediaStatus);
 
-        const progressListener = client.onMediaProgressUpdated?.(progress => {
-            updateMediaStatus();
-        });
+        // Listen for media progress updates.
+        const progressListener = client.onMediaProgressUpdated?.(updateMediaStatus);
 
-        // Use shorter interval for more responsive time updates during playback
+        // Use shorter interval for more responsive time updates during playback.
         const interval = setInterval(updateMediaStatus, 250); // 4 times per second
 
+        // Clean up listeners and interval on unmount.
         return () => {
             clearInterval(interval);
-            // Clean up listeners if they exist
             statusListener?.remove?.();
             progressListener?.remove?.();
         };
