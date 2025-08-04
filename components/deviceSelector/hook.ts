@@ -1,3 +1,4 @@
+import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useCallback, useMemo, useState } from 'react';
 import { CastContext, CastState, useCastState, useDevices, useRemoteMediaClient } from 'react-native-google-cast';
 
@@ -8,6 +9,13 @@ export function useCastSelector() {
         castState = useCastState(),
         remoteMediaClient = useRemoteMediaClient(),
         sessionManager = useMemo(() => CastContext.getSessionManager(), []);
+
+    // Set the local device as the selected device on initial load.
+    useAsyncEffect(async () => {
+        const session = await sessionManager.getCurrentCastSession();
+        const localDevice = await session?.getCastDevice();
+        localDevice?.deviceId && setSelectedDevice(localDevice.deviceId);
+    }, []);
 
     /**
      * Handles the selection of a cast device by its ID.
@@ -21,11 +29,9 @@ export function useCastSelector() {
     const handleDeviceSelect = useCallback(
         async (deviceId: string) => {
             try {
-                console.log('Selected device ID:', deviceId);
                 // Handle "This Device" selection - disconnect from cast.
                 if (deviceId === 'local') {
                     if (castState === CastState.CONNECTED) {
-                        console.log('Selecting local device, disconnecting from cast...');
                         if (remoteMediaClient) await remoteMediaClient.stop();
                         await sessionManager.endCurrentSession();
                     }
@@ -37,7 +43,6 @@ export function useCastSelector() {
                     }
 
                     // Connect to the selected device using the session manager.
-                    console.log('Starting session on device:', device.friendlyName);
                     await sessionManager.startSession(device.deviceId);
                 }
 
@@ -60,8 +65,7 @@ export function useCastSelector() {
                     value: 'local',
                 },
                 ...devices
-                    .filter(device => !device.friendlyName.toLowerCase().includes('group'))
-                    .filter(device => !device.friendlyName.toLowerCase().includes('speaker'))
+                    .filter(device => device.capabilities.includes('VideoOut'))
                     .sort((a, b) => a.friendlyName.toLowerCase().localeCompare(b.friendlyName.toLowerCase()))
                     .map(device => ({
                         label: device.friendlyName.replace(/\b\w/g, char => char.toUpperCase()),

@@ -85,7 +85,12 @@ export function useRemoteScreen() {
 
     // Listen for media status changes and poll at different frequencies
     useEffect(() => {
-        if (!client) return;
+        console.log('RemoteScreen client:', client);
+
+        if (!client || !item) return;
+
+        // Cast the media to the connected device.
+        playback.cast();
 
         // Initial status update.
         updateMediaStatus();
@@ -105,7 +110,7 @@ export function useRemoteScreen() {
             statusListener?.remove?.();
             progressListener?.remove?.();
         };
-    }, [client, updateMediaStatus]);
+    }, [client, updateMediaStatus, item]);
 
     /**
      * Formats seconds into MM:SS or HH:MM:SS format.

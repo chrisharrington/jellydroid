@@ -40,9 +40,6 @@ export function usePlayback(itemId: string, mediaSourceId: string) {
         // );
         playbackSessionId.current = 'blah';
 
-        // Cast the media to the connected device.
-        cast();
-
         console.log('Created new playback session ID:', playbackSessionId.current);
     }, [itemId]);
 

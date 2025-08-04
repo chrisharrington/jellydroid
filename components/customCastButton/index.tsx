@@ -1,6 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
-import { CastState } from 'react-native-google-cast';
 import { useCustomCastButton } from './hook';
 
 export type CustomCastButtonProps = {
@@ -11,7 +10,7 @@ export type CustomCastButtonProps = {
 };
 
 export function CustomCastButton({ style, tintColor = 'white', size = 24, onPress }: CustomCastButtonProps) {
-    const { state } = useCustomCastButton();
+    const { isConnected } = useCustomCastButton();
 
     return (
         <TouchableOpacity
@@ -27,11 +26,7 @@ export function CustomCastButton({ style, tintColor = 'white', size = 24, onPres
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <MaterialIcons
-                name={state === CastState.CONNECTING || state === CastState.CONNECTED ? 'cast-connected' : 'cast'}
-                size={size}
-                color={tintColor}
-            />
+            <MaterialIcons name={isConnected ? 'cast-connected' : 'cast'} size={size} color={tintColor} />
         </TouchableOpacity>
     );
 }
