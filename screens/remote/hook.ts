@@ -1,21 +1,10 @@
 import { SelectorOption } from '@/components/selector';
+import { PlayStatus, useCast } from '@/contexts/cast';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { useInterpolatedTime } from '@/hooks/interpolatedTime';
 import { useJellyfin } from '@/hooks/jellyfin';
-import { usePlayback } from '@/hooks/playback';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MediaPlayerState, useRemoteMediaClient } from 'react-native-google-cast';
-
-type PlayStatus = {
-    isPlaying: boolean;
-    isLoading: boolean;
-    streamPosition: number;
-    maxPosition: number;
-    currentTime: string;
-    maxTime: string;
-};
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useState } from 'react';
 
 const subtitleOptions: SelectorOption[] = [
     { label: 'None', value: 'none' },
@@ -40,8 +29,8 @@ const audioOptions: SelectorOption[] = [
 ];
 
 export function useRemoteScreen() {
-    const client = useRemoteMediaClient(),
-        { getItemDetails, getPosterForItem, updatePlaybackProgress } = useJellyfin(),
+    const { getItemDetails, getPosterForItem, updatePlaybackProgress } = useJellyfin(),
+        { status, cast, onPlaybackUpdated } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
         [dragPosition, setDragPosition] = useState<number>(0),
@@ -49,20 +38,9 @@ export function useRemoteScreen() {
         [poster, setPoster] = useState<string | null>(null),
         [selectedSubtitle, setSelectedSubtitle] = useState<string>('none'),
         [selectedAudio, setSelectedAudio] = useState<string>('en'),
-        [status, setStatus] = useState<PlayStatus>({
-            isPlaying: false,
-            isLoading: false,
-            streamPosition: 0,
-            maxPosition: 0,
-            currentTime: '00:00',
-            maxTime: '00:00',
-        }),
-        [localTime, setLocalTime] = useState<number>(0),
-        [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now()),
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
-        currentInterpolatedTime = useInterpolatedTime(localTime, status.isPlaying, lastUpdateTime),
-        playback = usePlayback(params.itemId, params.mediaSourceId),
-        progressCounter = useRef<number>(0);
+        playback = useCast(),
+        navigation = useNavigation();
 
     useAsyncEffect(async () => {
         try {
@@ -76,41 +54,17 @@ export function useRemoteScreen() {
             // Set the item and poster for the current playback.
             setItem(item);
             setPoster(getPosterForItem(item));
+
+            // Listen for playback updates from the cast client.
+            onPlaybackUpdated((status: PlayStatus) => {
+                console.log('Playback status updated:', status);
+            });
         } catch (e) {
             console.error('Error retrieving item details:', e);
         } finally {
             setBusy(false);
         }
     }, []);
-
-    // Listen for media status changes and poll at different frequencies
-    useEffect(() => {
-        console.log('RemoteScreen client:', client);
-
-        if (!client || !item) return;
-
-        // Cast the media to the connected device.
-        playback.cast();
-
-        // Initial status update.
-        updateMediaStatus();
-
-        // Set up event listeners for immediate updates.
-        const statusListener = client.onMediaStatusUpdated?.(updateMediaStatus);
-
-        // Listen for media progress updates.
-        const progressListener = client.onMediaProgressUpdated?.(updateMediaStatus);
-
-        // Use shorter interval for more responsive time updates during playback.
-        const interval = setInterval(updateMediaStatus, 250); // 4 times per second
-
-        // Clean up listeners and interval on unmount.
-        return () => {
-            clearInterval(interval);
-            statusListener?.remove?.();
-            progressListener?.remove?.();
-        };
-    }, [client, updateMediaStatus, item]);
 
     /**
      * Formats seconds into MM:SS or HH:MM:SS format.
@@ -138,21 +92,15 @@ export function useRemoteScreen() {
      * - Updates the selected subtitle state when successful.
      * - Any errors encountered during the operation are logged to the console.
      */
-    const changeSubtitle = useCallback(
-        async (subtitleValue: string) => {
-            try {
-                if (!client) return;
-
-                // TODO: Implement actual subtitle switching logic with Google Cast
-                // await client.setActiveTrackIds([subtitleTrackId]);
-
-                setSelectedSubtitle(subtitleValue);
-            } catch (error) {
-                console.error('Failed to change subtitle:', error);
-            }
-        },
-        [client]
-    );
+    const changeSubtitle = useCallback(async (subtitleValue: string) => {
+        try {
+            // TODO: Implement actual subtitle switching logic with Google Cast
+            // await client.setActiveTrackIds([subtitleTrackId]);
+            setSelectedSubtitle(subtitleValue);
+        } catch (error) {
+            console.error('Failed to change subtitle:', error);
+        }
+    }, []);
 
     /**
      * Changes the audio track for the current media playback.
@@ -163,21 +111,15 @@ export function useRemoteScreen() {
      * - Updates the selected audio state when successful.
      * - Any errors encountered during the operation are logged to the console.
      */
-    const changeAudio = useCallback(
-        async (audioValue: string) => {
-            try {
-                if (!client) return;
-
-                // TODO: Implement actual audio track switching logic with Google Cast
-                // await client.setActiveTrackIds([audioTrackId]);
-
-                setSelectedAudio(audioValue);
-            } catch (error) {
-                console.error('Failed to change audio track:', error);
-            }
-        },
-        [client]
-    );
+    const changeAudio = useCallback(async (audioValue: string) => {
+        try {
+            // TODO: Implement actual audio track switching logic with Google Cast
+            // await client.setActiveTrackIds([audioTrackId]);
+            setSelectedAudio(audioValue);
+        } catch (error) {
+            console.error('Failed to change audio track:', error);
+        }
+    }, []);
 
     /**
      * Handles the completion of slider movement by updating dragging state and seeking to a new position.
@@ -194,6 +136,10 @@ export function useRemoteScreen() {
 
     return {
         ...playback,
+        stop: () => {
+            playback.stop();
+            navigation.goBack();
+        },
         changeSubtitle,
         changeAudio,
         item,
@@ -202,23 +148,10 @@ export function useRemoteScreen() {
         subtitleOptions,
         selectedAudio,
         audioOptions,
-        status: {
-            ...status,
-            // Use interpolated time for smoother display
-            currentTime: isDragging ? formatTimeForDrag(dragPosition) : formatTimeFromSeconds(currentInterpolatedTime),
-            streamPosition: isDragging ? dragPosition : currentInterpolatedTime,
-        },
+        status,
         handleSliderStart: () => setDragging(true),
         handleSliderChange: setDragPosition,
         handleSliderComplete,
-        currentTime: useMemo(
-            () => (isDragging ? formatTimeForDrag(dragPosition) : formatTimeFromSeconds(currentInterpolatedTime)),
-            [dragPosition, isDragging, currentInterpolatedTime, formatTimeForDrag, formatTimeFromSeconds]
-        ),
-        streamPosition: useMemo(
-            () => (isDragging ? dragPosition : currentInterpolatedTime),
-            [isDragging, dragPosition, currentInterpolatedTime]
-        ),
         isBusy,
     };
 
@@ -226,52 +159,52 @@ export function useRemoteScreen() {
      * Updates the media status by fetching current playback information from the remote media client.
      * This includes play state, stream position, duration, and formatted time strings.
      */
-    async function updateMediaStatus() {
-        try {
-            if (!client) return;
+    // async function updateMediaStatus() {
+    //     try {
+    //         if (!client) return;
 
-            // Retrieve the current media status from the client.
-            const mediaStatus = await client.getMediaStatus();
-            if (!mediaStatus) return;
+    //         // Retrieve the current media status from the client.
+    //         const mediaStatus = await client.getMediaStatus();
+    //         if (!mediaStatus) return;
 
-            // Extract media info and current position.
-            const mediaInfo = mediaStatus.mediaInfo,
-                duration = mediaInfo?.streamDuration || 0,
-                position = (await client.getStreamPosition()) || 0,
-                playerState = mediaStatus.playerState;
+    //         // Extract media info and current position.
+    //         const mediaInfo = mediaStatus.mediaInfo,
+    //             duration = mediaInfo?.streamDuration || 0,
+    //             position = (await client.getStreamPosition()) || 0,
+    //             playerState = mediaStatus.playerState;
 
-            // Update local time and last update timestamp.
-            const now = Date.now();
-            setLastUpdateTime(now);
-            setLocalTime(position);
+    //         // Update local time and last update timestamp.
+    //         const now = Date.now();
+    //         setLastUpdateTime(now);
+    //         setLocalTime(position);
 
-            // Update playback status based on media state.
-            setStatus({
-                isPlaying: playerState === MediaPlayerState.PLAYING,
-                isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
-                streamPosition: position,
-                maxPosition: duration,
-                currentTime: formatTimeFromSeconds(position),
-                maxTime: formatTimeFromSeconds(duration),
-            });
+    //         // Update playback status based on media state.
+    //         setStatus({
+    //             isPlaying: playerState === MediaPlayerState.PLAYING,
+    //             isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
+    //             streamPosition: position,
+    //             maxPosition: duration,
+    //             currentTime: formatTimeFromSeconds(position),
+    //             maxTime: formatTimeFromSeconds(duration),
+    //         });
 
-            // Update playback progress with Jellyfin every 10 updates to prevent
-            // bombarding the server.
-            progressCounter.current += 1;
-            if (progressCounter.current >= 10) {
-                updatePlaybackProgress(
-                    params.itemId,
-                    params.mediaSourceId,
-                    playback.playbackSessionId,
-                    position,
-                    status.isPlaying
-                );
-                progressCounter.current = 0;
-            }
-        } catch (error) {
-            console.error('Failed to update media status:', error);
-        }
-    }
+    //         // Update playback progress with Jellyfin every 10 updates to prevent
+    //         // bombarding the server.
+    //         progressCounter.current += 1;
+    //         if (progressCounter.current >= 10) {
+    //             updatePlaybackProgress(
+    //                 params.itemId,
+    //                 params.mediaSourceId,
+    //                 playback.playbackSessionId,
+    //                 position,
+    //                 status.isPlaying
+    //             );
+    //             progressCounter.current = 0;
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to update media status:', error);
+    //     }
+    // }
 
     /**
      * Formats a time duration in seconds into a human-readable string format.

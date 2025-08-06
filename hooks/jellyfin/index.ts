@@ -139,8 +139,6 @@ export function useJellyfin() {
         ) => {
             if (!user.current) await login();
 
-            console.log('Updating playback progress:', playSessionId, position);
-
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackProgress({
                 playbackProgressInfo: {
@@ -165,8 +163,6 @@ export function useJellyfin() {
     const startPlaybackSession = useCallback(
         async (itemId: string, mediaSourceId: string, playSessionId: string | null) => {
             if (!user.current) await login();
-
-            console.log('Starting playback session for item:', itemId, mediaSourceId, playSessionId);
 
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStart({
@@ -193,8 +189,6 @@ export function useJellyfin() {
     const stopPlaybackSession = useCallback(
         async (itemId: string, mediaSourceId: string, playSessionId: string | null, positionTicks: number) => {
             if (!user.current) await login();
-
-            console.log('Stopping playback session for item:', itemId, mediaSourceId, playSessionId, positionTicks);
 
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStopped({

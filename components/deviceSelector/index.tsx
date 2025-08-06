@@ -1,22 +1,22 @@
 import { Selector } from '@/components/selector';
-import { useCastSelector } from './hook';
+import { useCast } from '@/contexts/cast';
 
-export type CastSelectorProps = {
+export type DeviceSelector = {
     isVisible: boolean;
-    selectedDevice: string;
+    selectedDeviceId: string;
     onClose: () => void;
     onDeviceSelect: (deviceId: string) => void;
 };
 
-export function CastSelector({ isVisible, selectedDevice, onClose, onDeviceSelect }: CastSelectorProps) {
-    const { devices } = useCastSelector();
+export function DeviceSelector({ isVisible, selectedDeviceId, onClose, onDeviceSelect }: DeviceSelector) {
+    const { devices } = useCast();
 
     return (
         <Selector
             visible={isVisible}
             onClose={onClose}
             options={devices}
-            selectedValue={selectedDevice}
+            selectedValue={selectedDeviceId}
             onSelectValue={onDeviceSelect}
             title='Device'
             icon='cast'

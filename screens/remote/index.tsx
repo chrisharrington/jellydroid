@@ -26,8 +26,6 @@ export function RemoteScreen() {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
-        currentTime,
-        streamPosition,
         isBusy,
     } = useRemoteScreen();
 
@@ -58,14 +56,14 @@ export function RemoteScreen() {
 
                 <View style={styles.progressControl}>
                     <View style={styles.timeContainer}>
-                        <Text style={styles.timeText}>{currentTime}</Text>
-                        <Text style={[styles.timeText, styles.timeRight]}>{status.maxTime || '00:00'}</Text>
+                        <Text style={styles.timeText}>{'00:00'}</Text>
+                        <Text style={[styles.timeText, styles.timeRight]}>{'00:00'}</Text>
                     </View>
                     <Slider
                         style={styles.slider}
                         minimumValue={0}
                         maximumValue={status.maxPosition}
-                        value={streamPosition}
+                        value={status.streamPosition}
                         onSlidingStart={handleSliderStart}
                         onValueChange={handleSliderChange}
                         onSlidingComplete={handleSliderComplete}

@@ -14,7 +14,7 @@ export function useRetry() {
      * @returns A promise that resolves when the test function succeeds
      * @throws An error if the timeout is exceeded before the test function succeeds
      */
-    const retry = useCallback(async <T>(testFunction: () => T | Promise<T>, timeout: number = 10000): Promise<T> => {
+    const retry = useCallback(async <T>(testFunction: () => T | Promise<T>, timeout: number = 10_000): Promise<T> => {
         const startTime = Date.now(),
             retryDelay = 100; // Initial retry delay in milliseconds.
         let lastError: Error | unknown;

@@ -1,10 +1,8 @@
-import { CastState, useCastState, useRemoteMediaClient } from 'react-native-google-cast';
+import { useCast } from '@/contexts/cast';
 
 export function useCustomCastButton() {
-    const castState = useCastState(),
-        client = useRemoteMediaClient();
-
+    const { isConnected } = useCast();
     return {
-        isConnected: client && (castState === CastState.CONNECTED || castState === CastState.CONNECTING),
+        isConnected,
     };
 }
