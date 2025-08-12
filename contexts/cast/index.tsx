@@ -1,36 +1,73 @@
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
     CastContext as GoogleCastContext,
+    MediaPlayerState,
     useCastSession,
     useDevices,
     useRemoteMediaClient,
 } from 'react-native-google-cast';
 
 export type PlayStatus = {
+    /** Required. Indicates whether media is currently playing. */
     isPlaying: boolean;
-    isLoading: boolean;
+
+    /** Required. Indicates if the player is in a loading or buffering state. */
+    isBusy: boolean;
+
+    /** Required. Indicates if playback has been stopped or ended. */
     isStopped: boolean;
+
+    /** Required. Current playback position in seconds. */
     streamPosition: number;
+
+    /** Required. Total duration of the media in seconds. */
     maxPosition: number;
 };
 
 type CastContextType = {
+    /** Required. Initiates casting of a media item to the connected device. */
     cast: (item: BaseItemDto) => void;
+
+    /** Required. Pauses the current media playback. */
     pause: () => Promise<void>;
+
+    /** Required. Resumes the current media playback. */
     resume: () => Promise<void>;
+
+    /** Required. Stops the current media playback and ends the casting session. */
     stop: () => Promise<void>;
+
+    /** Required. Seeks backward in the current media by specified seconds. Defaults to 10 seconds. */
     seekBackward: (seconds?: number) => Promise<void>;
+
+    /** Required. Seeks forward in the current media by specified seconds. Defaults to 30 seconds. */
     seekForward: (seconds?: number) => Promise<void>;
+
+    /** Required. Seeks to a specific position in seconds in the current media. */
     seekToPosition: (position: number) => Promise<void>;
+
+    /** Required. Current playback status including position, duration, and player state. */
     status: PlayStatus;
+
+    /** Required. List of available casting devices including the local device. */
     devices: Array<{ label: string; value: string }>;
-    playbackSessionId: string | null;
-    onPlaybackUpdated: (callback: (status: PlayStatus) => void) => () => void;
+
+    /** Required. Callback registration for receiving playback status updates. */
+    onPlaybackUpdated: (callback: (status: PlayStatus) => void) => void;
+
+    /** Required. Handles device selection and connection management. */
     onDeviceSelected: (deviceId: string | null) => Promise<void>;
+
+    /** Required. Indicates if connected to a casting device. */
     isConnected: boolean;
+
+    /** Required. ID of the currently selected casting device. */
     selectedDeviceId: string;
+
+    /** Optional. Unique identifier for the current playback session. */
+    playbackSessionId: string | null;
 };
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -47,19 +84,20 @@ type CastProviderProps = {
  * @param children - React child components that will have access to the cast context.
  */
 export function CastProvider({ children }: CastProviderProps) {
-    const playbackSessionId = useRef<string | null>(null);
-    const client = useRemoteMediaClient();
-    const session = useCastSession();
-    const [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null);
-    const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>('local');
-    const devices = useDevices();
-    const [status, setStatus] = useState<PlayStatus>({
-        isPlaying: false,
-        isLoading: false,
-        isStopped: false,
-        streamPosition: 0,
-        maxPosition: 0,
-    });
+    const playbackSessionId = useRef<string | null>(null),
+        client = useRemoteMediaClient(),
+        session = useCastSession(),
+        [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
+        [selectedDeviceId, setSelectedDeviceId] = useState<string | null>('local'),
+        devices = useDevices(),
+        [statusCallback, setStatusCallback] = useState<((status: PlayStatus) => void) | null>(null),
+        [status, setStatus] = useState<PlayStatus>({
+            isPlaying: false,
+            isBusy: false,
+            isStopped: false,
+            streamPosition: 0,
+            maxPosition: 0,
+        });
 
     useAsyncEffect(async () => {
         if (!session || !selectedItem || !client) return;
@@ -88,6 +126,43 @@ export function CastProvider({ children }: CastProviderProps) {
         }
     }, [session, selectedItem, client]);
 
+    // Set up event listeners for media status updates.
+    useEffect(() => {
+        if (!client) return;
+
+        const progressListener = client.onMediaProgressUpdated(progress => {
+            setStatus(prev => ({ ...prev, streamPosition: progress || 0 }));
+        });
+
+        const statusListener = client.onMediaStatusUpdated(mediaStatus => {
+            if (!mediaStatus) return;
+
+            const currentPlayerState = mediaStatus.playerState,
+                streamPosition = mediaStatus.streamPosition || 0,
+                duration = mediaStatus.mediaInfo?.streamDuration || 0;
+
+            console.log('onMediaStatusUpdated:', currentPlayerState);
+
+            setStatus(prev => ({
+                ...prev,
+                streamPosition,
+                maxPosition: duration,
+                isPlaying: currentPlayerState === MediaPlayerState.PLAYING,
+                isBusy: currentPlayerState === MediaPlayerState.BUFFERING || !currentPlayerState,
+                isStopped: currentPlayerState === MediaPlayerState.IDLE,
+            }));
+        });
+
+        return () => {
+            progressListener.remove();
+            statusListener.remove();
+        };
+    }, [client]);
+
+    useEffect(() => {
+        statusCallback && statusCallback(status);
+    }, [status]);
+
     /**
      * Initiates casting of a media item to the connected Google Cast device.
      * Updates the selected item state which triggers the media loading process.
@@ -108,12 +183,12 @@ export function CastProvider({ children }: CastProviderProps) {
             const availableClient = getCastClient(),
                 position = (await availableClient.getStreamPosition()) || 0;
 
-            setStatus(prev => ({ ...prev, streamPosition: position, isPlaying: false, isLoading: true }));
+            setStatus(prev => ({ ...prev, streamPosition: position, isPlaying: false, isBusy: true }));
             await availableClient.pause();
-            setStatus(prev => ({ ...prev, isLoading: false }));
+            setStatus(prev => ({ ...prev, isBusy: false }));
         } catch (error) {
             console.error('Failed to pause:', error);
-            setStatus(prev => ({ ...prev, isPlaying: true, isLoading: false }));
+            setStatus(prev => ({ ...prev, isPlaying: true, isBusy: false }));
         }
     }, [client]);
 
@@ -128,12 +203,12 @@ export function CastProvider({ children }: CastProviderProps) {
             const availableClient = getCastClient(),
                 position = (await availableClient.getStreamPosition()) || 0;
 
-            setStatus(prev => ({ ...prev, streamPosition: position, isPlaying: true, isLoading: true }));
+            setStatus(prev => ({ ...prev, streamPosition: position, isPlaying: true, isBusy: true }));
             await availableClient.play();
-            setStatus(prev => ({ ...prev, isLoading: false }));
+            setStatus(prev => ({ ...prev, isBusy: false }));
         } catch (error) {
             console.error('Failed to resume:', error);
-            setStatus(prev => ({ ...prev, isPlaying: false, isLoading: false }));
+            setStatus(prev => ({ ...prev, isPlaying: false, isBusy: false }));
         }
     }, [client]);
 
@@ -147,18 +222,18 @@ export function CastProvider({ children }: CastProviderProps) {
         async (seconds: number = 30) => {
             try {
                 const availableClient = getCastClient();
-                setStatus(prev => ({ ...prev, isLoading: true }));
+                setStatus(prev => ({ ...prev, isBusy: true }));
                 const mediaStatus = await availableClient.getMediaStatus();
                 if (!mediaStatus) {
-                    setStatus(prev => ({ ...prev, isLoading: false }));
+                    setStatus(prev => ({ ...prev, isBusy: false }));
                     return;
                 }
                 const newPosition = mediaStatus.streamPosition + seconds;
                 await availableClient.seek({ position: newPosition });
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
                 console.error('Failed to seek forward:', error);
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
         [client]
@@ -175,18 +250,18 @@ export function CastProvider({ children }: CastProviderProps) {
         async (seconds: number = 10) => {
             try {
                 const availableClient = getCastClient();
-                setStatus(prev => ({ ...prev, isLoading: true }));
+                setStatus(prev => ({ ...prev, isBusy: true }));
                 const mediaStatus = await availableClient.getMediaStatus();
                 if (!mediaStatus) {
-                    setStatus(prev => ({ ...prev, isLoading: false }));
+                    setStatus(prev => ({ ...prev, isBusy: false }));
                     return;
                 }
                 const newPosition = Math.max(0, mediaStatus.streamPosition - seconds);
                 await availableClient.seek({ position: newPosition });
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
                 console.error('Failed to seek backward:', error);
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
         [client]
@@ -204,14 +279,14 @@ export function CastProvider({ children }: CastProviderProps) {
                 const availableClient = getCastClient();
                 setStatus(prev => ({
                     ...prev,
-                    isLoading: true,
+                    isBusy: true,
                     streamPosition: position,
                 }));
                 await availableClient.seek({ position });
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
                 console.error('Failed to seek to position:', error);
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
         [client]
@@ -259,46 +334,7 @@ export function CastProvider({ children }: CastProviderProps) {
      */
     const onPlaybackUpdated = useCallback(
         (callback: (status: PlayStatus) => void) => {
-            if (!client) return () => {};
-
-            let streamPosition = 0;
-            let currentDuration = 0;
-            let currentPlayerState = 'UNKNOWN';
-
-            const progressListener = client.onMediaProgressUpdated(progress => {
-                streamPosition = progress || 0;
-                const localStatus = {
-                    streamPosition,
-                    maxPosition: 0,
-                    isPlaying: currentPlayerState === 'PLAYING',
-                    isLoading: currentPlayerState === 'BUFFERING',
-                    isStopped: currentPlayerState === 'IDLE' || currentPlayerState === 'UNKNOWN',
-                };
-                setStatus(prev => ({ ...prev, streamPosition }));
-                callback(localStatus);
-            });
-
-            const statusListener = client.onMediaStatusUpdated(mediaStatus => {
-                if (!mediaStatus) return;
-                currentPlayerState = mediaStatus.playerState || 'UNKNOWN';
-                if (mediaStatus.mediaInfo?.streamDuration) currentDuration = mediaStatus.mediaInfo.streamDuration;
-                if (mediaStatus.streamPosition !== undefined) streamPosition = mediaStatus.streamPosition;
-
-                const localStatus = {
-                    streamPosition,
-                    maxPosition: 0,
-                    isPlaying: currentPlayerState === 'PLAYING',
-                    isLoading: currentPlayerState === 'BUFFERING',
-                    isStopped: currentPlayerState === 'IDLE' || currentPlayerState === 'UNKNOWN',
-                };
-                setStatus(prev => ({ ...prev, ...localStatus }));
-                callback(localStatus);
-            });
-
-            return () => {
-                progressListener.remove();
-                statusListener.remove();
-            };
+            setStatusCallback(callback);
         },
         [client]
     );
@@ -313,7 +349,7 @@ export function CastProvider({ children }: CastProviderProps) {
     const onDeviceSelected = useCallback(
         async (deviceId: string | null) => {
             try {
-                setStatus(prev => ({ ...prev, isLoading: true }));
+                setStatus(prev => ({ ...prev, isBusy: true }));
                 setSelectedDeviceId(deviceId);
 
                 if (deviceId === null || deviceId === 'local') {
@@ -323,7 +359,7 @@ export function CastProvider({ children }: CastProviderProps) {
                     const device = devices.find(d => d.deviceId === deviceId);
                     if (!device) {
                         console.error('Device not found:', deviceId);
-                        setStatus(prev => ({ ...prev, isLoading: false }));
+                        setStatus(prev => ({ ...prev, isBusy: false }));
                         return;
                     }
 
@@ -332,10 +368,10 @@ export function CastProvider({ children }: CastProviderProps) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
 
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
                 console.error('Failed to handle device selection:', error);
-                setStatus(prev => ({ ...prev, isLoading: false }));
+                setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
         [devices]

@@ -56,9 +56,7 @@ export function useRemoteScreen() {
             setPoster(getPosterForItem(item));
 
             // Listen for playback updates from the cast client.
-            onPlaybackUpdated((status: PlayStatus) => {
-                console.log('Playback status updated:', status);
-            });
+            onPlaybackUpdated((status: PlayStatus) => {});
         } catch (e) {
             console.error('Error retrieving item details:', e);
         } finally {
