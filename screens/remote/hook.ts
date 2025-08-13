@@ -1,10 +1,10 @@
 import { SelectorOption } from '@/components/selector';
-import { PlayStatus, useCast } from '@/contexts/cast';
+import { useCast } from '@/contexts/cast';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 const subtitleOptions: SelectorOption[] = [
     { label: 'None', value: 'none' },
@@ -30,7 +30,7 @@ const audioOptions: SelectorOption[] = [
 
 export function useRemoteScreen() {
     const { getItemDetails, getPosterForItem, updatePlaybackProgress } = useJellyfin(),
-        { status, cast, onPlaybackUpdated } = useCast(),
+        { status } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
         [dragPosition, setDragPosition] = useState<number>(0),
@@ -40,7 +40,8 @@ export function useRemoteScreen() {
         [selectedAudio, setSelectedAudio] = useState<string>('en'),
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         playback = useCast(),
-        navigation = useNavigation();
+        navigation = useNavigation(),
+        [currentTime, setCurrentTime] = useState<string>('00:00');
 
     useAsyncEffect(async () => {
         try {
@@ -54,9 +55,6 @@ export function useRemoteScreen() {
             // Set the item and poster for the current playback.
             setItem(item);
             setPoster(getPosterForItem(item));
-
-            // Listen for playback updates from the cast client.
-            onPlaybackUpdated((status: PlayStatus) => {});
         } catch (e) {
             console.error('Error retrieving item details:', e);
         } finally {
@@ -150,6 +148,8 @@ export function useRemoteScreen() {
         handleSliderStart: () => setDragging(true),
         handleSliderChange: setDragPosition,
         handleSliderComplete,
+        currentTime: formatTimeFromSeconds(status.streamPosition),
+        maxTime: useMemo(() => formatTimeFromSeconds(status.maxPosition), [item]),
         isBusy,
     };
 

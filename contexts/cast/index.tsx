@@ -54,9 +54,6 @@ type CastContextType = {
     /** Required. List of available casting devices including the local device. */
     devices: Array<{ label: string; value: string }>;
 
-    /** Required. Callback registration for receiving playback status updates. */
-    onPlaybackUpdated: (callback: (status: PlayStatus) => void) => void;
-
     /** Required. Handles device selection and connection management. */
     onDeviceSelected: (deviceId: string | null) => Promise<void>;
 
@@ -90,7 +87,7 @@ export function CastProvider({ children }: CastProviderProps) {
         [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
         [selectedDeviceId, setSelectedDeviceId] = useState<string | null>('local'),
         devices = useDevices(),
-        [statusCallback, setStatusCallback] = useState<((status: PlayStatus) => void) | null>(null),
+        statusCallback = useRef<((status: PlayStatus) => void) | null>(null),
         [status, setStatus] = useState<PlayStatus>({
             isPlaying: false,
             isBusy: false,
@@ -141,8 +138,6 @@ export function CastProvider({ children }: CastProviderProps) {
                 streamPosition = mediaStatus.streamPosition || 0,
                 duration = mediaStatus.mediaInfo?.streamDuration || 0;
 
-            console.log('onMediaStatusUpdated:', currentPlayerState);
-
             setStatus(prev => ({
                 ...prev,
                 streamPosition,
@@ -160,7 +155,7 @@ export function CastProvider({ children }: CastProviderProps) {
     }, [client]);
 
     useEffect(() => {
-        statusCallback && statusCallback(status);
+        statusCallback.current && statusCallback.current(status);
     }, [status]);
 
     /**
@@ -326,20 +321,6 @@ export function CastProvider({ children }: CastProviderProps) {
     }, [devices]);
 
     /**
-     * Provides a callback mechanism for receiving real-time playback updates from the Google Cast client.
-     * Combines both progress and status updates into a single callback interface.
-     * The callback receives position, playback state, and loading information.
-     * @param callback - Function to be called with playback status updates.
-     * @returns A cleanup function that removes the event listeners when called.
-     */
-    const onPlaybackUpdated = useCallback(
-        (callback: (status: PlayStatus) => void) => {
-            setStatusCallback(callback);
-        },
-        [client]
-    );
-
-    /**
      * Handles device selection for casting operations.
      * If deviceId is null or 'local', disconnects any active cast sessions.
      * If deviceId is provided, starts a cast session with the specified device.
@@ -399,7 +380,6 @@ export function CastProvider({ children }: CastProviderProps) {
             status,
             devices: getDevices(),
             playbackSessionId: playbackSessionId.current,
-            onPlaybackUpdated,
             onDeviceSelected,
             isConnected: !!session,
             selectedDeviceId: selectedDeviceId || 'local',
@@ -415,7 +395,6 @@ export function CastProvider({ children }: CastProviderProps) {
             status,
             getDevices,
             selectedDeviceId,
-            onPlaybackUpdated,
             onDeviceSelected,
             session,
             selectedDeviceId,

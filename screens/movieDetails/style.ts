@@ -21,12 +21,12 @@ export default StyleSheet.create({
 
     info: {
         fontSize: 14,
-        color: Colours.icon,
+        color: Colours.subtext,
     },
 
     divider: {
         fontSize: 14,
-        color: Colours.text,
+        color: Colours.subtext,
     },
 
     buttonContainer: {
@@ -34,7 +34,7 @@ export default StyleSheet.create({
     },
 
     overview: {
-        fontSize: 18,
+        fontSize: 17,
         color: Colours.subtext,
         marginTop: 16,
     },

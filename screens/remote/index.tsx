@@ -23,6 +23,8 @@ export function RemoteScreen() {
         selectedAudio,
         audioOptions,
         status,
+        currentTime,
+        maxTime,
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
@@ -56,8 +58,8 @@ export function RemoteScreen() {
 
                 <View style={styles.progressControl}>
                     <View style={styles.timeContainer}>
-                        <Text style={styles.timeText}>{'00:00'}</Text>
-                        <Text style={[styles.timeText, styles.timeRight]}>{'00:00'}</Text>
+                        <Text style={styles.timeText}>{currentTime}</Text>
+                        <Text style={[styles.timeText, styles.timeRight]}>{maxTime}</Text>
                     </View>
                     <Slider
                         style={styles.slider}
