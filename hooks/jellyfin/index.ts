@@ -109,14 +109,16 @@ export function useJellyfin() {
     );
 
     /**
-     * Generates the URL for the primary poster image of a given Jellyfin item.
-     *
-     * @param item - The Jellyfin item for which to retrieve the poster image.
-     * @returns The URL string pointing to the item's primary poster image, including the API key for authentication.
+     * Generates a URL for retrieving the primary image of a Jellyfin item.
+     * @param itemId - The unique identifier of the Jellyfin item
+     * @returns A fully qualified URL string pointing to the item's primary image
+     * @example
+     * const imageUrl = getImageForId("123456");
+     * // Returns: "http://your-jellyfin-server/Items/123456/Images/Primary?api_key=your-api-key"
      */
-    const getPosterForItem = useCallback(
-        (item: BaseItemDto) =>
-            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${item.Id}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+    const getImageForId = useCallback(
+        (itemId: string) =>
+            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
         []
     );
 
@@ -209,7 +211,7 @@ export function useJellyfin() {
         getMediaInfo,
         getRecentlyAddedMovies,
         getItemDetails,
-        getPosterForItem,
+        getImageForId,
         updatePlaybackProgress,
         startPlaybackSession,
         stopPlaybackSession,

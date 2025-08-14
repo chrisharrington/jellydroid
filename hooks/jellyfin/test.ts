@@ -339,15 +339,15 @@ describe('useJellyfin', () => {
         });
     });
 
-    describe('getPosterForItem', () => {
-        it('should generate correct poster URL for an item', () => {
+    describe('getImageForItem', () => {
+        it('should generate correct image URL for an item', () => {
             const mockItem: BaseItemDto = { Id: 'item-123', Name: 'Test Item' };
 
             const { result } = renderHook(() => useJellyfin());
 
-            const posterUrl = result.current.getPosterForItem(mockItem);
+            const imageUrl = result.current.getImageForId(mockItem.Id!);
 
-            expect(posterUrl).toBe('http://test-jellyfin.local/Items/item-123/Images/Primary?api_key=test-api-key');
+            expect(imageUrl).toBe('http://test-jellyfin.local/Items/item-123/Images/Primary?api_key=test-api-key');
         });
     });
 

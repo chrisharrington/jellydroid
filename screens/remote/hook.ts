@@ -29,7 +29,7 @@ const audioOptions: SelectorOption[] = [
 ];
 
 export function useRemoteScreen() {
-    const { getItemDetails, getPosterForItem, updatePlaybackProgress } = useJellyfin(),
+    const { getItemDetails, getImageForId } = useJellyfin(),
         { status } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
@@ -54,7 +54,7 @@ export function useRemoteScreen() {
 
             // Set the item and poster for the current playback.
             setItem(item);
-            setPoster(getPosterForItem(item));
+            setPoster(getImageForId(item.Id!));
         } catch (e) {
             console.error('Error retrieving item details:', e);
         } finally {
