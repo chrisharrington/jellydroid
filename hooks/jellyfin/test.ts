@@ -103,7 +103,7 @@ describe('useJellyfin', () => {
             expect(result.current).toHaveProperty('getMediaInfo');
             expect(result.current).toHaveProperty('getRecentlyAddedMovies');
             expect(result.current).toHaveProperty('getItemDetails');
-            expect(result.current).toHaveProperty('getPosterForItem');
+            expect(result.current).toHaveProperty('getImageForId');
         });
 
         it('should create API instance on initialization', () => {
