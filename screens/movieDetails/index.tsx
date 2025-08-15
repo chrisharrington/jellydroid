@@ -1,9 +1,10 @@
 import { CastList } from '@/components/castList';
+import { InfoTable } from '@/components/infoTable';
 import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { FontAwesome } from '@expo/vector-icons';
-import { Image, Text, View } from 'react-native';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { useMovieDetails } from './hook';
 import style from './style';
 
@@ -18,21 +19,21 @@ export function MovieDetailsScreen() {
                 </View>
             ) : (
                 movie && (
-                    <>
+                    <ScrollView>
                         <Image source={{ uri: backdrop }} style={style.backdrop} resizeMode='cover' />
                         <View style={{ padding: 16, gap: 24 }}>
                             <View>
-                                <View style={style.infoContainer}>
-                                    <View style={style.infoEntries}>
+                                <View style={style.subHeader}>
+                                    <View style={style.subHeaderEntries}>
                                         {movie.ProductionYear && (
                                             <>
-                                                <Text style={style.info}>{movie.ProductionYear}</Text>
+                                                <Text style={style.subHeaderEntry}>{movie.ProductionYear}</Text>
                                                 <Text style={style.divider}>/</Text>
                                             </>
                                         )}
                                         {duration && (
                                             <>
-                                                <Text style={style.info}>{duration}</Text>
+                                                <Text style={style.subHeaderEntry}>{duration}</Text>
                                                 <Text style={style.divider}>/</Text>
                                             </>
                                         )}
@@ -44,24 +45,31 @@ export function MovieDetailsScreen() {
                                                     color='#FFD700'
                                                     style={{ marginTop: 2 }}
                                                 />
-                                                <Text style={style.info}>{movie.CommunityRating.toFixed(1)}</Text>
+                                                <Text style={style.subHeaderEntry}>
+                                                    {movie.CommunityRating.toFixed(1)}
+                                                </Text>
                                             </>
                                         )}
                                     </View>
                                     {movie.OfficialRating && <Text style={style.rating}>{movie.OfficialRating}</Text>}
                                 </View>
+
                                 <Text style={style.title}>{movie.Name}</Text>
+
                                 <View style={style.buttonContainer}>
                                     <PlayButton item={movie}>
                                         <FontAwesome name='play' size={18} color='white' />
                                     </PlayButton>
                                 </View>
+
                                 <Text style={style.overview}>{movie.Overview}</Text>
                             </View>
 
+                            <InfoTable item={movie} />
+
                             <CastList item={movie} />
                         </View>
-                    </>
+                    </ScrollView>
                 )
             )}
         </View>

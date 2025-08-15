@@ -7,26 +7,26 @@ export default StyleSheet.create({
         height: 200,
     },
 
-    infoContainer: {
+    subHeader: {
         flexDirection: 'row',
         marginTop: 8,
         justifyContent: 'space-between',
     },
 
-    infoEntries: {
+    subHeaderEntries: {
         flexDirection: 'row',
         gap: 8,
+    },
+
+    subHeaderEntry: {
+        fontSize: 14,
+        color: Colours.subtext,
     },
 
     title: {
         fontSize: 32,
         fontWeight: 'bold',
         color: Colours.text,
-    },
-
-    info: {
-        fontSize: 14,
-        color: Colours.subtext,
     },
 
     rating: {
