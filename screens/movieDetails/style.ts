@@ -29,6 +29,12 @@ export default StyleSheet.create({
         color: Colours.text,
     },
 
+    tagline: {
+        fontSize: 18,
+        color: Colours.subtext,
+        fontStyle: 'italic',
+    },
+
     rating: {
         borderRadius: 4,
         backgroundColor: Colours.background3,

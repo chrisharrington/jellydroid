@@ -24,7 +24,7 @@ export default StyleSheet.create({
     },
 
     entryValue: {
-        flex: 4,
+        flex: 3,
         color: Colours.text,
         textAlign: 'left',
     },
