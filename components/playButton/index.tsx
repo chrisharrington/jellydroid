@@ -1,5 +1,5 @@
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { Button, ButtonProps } from '../button';
+import { ButtonProps, PrimaryButton } from '../button';
 import { usePlayButton } from './hook';
 
 export type PlayButtonProps = Omit<ButtonProps, 'onPress'> & {
@@ -8,5 +8,5 @@ export type PlayButtonProps = Omit<ButtonProps, 'onPress'> & {
 
 export function PlayButton(props: PlayButtonProps) {
     const { handlePress } = usePlayButton(props);
-    return <Button {...props} onPress={handlePress} />;
+    return <PrimaryButton {...props} onPress={handlePress} />;
 }

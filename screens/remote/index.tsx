@@ -69,9 +69,9 @@ export function RemoteScreen() {
                         onSlidingStart={handleSliderStart}
                         onValueChange={handleSliderChange}
                         onSlidingComplete={handleSliderComplete}
-                        minimumTrackTintColor={Colours.icon}
+                        minimumTrackTintColor={Colours.primary}
                         maximumTrackTintColor={Colours.text}
-                        thumbTintColor={Colours.icon}
+                        thumbTintColor={Colours.primary}
                         testID='slider'
                     />
                 </View>

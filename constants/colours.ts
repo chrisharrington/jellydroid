@@ -4,5 +4,6 @@ export const Colours = {
     background: '#151718',
     background2: '#202222ff',
     background3: '#2c2e2fff',
-    icon: '#8fbf21',
+    primary: '#8fbf21',
+    error: '#f44336',
 };

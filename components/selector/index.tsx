@@ -61,7 +61,7 @@ export function Selector({ visible, onClose, title, icon, options, selectedValue
                                 {option.label}
                             </Text>
                             {selectedValue === option.value && (
-                                <MaterialIcons name='check' size={20} color={Colours.icon} />
+                                <MaterialIcons name='check' size={20} color={Colours.primary} />
                             )}
                         </TouchableOpacity>
                     ))}

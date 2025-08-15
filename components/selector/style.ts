@@ -73,7 +73,7 @@ export const styles = StyleSheet.create({
     },
 
     selectedOptionText: {
-        color: Colours.icon,
+        color: Colours.primary,
         fontFamily: 'Lato-Bold',
     },
 });

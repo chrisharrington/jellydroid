@@ -1,4 +1,5 @@
 import Spinner from '@/components/spinner';
+import { ToastProvider } from '@/components/toast';
 import { CastProvider } from '@/contexts/cast';
 import { BaseLayout } from '@/layout';
 import { useFonts } from 'expo-font';
@@ -22,7 +23,9 @@ export default function RootLayout() {
     return fontsLoaded ? (
         <CastProvider>
             <Host>
-                <BaseLayout />
+                <ToastProvider>
+                    <BaseLayout />
+                </ToastProvider>
             </Host>
         </CastProvider>
     ) : (

@@ -7,8 +7,15 @@ export default StyleSheet.create({
         width: '100%',
         paddingVertical: 12,
         paddingHorizontal: 18,
-        backgroundColor: Colours.icon,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    primaryButton: {
+        backgroundColor: Colours.primary,
+    },
+
+    secondaryButton: {
+        backgroundColor: Colours.background3,
     },
 });

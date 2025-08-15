@@ -1,15 +1,16 @@
+import { SecondaryButton } from '@/components/button';
 import { CastList } from '@/components/castList';
 import { InfoTable } from '@/components/infoTable';
 import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
-import { FontAwesome } from '@expo/vector-icons';
+import { AntDesign, FontAwesome } from '@expo/vector-icons';
 import { Image, ScrollView, Text, View } from 'react-native';
 import { useMovieDetails } from './hook';
 import style from './style';
 
 export function MovieDetailsScreen() {
-    const { isBusy, movie, backdrop, duration } = useMovieDetails();
+    const { isBusy, movie, backdrop, duration, onMovieWatchedPress } = useMovieDetails();
 
     return (
         <View style={{ flex: 1, backgroundColor: Colours.background }}>
@@ -58,9 +59,17 @@ export function MovieDetailsScreen() {
                                 {movie.Taglines?.length && <Text style={style.tagline}>{movie.Taglines[0]}</Text>}
 
                                 <View style={style.buttonContainer}>
-                                    <PlayButton item={movie}>
-                                        <FontAwesome name='play' size={18} color='white' />
-                                    </PlayButton>
+                                    <View style={style.playButton}>
+                                        <PlayButton item={movie}>
+                                            <FontAwesome name='play' size={18} color='white' />
+                                        </PlayButton>
+                                    </View>
+
+                                    <View style={style.watchedButton}>
+                                        <SecondaryButton onPress={onMovieWatchedPress}>
+                                            <AntDesign name='checkcircle' size={18} color='white' />
+                                        </SecondaryButton>
+                                    </View>
                                 </View>
 
                                 <Text style={style.overview}>{movie.Overview}</Text>

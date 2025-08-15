@@ -52,6 +52,16 @@ export default StyleSheet.create({
 
     buttonContainer: {
         marginTop: 16,
+        gap: 16,
+        flexDirection: 'row',
+    },
+
+    playButton: {
+        flex: 1,
+    },
+
+    watchedButton: {
+        width: 60,
     },
 
     overview: {

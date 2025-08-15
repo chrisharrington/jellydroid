@@ -18,7 +18,7 @@ export default StyleSheet.create({
         fontFamily: 'Lato',
         paddingBottom: 4,
         borderBottomWidth: 2,
-        borderBottomColor: Colours.icon,
+        borderBottomColor: Colours.primary,
     },
 
     childrenContainer: {
