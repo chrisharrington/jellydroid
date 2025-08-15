@@ -9,8 +9,13 @@ export default StyleSheet.create({
 
     infoContainer: {
         flexDirection: 'row',
-        gap: 8,
         marginTop: 8,
+        justifyContent: 'space-between',
+    },
+
+    infoEntries: {
+        flexDirection: 'row',
+        gap: 8,
     },
 
     title: {
@@ -22,6 +27,16 @@ export default StyleSheet.create({
     info: {
         fontSize: 14,
         color: Colours.subtext,
+    },
+
+    rating: {
+        borderRadius: 4,
+        backgroundColor: Colours.background3,
+        color: Colours.text,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        fontWeight: 'bold',
+        fontFamily: 'monospace',
     },
 
     divider: {

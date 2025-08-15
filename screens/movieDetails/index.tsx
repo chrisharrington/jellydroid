@@ -23,35 +23,32 @@ export function MovieDetailsScreen() {
                         <View style={{ padding: 16, gap: 24 }}>
                             <View>
                                 <View style={style.infoContainer}>
-                                    {movie.ProductionYear && (
-                                        <>
-                                            <Text style={style.info}>{movie.ProductionYear}</Text>
-                                            <Text style={style.divider}>/</Text>
-                                        </>
-                                    )}
-                                    {duration && (
-                                        <>
-                                            <Text style={style.info}>{duration}</Text>
-                                            <Text style={style.divider}>/</Text>
-                                        </>
-                                    )}
-                                    {movie.Genres && movie.Genres.length > 0 && (
-                                        <>
-                                            <Text style={style.info}>{movie.Genres.slice(0, 2).join(', ')}</Text>
-                                            <Text style={style.divider}>/</Text>
-                                        </>
-                                    )}
-                                    {movie.CommunityRating && (
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <FontAwesome
-                                                name='star'
-                                                size={16}
-                                                color='#FFD700'
-                                                style={{ marginRight: 4 }}
-                                            />
-                                            <Text style={style.info}>{movie.CommunityRating.toFixed(1)}</Text>
-                                        </View>
-                                    )}
+                                    <View style={style.infoEntries}>
+                                        {movie.ProductionYear && (
+                                            <>
+                                                <Text style={style.info}>{movie.ProductionYear}</Text>
+                                                <Text style={style.divider}>/</Text>
+                                            </>
+                                        )}
+                                        {duration && (
+                                            <>
+                                                <Text style={style.info}>{duration}</Text>
+                                                <Text style={style.divider}>/</Text>
+                                            </>
+                                        )}
+                                        {movie.CommunityRating && (
+                                            <>
+                                                <FontAwesome
+                                                    name='star'
+                                                    size={16}
+                                                    color='#FFD700'
+                                                    style={{ marginTop: 2 }}
+                                                />
+                                                <Text style={style.info}>{movie.CommunityRating.toFixed(1)}</Text>
+                                            </>
+                                        )}
+                                    </View>
+                                    {movie.OfficialRating && <Text style={style.rating}>{movie.OfficialRating}</Text>}
                                 </View>
                                 <Text style={style.title}>{movie.Name}</Text>
                                 <View style={style.buttonContainer}>
