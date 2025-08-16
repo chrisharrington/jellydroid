@@ -1,20 +1,34 @@
 import { Selector } from '@/components/selector';
 import { Colours } from '@/constants/colours';
+import { LabelValue } from '@/models';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Portal } from 'react-native-portalize';
 import { useSelectorButton } from './hook';
 import styles from './style';
 
-interface SelectorButtonProps {
-    options: Array<{ label: string; value: string }>;
-    selectedValue: string;
+type SelectorButtonProps = {
+    /** Required. Array of options to display in the selector. */
+    options: Array<LabelValue>;
+
+    /** Required. Currently selected value, or null if none selected. */
+    selectedValue: string | null;
+
+    /** Required. Callback function when a value is selected. */
     onSelectValue: (value: string | null) => void;
+
+    /** Required. Title displayed at the top of the selector modal. */
     title: string;
-    iconName: keyof typeof MaterialIcons.glyphMap;
+
+    /** Optional. MaterialIcons icon name to display before the selector text. */
+    iconName?: keyof typeof MaterialIcons.glyphMap;
+
+    /** Required. Text to display when no value is selected. */
     defaultLabel: string;
+
+    /** Required. Prefix for test IDs used in components. */
     testIdPrefix: string;
-}
+};
 
 export function SelectorButton({
     options,

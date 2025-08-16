@@ -14,7 +14,10 @@ export function useCastSelector() {
      * @param deviceId - The unique identifier of the selected cast device, or "local" for this device
      * @returns A promise that resolves when the device connection/disconnection is complete
      */
-    const handleDeviceSelect = useCallback(async (deviceId: string) => onDeviceSelected(deviceId), [onDeviceSelected]);
+    const handleDeviceSelect = useCallback(
+        async (deviceId: string | null) => onDeviceSelected(deviceId),
+        [onDeviceSelected]
+    );
 
     return {
         isVisible,
