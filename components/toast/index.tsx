@@ -15,7 +15,7 @@ type ToastContextType = {
     success: (message: string) => void;
 
     /** Required. Function to display an error toast with the specified message. */
-    error: (message: string) => void;
+    error: (message: string, error?: any) => void;
 
     /** Required. Function to immediately hide any currently visible toast. */
     hide: () => void;
@@ -203,8 +203,9 @@ export function ToastProvider({ children }: ToastProviderProps) {
      * ```
      */
     const error = useCallback(
-        (message: string) => {
-            console.trace(message);
+        (message: string, error: any) => {
+            console.error(message);
+            error && console.trace(error);
             showToast(message, 'error');
         },
         [showToast]

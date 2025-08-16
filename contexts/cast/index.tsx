@@ -1,3 +1,4 @@
+import { useToast } from '@/components/toast';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -28,7 +29,7 @@ export type PlayStatus = {
 
 type CastContextType = {
     /** Required. Initiates casting of a media item to the connected device. */
-    cast: (item: BaseItemDto) => void;
+    cast: (item: BaseItemDto, resumePlayback?: boolean) => void;
 
     /** Required. Pauses the current media playback. */
     pause: () => Promise<void>;
@@ -94,7 +95,8 @@ export function CastProvider({ children }: CastProviderProps) {
             isStopped: false,
             streamPosition: 0,
             maxPosition: 0,
-        });
+        }),
+        toast = useToast();
 
     useAsyncEffect(async () => {
         if (!session || !selectedItem || !client) return;
@@ -119,7 +121,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 },
             });
         } catch (e) {
-            console.error('Failed to cast:', e);
+            toast.error('Failed to cast media. Please try again later.', e);
         }
     }, [session, selectedItem, client]);
 
@@ -162,8 +164,9 @@ export function CastProvider({ children }: CastProviderProps) {
      * Initiates casting of a media item to the connected Google Cast device.
      * Updates the selected item state which triggers the media loading process.
      * @param item - The Jellyfin media item to be cast to the device.
+     * @param resumePlayback - Whether to resume playback if the item is already playing.
      */
-    const cast = useCallback((item: BaseItemDto) => {
+    const cast = useCallback((item: BaseItemDto, resumePlayback?: boolean) => {
         setSelectedItem(item);
     }, []);
 
