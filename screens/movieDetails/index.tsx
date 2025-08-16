@@ -75,9 +75,7 @@ export function MovieDetailsScreen() {
 
                                 <View style={style.buttonContainer}>
                                     <View style={style.playButton}>
-                                        <PlayButton item={movie}>
-                                            <FontAwesome name='play' size={18} color='white' />
-                                        </PlayButton>
+                                        <PlayButton item={movie} />
                                     </View>
 
                                     <View style={style.additionalButton}>

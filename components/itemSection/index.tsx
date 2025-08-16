@@ -19,8 +19,6 @@ export type ItemSectionProps = {
 };
 
 export function ItemSection(props: ItemSectionProps) {
-    if (props.withProgressIndicator) console.log(props.items[0].UserData?.PlayedPercentage);
-
     return (
         <Section {...props}>
             <FlatList

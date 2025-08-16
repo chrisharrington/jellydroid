@@ -204,6 +204,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
      */
     const error = useCallback(
         (message: string) => {
+            console.trace(message);
             showToast(message, 'error');
         },
         [showToast]

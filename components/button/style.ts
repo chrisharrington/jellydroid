@@ -5,10 +5,10 @@ export default StyleSheet.create({
     button: {
         borderRadius: 6,
         width: '100%',
-        paddingVertical: 12,
         paddingHorizontal: 18,
         justifyContent: 'center',
         alignItems: 'center',
+        height: 40,
     },
 
     primaryButton: {
