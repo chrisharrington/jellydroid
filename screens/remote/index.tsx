@@ -2,11 +2,11 @@ import { Spinner } from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import Slider from '@react-native-community/slider';
 import { Image, Text, View } from 'react-native';
-import { AudioSelector } from './audio';
+import { AudioSelector } from '../../components/audio';
+import { SubtitleSelector } from '../../components/subtitles';
 import { ControlBar } from './controlBar';
 import { useRemoteScreen } from './hook';
-import styles from './style';
-import { SubtitleSelector } from './subtitles';
+import style from './style';
 
 export function RemoteScreen() {
     const {
@@ -32,17 +32,17 @@ export function RemoteScreen() {
     } = useRemoteScreen();
 
     return isBusy ? (
-        <View style={styles.loadingContainer}>
+        <View style={style.loadingContainer}>
             <Spinner />
         </View>
     ) : (
-        <View style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.posterContainer}>
-                    {poster && <Image source={{ uri: poster }} style={styles.poster} />}
+        <View style={style.container}>
+            <View style={style.content}>
+                <View style={style.posterContainer}>
+                    {poster && <Image source={{ uri: poster }} style={style.poster} />}
                 </View>
 
-                <View style={styles.selectorsContainer}>
+                <View style={style.selectorsContainer}>
                     <AudioSelector
                         audioOptions={audioOptions}
                         selectedAudio={selectedAudio}
@@ -56,13 +56,13 @@ export function RemoteScreen() {
                     />
                 </View>
 
-                <View style={styles.progressControl}>
-                    <View style={styles.timeContainer}>
-                        <Text style={styles.timeText}>{currentTime}</Text>
-                        <Text style={[styles.timeText, styles.timeRight]}>{maxTime}</Text>
+                <View style={style.progressControl}>
+                    <View style={style.timeContainer}>
+                        <Text style={style.timeText}>{currentTime}</Text>
+                        <Text style={[style.timeText, style.timeRight]}>{maxTime}</Text>
                     </View>
                     <Slider
-                        style={styles.slider}
+                        style={style.slider}
                         minimumValue={0}
                         maximumValue={status.maxPosition}
                         value={status.streamPosition}

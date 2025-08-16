@@ -7,7 +7,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
 const subtitleOptions: SelectorOption[] = [
-    { label: 'None', value: 'none' },
+    { label: 'None', value: null },
     { label: 'English', value: 'en' },
     { label: 'Spanish', value: 'es' },
     { label: 'French', value: 'fr' },
@@ -36,12 +36,11 @@ export function useRemoteScreen() {
         [dragPosition, setDragPosition] = useState<number>(0),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
-        [selectedSubtitle, setSelectedSubtitle] = useState<string>('none'),
-        [selectedAudio, setSelectedAudio] = useState<string>('en'),
+        [selectedSubtitle, setSelectedSubtitle] = useState<string | null>(null),
+        [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         playback = useCast(),
-        navigation = useNavigation(),
-        [currentTime, setCurrentTime] = useState<string>('00:00');
+        navigation = useNavigation();
 
     useAsyncEffect(async () => {
         try {
@@ -88,7 +87,7 @@ export function useRemoteScreen() {
      * - Updates the selected subtitle state when successful.
      * - Any errors encountered during the operation are logged to the console.
      */
-    const changeSubtitle = useCallback(async (subtitleValue: string) => {
+    const changeSubtitle = useCallback(async (subtitleValue: string | null) => {
         try {
             // TODO: Implement actual subtitle switching logic with Google Cast
             // await client.setActiveTrackIds([subtitleTrackId]);
@@ -107,7 +106,7 @@ export function useRemoteScreen() {
      * - Updates the selected audio state when successful.
      * - Any errors encountered during the operation are logged to the console.
      */
-    const changeAudio = useCallback(async (audioValue: string) => {
+    const changeAudio = useCallback(async (audioValue: string | null) => {
         try {
             // TODO: Implement actual audio track switching logic with Google Cast
             // await client.setActiveTrackIds([audioTrackId]);

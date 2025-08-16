@@ -15,8 +15,6 @@ export function InfoTable({ item }: InfoTableProps) {
             <InfoEntry label='🎭  Genres' value={genres} />
             <InfoEntry label='🎬  Director' value={director} />
             <InfoEntry label='✍️  Writers' value={writers} />
-            <InfoEntry label='📹  Video' value={video} />
-            <InfoEntry label='🔊  Audio' value={audio} />
         </View>
     );
 }

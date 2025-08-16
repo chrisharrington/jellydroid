@@ -1,10 +1,11 @@
 import { SelectorButton } from '@/components/selectorButton';
+import { LabelValue } from '@/models';
 
-interface SubtitleSelectorProps {
-    subtitleOptions: Array<{ label: string; value: string }>;
-    selectedSubtitle: string;
-    onSelectSubtitle: (value: string) => void;
-}
+type SubtitleSelectorProps = {
+    subtitleOptions: Array<LabelValue>;
+    selectedSubtitle: string | null;
+    onSelectSubtitle: (value: string | null) => void;
+};
 
 export function SubtitleSelector({ subtitleOptions, selectedSubtitle, onSelectSubtitle }: SubtitleSelectorProps) {
     return (
@@ -13,7 +14,6 @@ export function SubtitleSelector({ subtitleOptions, selectedSubtitle, onSelectSu
             selectedValue={selectedSubtitle}
             onSelectValue={onSelectSubtitle}
             title='Subtitles'
-            iconName='subtitles'
             defaultLabel='None'
             testIdPrefix='subtitle-selector'
         />

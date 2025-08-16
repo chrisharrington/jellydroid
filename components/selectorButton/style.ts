@@ -14,6 +14,7 @@ export default StyleSheet.create({
         elevation: 3,
         overflow: 'visible',
     },
+
     selectorButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -24,9 +25,11 @@ export default StyleSheet.create({
         paddingVertical: 14,
         minHeight: 48,
     },
+
     selectorIcon: {
         marginRight: 12,
     },
+
     selectorText: {
         color: Colours.text,
         fontSize: 16,

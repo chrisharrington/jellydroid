@@ -4,8 +4,7 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
     container: {
         width: '100%',
-        gap: 4,
-        borderRadius: 4,
+        gap: 12,
         overflow: 'hidden',
     },
 
@@ -13,8 +12,6 @@ export default StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         gap: 24,
-        backgroundColor: Colours.background2,
-        padding: 8,
     },
 
     entryLabel: {

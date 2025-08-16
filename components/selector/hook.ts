@@ -3,7 +3,7 @@ import { Animated, Dimensions } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
 
-export function useSelector(visible: boolean, onSelectValue?: (value: string) => void, onClose?: () => void) {
+export function useSelector(visible: boolean, onSelectValue?: (value: string | null) => void, onClose?: () => void) {
     const slideAnim = useRef(new Animated.Value(screenHeight)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isVisible, setIsVisible] = useState(false);
@@ -42,7 +42,7 @@ export function useSelector(visible: boolean, onSelectValue?: (value: string) =>
     }, [visible, slideAnim, fadeAnim, isVisible]);
 
     const handleSelectValue = useCallback(
-        (value: string) => {
+        (value: string | null) => {
             if (onSelectValue) {
                 onSelectValue(value);
             }

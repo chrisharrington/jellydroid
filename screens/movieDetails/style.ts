@@ -50,6 +50,13 @@ export default StyleSheet.create({
         color: Colours.subtext,
     },
 
+    selectorsContainer: {
+        gap: 16,
+        paddingVertical: 8,
+        marginBottom: 12,
+        overflow: 'visible',
+    },
+
     buttonContainer: {
         marginTop: 16,
         gap: 16,
@@ -60,7 +67,7 @@ export default StyleSheet.create({
         flex: 1,
     },
 
-    watchedButton: {
+    additionalButton: {
         width: 60,
     },
 
@@ -68,5 +75,11 @@ export default StyleSheet.create({
         fontSize: 17,
         color: Colours.subtext,
         marginTop: 16,
+    },
+
+    selectorLabel: {
+        color: Colours.subtext,
+        fontSize: 14,
+        marginBottom: 4,
     },
 });

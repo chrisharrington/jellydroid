@@ -13,7 +13,6 @@ export function CastList(props: CastListProps) {
     return (
         <PosterList<BaseItemPerson>
             items={actors}
-            title='Cast'
             itemSubtext={actor => actor.Name!}
             itemPosterUrl={actor => actor.Id!}
             keyExtractor={actor => actor.Id!}

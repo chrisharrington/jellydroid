@@ -9,7 +9,7 @@ import styles from './style';
 interface SelectorButtonProps {
     options: Array<{ label: string; value: string }>;
     selectedValue: string;
-    onSelectValue: (value: string) => void;
+    onSelectValue: (value: string | null) => void;
     title: string;
     iconName: keyof typeof MaterialIcons.glyphMap;
     defaultLabel: string;
@@ -36,7 +36,9 @@ export function SelectorButton({
                     testID={`${testIdPrefix}-button`}
                 >
                     <View style={styles.selectorButton}>
-                        <MaterialIcons name={iconName} size={20} color={Colours.text} style={styles.selectorIcon} />
+                        {iconName && (
+                            <MaterialIcons name={iconName} size={20} color={Colours.text} style={styles.selectorIcon} />
+                        )}
                         <Text style={styles.selectorText}>
                             {getSelectedLabel(options, selectedValue, defaultLabel)}
                         </Text>
@@ -45,7 +47,7 @@ export function SelectorButton({
                 </TouchableOpacity>
             </View>
 
-            {/* Render the Selector at the root level to avoid positioning issues */}
+            {/* Render the Selector at the root level to avoid positioning issues. */}
             <Portal>
                 <Selector
                     visible={showModal}

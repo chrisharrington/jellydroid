@@ -2,40 +2,53 @@ import { Colours } from '@/constants/colours';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Animated, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSelector } from './hook';
-import { styles } from './style';
+import { styles as style } from './style';
 
 export type SelectorOption = {
     label: string;
-    value: string;
+    value: string | null;
 };
 
 type SelectorProps = {
+    /** Required. Controls the visibility of the selector modal. */
     visible: boolean;
+
+    /** Required. Callback function invoked when the selector should be closed. */
     onClose: () => void;
+
+    /** Required. The title text displayed in the selector header. */
     title: string;
-    icon: keyof typeof MaterialIcons.glyphMap;
+
+    /** Optional. The Material Icons icon name to display in the header. */
+    icon?: keyof typeof MaterialIcons.glyphMap;
+
+    /** Required. Array of selectable options to display in the selector. */
     options: SelectorOption[];
-    selectedValue: string;
-    onSelectValue: (value: string) => void;
+
+    /** Required. The currently selected value, or null if no selection. */
+    selectedValue: string | null;
+
+    /** Required. Callback function invoked when a new value is selected. */
+    onSelectValue: (value: string | null) => void;
 };
 
 export function Selector({ visible, onClose, title, icon, options, selectedValue, onSelectValue }: SelectorProps) {
     const { slideAnim, fadeAnim, isVisible, handleSelectValue } = useSelector(visible, onSelectValue, onClose);
 
     return !isVisible ? null : (
-        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-            <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        <Animated.View style={[style.overlay, { opacity: fadeAnim }]}>
+            <TouchableOpacity style={style.backdrop} activeOpacity={1} onPress={onClose} />
             <Animated.View
                 style={[
-                    styles.slideUpContainer,
+                    style.slideUpContainer,
                     {
                         transform: [{ translateY: slideAnim }],
                     },
                 ]}
             >
-                <View style={styles.header}>
-                    <MaterialIcons name={icon} size={24} color={Colours.text} />
-                    <Text style={styles.title}>{title}</Text>
+                <View style={style.header}>
+                    {icon && <MaterialIcons style={style.icon} name={icon} size={24} color={Colours.text} />}
+                    <Text style={style.title}>{title}</Text>
                     <TouchableOpacity
                         onPress={onClose}
                         style={{
@@ -47,16 +60,16 @@ export function Selector({ visible, onClose, title, icon, options, selectedValue
                         <MaterialIcons name='close' size={24} color={Colours.text} />
                     </TouchableOpacity>
                 </View>
-                <ScrollView style={styles.content}>
+                <ScrollView style={style.content}>
                     {options.map(option => (
                         <TouchableOpacity
                             key={option.value}
-                            style={[styles.option, selectedValue === option.value && styles.selectedOption]}
+                            style={[style.option, selectedValue === option.value && style.selectedOption]}
                             activeOpacity={0.7}
                             onPress={() => handleSelectValue(option.value)}
                         >
                             <Text
-                                style={[styles.optionText, selectedValue === option.value && styles.selectedOptionText]}
+                                style={[style.optionText, selectedValue === option.value && style.selectedOptionText]}
                             >
                                 {option.label}
                             </Text>

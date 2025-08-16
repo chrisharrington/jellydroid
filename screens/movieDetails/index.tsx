@@ -1,16 +1,30 @@
+import { AudioSelector } from '@/components/audio';
 import { SecondaryButton } from '@/components/button';
 import { CastList } from '@/components/castList';
 import { InfoTable } from '@/components/infoTable';
 import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
+import { SubtitleSelector } from '@/components/subtitles';
 import { Colours } from '@/constants/colours';
-import { AntDesign, FontAwesome } from '@expo/vector-icons';
+import { AntDesign, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Image, ScrollView, Text, View } from 'react-native';
 import { useMovieDetails } from './hook';
 import style from './style';
 
 export function MovieDetailsScreen() {
-    const { isBusy, movie, backdrop, duration, onMovieWatchedPress } = useMovieDetails();
+    const {
+        isBusy,
+        movie,
+        subtitleOptions,
+        audioOptions,
+        selectedSubtitle,
+        selectedAudio,
+        backdrop,
+        duration,
+        onMovieWatchedPress,
+        onSubtitleSelected,
+        onAudioSelected,
+    } = useMovieDetails();
 
     return (
         <View style={{ flex: 1, backgroundColor: Colours.background }}>
@@ -22,7 +36,7 @@ export function MovieDetailsScreen() {
                 movie && (
                     <ScrollView>
                         <Image source={{ uri: backdrop }} style={style.backdrop} resizeMode='cover' />
-                        <View style={{ padding: 16, gap: 24 }}>
+                        <View style={{ padding: 16, gap: 8, paddingBottom: 32 }}>
                             <View>
                                 <View style={style.subHeader}>
                                     <View style={style.subHeaderEntries}>
@@ -56,6 +70,7 @@ export function MovieDetailsScreen() {
                                 </View>
 
                                 <Text style={style.title}>{movie.Name}</Text>
+
                                 {movie.Taglines?.length && <Text style={style.tagline}>{movie.Taglines[0]}</Text>}
 
                                 <View style={style.buttonContainer}>
@@ -65,9 +80,21 @@ export function MovieDetailsScreen() {
                                         </PlayButton>
                                     </View>
 
-                                    <View style={style.watchedButton}>
+                                    <View style={style.additionalButton}>
                                         <SecondaryButton onPress={onMovieWatchedPress}>
                                             <AntDesign name='checkcircle' size={18} color='white' />
+                                        </SecondaryButton>
+                                    </View>
+
+                                    <View style={style.additionalButton}>
+                                        <SecondaryButton>
+                                            <MaterialIcons name='subtitles' size={18} color='white' />
+                                        </SecondaryButton>
+                                    </View>
+
+                                    <View style={style.additionalButton}>
+                                        <SecondaryButton>
+                                            <AntDesign name='sound' size={18} color='white' />
                                         </SecondaryButton>
                                     </View>
                                 </View>
@@ -75,9 +102,31 @@ export function MovieDetailsScreen() {
                                 <Text style={style.overview}>{movie.Overview}</Text>
                             </View>
 
-                            <InfoTable item={movie} />
+                            <View style={style.selectorsContainer}>
+                                <View>
+                                    <Text style={style.selectorLabel}>Audio</Text>
+                                    <AudioSelector
+                                        audioOptions={audioOptions}
+                                        selectedAudio={selectedAudio}
+                                        onSelectAudio={onAudioSelected}
+                                    />
+                                </View>
 
-                            <CastList item={movie} />
+                                <View>
+                                    <Text style={style.selectorLabel}>Subtitles</Text>
+                                    <SubtitleSelector
+                                        subtitleOptions={subtitleOptions}
+                                        selectedSubtitle={selectedSubtitle}
+                                        onSelectSubtitle={onSubtitleSelected}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={{ marginTop: 0 }}>
+                                <CastList item={movie} />
+                            </View>
+
+                            <InfoTable item={movie} />
                         </View>
                     </ScrollView>
                 )

@@ -38,12 +38,15 @@ export const styles = StyleSheet.create({
         borderBottomColor: 'rgba(255,255,255,0.1)',
     },
 
+    icon: {
+        marginRight: 12,
+    },
+
     title: {
         color: Colours.text,
         fontSize: 18,
         fontFamily: 'Lato-Bold',
         flex: 1,
-        marginLeft: 12,
     },
 
     content: {
