@@ -8,7 +8,7 @@ export default function HomeScreen() {
 
     return (
         <ScrollView style={{ flex: 1, backgroundColor: Colours.background }}>
-            <MovieSection label='Continue Watching' movies={continueWatchingItems} />
+            <MovieSection label='Continue Watching' movies={continueWatchingItems} withProgressIndicator />
             <MovieSection label='Recently Added' movies={recentlyAddedMovies} />
         </ScrollView>
     );
