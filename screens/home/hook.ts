@@ -4,12 +4,15 @@ import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useState } from 'react';
 
 export function useHome() {
-    const { getRecentlyAddedMovies } = useJellyfin(),
-        [recentlyAddedMovies, setRecentlyAddedMovies] = useState<BaseItemDto[]>([]);
+    const { getRecentlyAddedMovies, getContinueWatchingItems } = useJellyfin(),
+        [recentlyAddedMovies, setRecentlyAddedMovies] = useState<BaseItemDto[]>([]),
+        [continueWatchingItems, setContinueWatchingItems] = useState<BaseItemDto[]>([]);
 
     useAsyncEffect(async () => {
-        setRecentlyAddedMovies(await getRecentlyAddedMovies());
+        const result = await Promise.all([getRecentlyAddedMovies(), getContinueWatchingItems()]);
+        setRecentlyAddedMovies(result[0]);
+        setContinueWatchingItems(result[1]);
     }, []);
 
-    return { recentlyAddedMovies };
+    return { recentlyAddedMovies, continueWatchingItems };
 }

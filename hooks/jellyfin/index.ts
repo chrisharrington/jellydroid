@@ -1,5 +1,5 @@
 import { Jellyfin } from '@jellyfin/sdk';
-import { BaseItemDto, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
+import { BaseItemDto, BaseItemKind, ItemSortBy, SortOrder, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
 import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
@@ -79,15 +79,41 @@ export function useJellyfin() {
     const getRecentlyAddedMovies = useCallback(async () => {
         const itemsApi = getItemsApi(api);
         const response = await itemsApi.getItems({
-            sortBy: ['DateCreated'],
-            sortOrder: ['Descending'],
-            includeItemTypes: ['Movie'],
+            sortBy: [ItemSortBy.DateCreated],
+            sortOrder: [SortOrder.Descending],
+            includeItemTypes: [BaseItemKind.Movie],
             recursive: true,
             limit: 30,
         });
 
         if (!response.data.Items) throw new Error('No items found in response.');
 
+        return response.data.Items;
+    }, [api]);
+
+    /**
+     * Retrieves a list of movies that can be resumed/continued watching.
+     *
+     * @returns A promise that resolves to an array of resumable movie items, sorted by date played in descending order
+     * @throws {Error} When no items are found in the API response
+     *
+     * @remarks
+     * - Fetches up to 30 resumable movies
+     * - Results are sorted by most recently played first
+     * - Only includes items of type 'Movie'
+     * - Searches recursively through all libraries
+     */
+    const getContinueWatchingItems = useCallback(async () => {
+        if (!user.current) await login();
+
+        const itemsApi = getItemsApi(api);
+        const response = await itemsApi.getResumeItems({
+            userId: user.current!.Id,
+            includeItemTypes: [BaseItemKind.Movie],
+            mediaTypes: ['Video'],
+            limit: 30,
+        });
+        if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
     }, [api]);
 
@@ -210,6 +236,7 @@ export function useJellyfin() {
         findMovieByName,
         getMediaInfo,
         getRecentlyAddedMovies,
+        getContinueWatchingItems,
         getItemDetails,
         getImageForId,
         updatePlaybackProgress,

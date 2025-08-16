@@ -12,17 +12,15 @@ export default StyleSheet.create({
     },
 
     label: {
-        color: Colours.text,
-        letterSpacing: 0.5,
-        fontSize: 17,
+        color: Colours.subtext,
+        letterSpacing: 0.7,
+        fontSize: 14,
+        textTransform: 'uppercase',
         fontFamily: 'Lato',
-        paddingBottom: 4,
-        borderBottomWidth: 2,
-        borderBottomColor: Colours.primary,
     },
 
     childrenContainer: {
         flex: 1,
-        marginTop: 12,
+        marginTop: 4,
     },
 });

@@ -6,7 +6,7 @@ import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
 import { SubtitleSelector } from '@/components/subtitles';
 import { Colours } from '@/constants/colours';
-import { AntDesign, FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, FontAwesome } from '@expo/vector-icons';
 import { Image, ScrollView, Text, View } from 'react-native';
 import { useMovieDetails } from './hook';
 import style from './style';
@@ -36,7 +36,7 @@ export function MovieDetailsScreen() {
                 movie && (
                     <ScrollView>
                         <Image source={{ uri: backdrop }} style={style.backdrop} resizeMode='cover' />
-                        <View style={{ padding: 16, gap: 8, paddingBottom: 32 }}>
+                        <View style={{ padding: 16, gap: 24, paddingBottom: 48 }}>
                             <View>
                                 <View style={style.subHeader}>
                                     <View style={style.subHeaderEntries}>
@@ -83,18 +83,6 @@ export function MovieDetailsScreen() {
                                     <View style={style.additionalButton}>
                                         <SecondaryButton onPress={onMovieWatchedPress}>
                                             <AntDesign name='checkcircle' size={18} color='white' />
-                                        </SecondaryButton>
-                                    </View>
-
-                                    <View style={style.additionalButton}>
-                                        <SecondaryButton>
-                                            <MaterialIcons name='subtitles' size={18} color='white' />
-                                        </SecondaryButton>
-                                    </View>
-
-                                    <View style={style.additionalButton}>
-                                        <SecondaryButton>
-                                            <AntDesign name='sound' size={18} color='white' />
                                         </SecondaryButton>
                                     </View>
                                 </View>

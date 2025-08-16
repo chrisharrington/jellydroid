@@ -9,7 +9,7 @@ type MovieSectionProps = Omit<SectionProps, 'children'> & {
     movies: BaseItemDto[];
 };
 
-export function MovieSection(props: MovieSectionProps) {
+export function ItemSection(props: MovieSectionProps) {
     const { navigateToMovieDetails } = useMovieSection();
 
     return (
