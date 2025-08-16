@@ -3,8 +3,8 @@ import { Text, View } from 'react-native';
 import style from './style';
 
 export type SectionProps = PropsWithChildren & {
+    /** Required. The top label for the section. */
     label: string;
-    path?: string;
 };
 
 export function Section({ label, children }: SectionProps) {
