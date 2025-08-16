@@ -11,8 +11,14 @@ type ToastMessage = {
 };
 
 type ToastContextType = {
+    /** Required. Function to display a success toast with the specified message. */
     success: (message: string) => void;
+
+    /** Required. Function to display an error toast with the specified message. */
     error: (message: string) => void;
+
+    /** Required. Function to immediately hide any currently visible toast. */
+    hide: () => void;
 };
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -203,9 +209,46 @@ export function ToastProvider({ children }: ToastProviderProps) {
         [showToast]
     );
 
+    /**
+     * Immediately hides the currently visible toast notification.
+     *
+     * This method clears any pending dismiss timers and animates the toast out of view
+     * with a fade and slide animation. After the animation completes, it cleans up
+     * the toast state.
+     *
+     * @example
+     * ```tsx
+     * const { hide } = useToast();
+     * hide(); // Immediately dismiss current toast
+     * ```
+     */
+    const hide = useCallback(() => {
+        if (dismissTimeoutRef.current) {
+            clearTimeout(dismissTimeoutRef.current);
+            dismissTimeoutRef.current = null;
+        }
+
+        Animated.parallel([
+            Animated.timing(opacity, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(translateY, {
+                toValue: 50,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            setCurrentToast(null);
+            isToastVisibleRef.current = false;
+        });
+    }, [translateY, opacity]);
+
     const contextValue: ToastContextType = {
         success,
         error,
+        hide,
     };
 
     return (

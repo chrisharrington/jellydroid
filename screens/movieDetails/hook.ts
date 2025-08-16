@@ -23,6 +23,10 @@ export function useMovieDetails() {
             if (!localMovie) throw new Error('Movie not found.');
 
             setMovie(localMovie);
+            setSelectedAudio(
+                localMovie?.MediaStreams?.find(stream => stream.Type === MediaStreamType.Audio)?.Index?.toString() ||
+                    null
+            );
         } catch (error) {
             toast.error('Failed to fetch movie details. Try again later.');
             console.error('Failed to fetch movie details:', error);

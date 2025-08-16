@@ -20,17 +20,19 @@ export default function RootLayout() {
         'Lato-ThinItalic': require('../fonts/Lato-ThinItalic.ttf'),
     });
 
-    return fontsLoaded ? (
-        <CastProvider>
-            <Host>
-                <ToastProvider>
-                    <BaseLayout />
-                </ToastProvider>
-            </Host>
-        </CastProvider>
-    ) : (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Spinner size='md' />
-        </View>
+    return (
+        <Host>
+            <ToastProvider>
+                <CastProvider>
+                    {fontsLoaded ? (
+                        <BaseLayout />
+                    ) : (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <Spinner size='md' />
+                        </View>
+                    )}
+                </CastProvider>
+            </ToastProvider>
+        </Host>
     );
 }

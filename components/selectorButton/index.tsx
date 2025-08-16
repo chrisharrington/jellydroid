@@ -3,7 +3,6 @@ import { Colours } from '@/constants/colours';
 import { LabelValue } from '@/models';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { Portal } from 'react-native-portalize';
 import { useSelectorButton } from './hook';
 import styles from './style';
 
@@ -62,17 +61,15 @@ export function SelectorButton({
             </View>
 
             {/* Render the Selector at the root level to avoid positioning issues. */}
-            <Portal>
-                <Selector
-                    visible={showModal}
-                    onClose={() => setShowModal(false)}
-                    title={title}
-                    icon={iconName}
-                    options={options}
-                    selectedValue={selectedValue}
-                    onSelectValue={onSelectValue}
-                />
-            </Portal>
+            <Selector
+                visible={showModal}
+                onClose={() => setShowModal(false)}
+                title={title}
+                icon={iconName}
+                options={options}
+                selectedValue={selectedValue}
+                onSelectValue={onSelectValue}
+            />
         </>
     );
 }
