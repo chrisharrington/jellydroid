@@ -9,13 +9,9 @@ import style from './style';
 export function VideoScreen() {
     const { isBusy, player } = useVideoScreen();
 
-    // Hide status bar for fullscreen experience
     useEffect(() => {
         StatusBar.setHidden(true);
-
-        return () => {
-            StatusBar.setHidden(false);
-        };
+        return () => StatusBar.setHidden(false);
     }, []);
 
     return isBusy ? (

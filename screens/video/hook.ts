@@ -9,9 +9,29 @@ import { useEffect, useState } from 'react';
 export function useVideoScreen() {
     const params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails, getStreamUrl } = useJellyfin(),
+        { getItemDetails, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
-        player = useVideoPlayer(item ? getStreamUrl(item) : null, player => player.play());
+        player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
+            player.play();
+        });
+
+    // Handle resume position when video is ready
+    useEffect(() => {
+        if (!player || !item) return;
+
+        const resumeSeconds = getResumePositionSeconds(item);
+        if (resumeSeconds <= 0) return;
+
+        // Add a status listener that seeks to the resume position when the video is ready to play.
+        const statusListener = player.addListener('statusChange', event => {
+            if (event.status !== 'readyToPlay') return;
+
+            player.currentTime = resumeSeconds;
+            statusListener.remove();
+        });
+
+        return () => statusListener?.remove();
+    }, [player, item, getResumePositionSeconds]);
 
     useEffect(() => {
         // Lock screen to landscape orientation when component mounts.

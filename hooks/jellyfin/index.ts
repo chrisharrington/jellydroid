@@ -156,10 +156,23 @@ export function useJellyfin() {
      */
     const getStreamUrl = useCallback(
         (item: BaseItemDto) => {
-            return `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/master.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`;
+            const url = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/main.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`;
+            console.log(url);
+            return url;
         },
         [api]
     );
+
+    /**
+     * Gets the resume position for a media item in seconds.
+     * @param item - The Jellyfin BaseItemDto object containing user data
+     * @returns The resume position in seconds, or 0 if no resume position is available
+     */
+    const getResumePositionSeconds = useCallback((item: BaseItemDto) => {
+        if (!item.UserData?.PlaybackPositionTicks) return 0;
+        // Convert ticks to seconds (1 tick = 100 nanoseconds)
+        return item.UserData.PlaybackPositionTicks / 10000000;
+    }, []);
 
     /**
      * Updates the playback progress for a media item, allowing Jellyfin to track viewing position.
@@ -253,6 +266,7 @@ export function useJellyfin() {
         getItemDetails,
         getImageForId,
         getStreamUrl,
+        getResumePositionSeconds,
         updatePlaybackProgress,
         startPlaybackSession,
         stopPlaybackSession,
