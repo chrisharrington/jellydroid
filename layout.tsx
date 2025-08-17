@@ -22,6 +22,7 @@ export function BaseLayout() {
                 <Stack.Screen name='index' />
                 <Stack.Screen name='movie/[name]/[id]' />
                 <Stack.Screen name='remote/[itemId]/[mediaSourceId]' options={{ headerRight: () => null }} />
+                <Stack.Screen name='video/[itemId]/[mediaSourceId]' options={{ headerShown: false }} />
             </Stack>
 
             <DeviceSelector

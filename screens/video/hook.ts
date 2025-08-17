@@ -15,7 +15,7 @@ export function useVideoScreen() {
 
     useEffect(() => {
         // Lock screen to landscape orientation when component mounts.
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT);
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
 
         // Cleanup: restore to default orientation when component unmounts.
         return () => {

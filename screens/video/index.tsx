@@ -2,6 +2,7 @@ import Spinner from '@/components/spinner';
 import { VideoView } from 'expo-video';
 import React, { useEffect } from 'react';
 import { StatusBar, View } from 'react-native';
+import { VideoControls } from './controls';
 import { useVideoScreen } from './hook';
 import style from './style';
 
@@ -26,11 +27,13 @@ export function VideoScreen() {
             <VideoView
                 style={style.video}
                 player={player}
-                allowsFullscreen
+                allowsFullscreen={false}
                 requiresLinearPlayback
-                showsTimecodes
+                showsTimecodes={false}
                 allowsPictureInPicture={false}
+                nativeControls={false}
             />
+            <VideoControls player={player} />
         </View>
     );
 }
