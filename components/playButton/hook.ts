@@ -21,11 +21,11 @@ export function usePlayButton(props: PlayButtonProps) {
                 push(`/remote/${props.item.Id}/${props.item.MediaSources?.[0].Id}`);
 
                 // Cast the item to the remote media client.
-                cast(props.item);
+                cast(props.item, true);
 
                 return;
             } else {
-                // TODO: Play locally.
+                push(`/video/${props.item.Id}/${props.item.MediaSources?.[0].Id}`);
             }
         } catch (e) {
             toast.error('Unable to play media. Please try again later.');

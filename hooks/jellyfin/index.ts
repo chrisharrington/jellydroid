@@ -149,6 +149,19 @@ export function useJellyfin() {
     );
 
     /**
+     * Retrieves the streaming URL for a given Jellyfin media item.
+     * @param item - The Jellyfin BaseItemDto object containing media information
+     * @returns The transcoding URL for streaming the media
+     * @throws {Error} When the streaming URL cannot be retrieved
+     */
+    const getStreamUrl = useCallback(
+        (item: BaseItemDto) => {
+            return `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/master.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`;
+        },
+        [api]
+    );
+
+    /**
      * Updates the playback progress for a media item, allowing Jellyfin to track viewing position.
      * This should be called periodically during playback to sync the current position.
      *
@@ -239,6 +252,7 @@ export function useJellyfin() {
         getContinueWatchingItems,
         getItemDetails,
         getImageForId,
+        getStreamUrl,
         updatePlaybackProgress,
         startPlaybackSession,
         stopPlaybackSession,

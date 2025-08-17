@@ -1,5 +1,4 @@
 import { useToast } from '@/components/toast';
-import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -85,7 +84,6 @@ export function CastProvider({ children }: CastProviderProps) {
     const playbackSessionId = useRef<string | null>(null),
         client = useRemoteMediaClient(),
         session = useCastSession(),
-        [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
         [selectedDeviceId, setSelectedDeviceId] = useState<string | null>('local'),
         devices = useDevices(),
         statusCallback = useRef<((status: PlayStatus) => void) | null>(null),
@@ -97,33 +95,6 @@ export function CastProvider({ children }: CastProviderProps) {
             maxPosition: 0,
         }),
         toast = useToast();
-
-    useAsyncEffect(async () => {
-        if (!session || !selectedItem || !client) return;
-
-        try {
-            // Generate stream and poster URLs.
-            const itemId = selectedItem.Id,
-                streamUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${itemId}/master.m3u8?MediaSourceId=${selectedItem.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
-                posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
-
-            // Cast media to the connected device.
-            await client.loadMedia({
-                autoplay: true,
-                mediaInfo: {
-                    contentUrl: streamUrl,
-                    contentType: 'application/x-mpegURL',
-                    metadata: {
-                        type: 'movie',
-                        title: selectedItem.Name || 'Unknown Movie',
-                        images: [{ url: posterUrl }],
-                    },
-                },
-            });
-        } catch (e) {
-            toast.error('Failed to cast media. Please try again later.', e);
-        }
-    }, [session, selectedItem, client]);
 
     // Set up event listeners for media status updates.
     useEffect(() => {
@@ -166,9 +137,39 @@ export function CastProvider({ children }: CastProviderProps) {
      * @param item - The Jellyfin media item to be cast to the device.
      * @param resumePlayback - Whether to resume playback if the item is already playing.
      */
-    const cast = useCallback((item: BaseItemDto, resumePlayback?: boolean) => {
-        setSelectedItem(item);
-    }, []);
+    const cast = useCallback(
+        async (item: BaseItemDto, resumePlayback?: boolean) => {
+            try {
+                if (!client) throw new Error('Cannot cast; no client available.');
+
+                // Generate stream and poster URLs.
+                let itemId = item.Id,
+                    streamUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${itemId}/master.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
+                    posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
+
+                if (resumePlayback) streamUrl += `&StartTimeTicks=${item.UserData?.PlaybackPositionTicks || 0}`;
+
+                console.log('Stream URL:', streamUrl);
+
+                // Cast media to the connected device.
+                await client.loadMedia({
+                    autoplay: true,
+                    mediaInfo: {
+                        contentUrl: streamUrl,
+                        contentType: 'application/x-mpegURL',
+                        metadata: {
+                            type: 'movie',
+                            title: item.Name || 'Unknown Movie',
+                            images: [{ url: posterUrl }],
+                        },
+                    },
+                });
+            } catch (e) {
+                toast.error('Failed to cast media. Please try again later.', e);
+            }
+        },
+        [client]
+    );
 
     /**
      * Pauses the current media playback on the connected Google Cast device.
@@ -185,7 +186,7 @@ export function CastProvider({ children }: CastProviderProps) {
             await availableClient.pause();
             setStatus(prev => ({ ...prev, isBusy: false }));
         } catch (error) {
-            console.error('Failed to pause:', error);
+            toast.error('Failed to pause:', error);
             setStatus(prev => ({ ...prev, isPlaying: true, isBusy: false }));
         }
     }, [client]);
@@ -205,7 +206,7 @@ export function CastProvider({ children }: CastProviderProps) {
             await availableClient.play();
             setStatus(prev => ({ ...prev, isBusy: false }));
         } catch (error) {
-            console.error('Failed to resume:', error);
+            toast.error('Failed to resume:', error);
             setStatus(prev => ({ ...prev, isPlaying: false, isBusy: false }));
         }
     }, [client]);
@@ -230,7 +231,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 await availableClient.seek({ position: newPosition });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                console.error('Failed to seek forward:', error);
+                toast.error('Failed to seek forward:', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
@@ -258,7 +259,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 await availableClient.seek({ position: newPosition });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                console.error('Failed to seek backward:', error);
+                toast.error('Failed to seek backward:', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
@@ -283,7 +284,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 await availableClient.seek({ position });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                console.error('Failed to seek to position:', error);
+                toast.error('Failed to seek to position:', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
@@ -297,11 +298,9 @@ export function CastProvider({ children }: CastProviderProps) {
      */
     const stop = useCallback(async () => {
         try {
-            const availableClient = getCastClient();
-            await availableClient.stop();
-            setSelectedItem(null);
+            await getCastClient().stop();
         } catch (error) {
-            console.error('Failed to stop:', error);
+            toast.error('Failed to stop the casting session:', error);
         }
     }, [client]);
 
@@ -342,7 +341,6 @@ export function CastProvider({ children }: CastProviderProps) {
                 } else {
                     const device = devices.find(d => d.deviceId === deviceId);
                     if (!device) {
-                        console.error('Device not found:', deviceId);
                         setStatus(prev => ({ ...prev, isBusy: false }));
                         return;
                     }
@@ -354,7 +352,7 @@ export function CastProvider({ children }: CastProviderProps) {
 
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                console.error('Failed to handle device selection:', error);
+                toast.error('Failed to handle device selection:', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },

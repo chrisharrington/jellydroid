@@ -29,6 +29,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     plugins: [
         'expo-font',
         'expo-router',
+        'expo-video',
+        'expo-screen-orientation',
         [
             'expo-splash-screen',
             {
