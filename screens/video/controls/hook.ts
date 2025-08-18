@@ -9,6 +9,8 @@ export function useVideoControls({ player }: VideoControlsProps) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isSliding, setIsSliding] = useState(false);
+    const [sliderValue, setSliderValue] = useState(0);
+    const [thumbPosition, setThumbPosition] = useState(0);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isAnimatingRef = useRef(false);
@@ -266,12 +268,15 @@ export function useVideoControls({ player }: VideoControlsProps) {
 
     const handleSliderStart = useCallback(() => {
         setIsSliding(true);
+        // Initialize thumb position to current progress when starting to drag
+        const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
+        setThumbPosition(currentProgress);
         // Clear auto-hide timer while sliding
         if (hideTimeoutRef.current) {
             clearTimeout(hideTimeoutRef.current);
             hideTimeoutRef.current = null;
         }
-    }, []);
+    }, [currentTime, duration]);
 
     const handleSliderChange = useCallback(
         (value: number) => {
@@ -279,6 +284,8 @@ export function useVideoControls({ player }: VideoControlsProps) {
 
             const newTime = (value / 100) * duration;
             setCurrentTime(newTime);
+            setSliderValue(value);
+            setThumbPosition(value);
         },
         [player, duration, isSliding]
     );
@@ -291,6 +298,8 @@ export function useVideoControls({ player }: VideoControlsProps) {
             player.currentTime = newTime;
             setCurrentTime(newTime);
             setIsSliding(false);
+            setSliderValue(value);
+            setThumbPosition(0); // Reset thumb position when not sliding
 
             // Reset auto-hide timer
             showControls();
@@ -310,6 +319,8 @@ export function useVideoControls({ player }: VideoControlsProps) {
         currentTime,
         duration,
         isSliding,
+        sliderValue,
+        thumbPosition,
         fadeAnim,
         handleVideoPress,
         handlePlayPause,

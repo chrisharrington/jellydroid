@@ -19,6 +19,9 @@ export function VideoControls({ player }: VideoControlsProps) {
         isBusy,
         currentTime,
         duration,
+        isSliding,
+        sliderValue,
+        thumbPosition,
         fadeAnim,
         handleVideoPress,
         handlePlayPause,
@@ -68,6 +71,26 @@ export function VideoControls({ player }: VideoControlsProps) {
                         </View>
 
                         <View style={style.bottomContainer}>
+                            {/* Thumb panel that follows the slider thumb when dragging */}
+                            {isSliding && (
+                                <View
+                                    style={[
+                                        style.thumbPanel,
+                                        {
+                                            left: `${thumbPosition}%`,
+                                            transform: [{ translateX: -40 }], // Center the panel on the thumb
+                                        },
+                                    ]}
+                                >
+                                    <View style={style.thumbPanelImage}>
+                                        <MaterialIcons name='image' size={24} style={style.placeholderIcon} />
+                                    </View>
+                                    <Text style={style.thumbPanelText}>
+                                        {formatTime((thumbPosition / 100) * duration)}
+                                    </Text>
+                                </View>
+                            )}
+
                             <View style={style.timeContainer}>
                                 <Text style={[style.timeText, { marginLeft: 15 }]}>{formatTime(currentTime)}</Text>
                                 <Text style={[style.timeText, { marginRight: 15 }]}>{formatTime(duration)}</Text>

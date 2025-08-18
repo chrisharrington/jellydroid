@@ -1,3 +1,4 @@
+import { useToast } from '@/components/toast';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
@@ -14,7 +15,8 @@ export function useVideoScreen() {
         [item, setItem] = useState<BaseItemDto | null>(null),
         player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
             player.play();
-        });
+        }),
+        toast = useToast();
 
     // Handle resume position when video is ready.
     useEffect(() => {
@@ -57,7 +59,7 @@ export function useVideoScreen() {
             // Set the item for the current playback.
             setItem(item);
         } catch (e) {
-            console.error('Error retrieving item details:', e);
+            toast.error('Error retrieving item details.', e);
         } finally {
             setBusy(false);
         }
@@ -69,7 +71,6 @@ export function useVideoScreen() {
         // Prefetch trick play images.
         (await getTrickPlayImageUrls(item)).forEach(url => {
             Image.prefetch(url);
-            console.log('Prefetch:', url);
         });
     }, [item]);
 
