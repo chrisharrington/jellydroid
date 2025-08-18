@@ -1,3 +1,4 @@
+import { JellyfinConfig } from '@/models';
 import { Jellyfin } from '@jellyfin/sdk';
 import { BaseItemDto, BaseItemKind, ItemSortBy, SortOrder, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
@@ -257,6 +258,84 @@ export function useJellyfin() {
         [api, login]
     );
 
+    /**
+     * Generates a URL for a trick play image from the Jellyfin server.
+     *
+     * @param item - The base item DTO containing the media item information
+     * @param index - The index of the trick play image to retrieve
+     * @returns The URL string for the trick play image
+     *
+     * @example
+     * ```typescript
+     * const imageUrl = await getTrickPlayImageUrl(mediaItem, 5);
+     * ```
+     */
+    const getTrickPlayImageUrl = useCallback(
+        (item: BaseItemDto, index: number) =>
+            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+        [api, login]
+    );
+
+    /**
+     * Retrieves URLs for trick play images associated with a media item.
+     *
+     * This function calculates the number of trick play image sheets needed based on the item's
+     * duration and the system's trick play configuration, then generates URLs for each sheet.
+     *
+     * @param item - The media item to get trick play images for
+     * @returns A promise that resolves to an array of trick play image URLs
+     *
+     * @example
+     * ```typescript
+     * const urls = await getTrickPlayImageUrls(mediaItem);
+     * console.log(urls); // ['http://...sheet0.jpg', 'http://...sheet1.jpg', ...]
+     * ```
+     */
+    const getTrickPlayImageUrls = useCallback(
+        async (item: BaseItemDto) => {
+            // Retrieve the system configuration so we can determine how many trick play images are in
+            // a single sheet.
+            const config = await getSystemConfig();
+
+            // Calculate the number of seconds in the provided item.
+            const durationInSeconds = Math.floor((item.RunTimeTicks || 0) / 10_000_000);
+
+            // Calculate the number of trick play images needed.
+            const totalImages = Math.ceil(durationInSeconds / (config.TrickplayOptions.Interval / 1_000));
+
+            // Using that and the tile width and height, calculate how many sheets are needed.
+            const imagesPerSheet = config.TrickplayOptions.TileWidth * config.TrickplayOptions.TileHeight;
+
+            // Derive the number of sheets.
+            const numSheets = Math.ceil(totalImages / imagesPerSheet);
+
+            // Generate the array of trick play image URLs.
+            return Array.from({ length: numSheets }, (_, i) => getTrickPlayImageUrl(item, i));
+        },
+        [api, login]
+    );
+
+    /**
+     * Retrieves the Jellyfin system configuration.
+     *
+     * This function ensures the user is logged in before making the API request.
+     * It fetches the system configuration from the Jellyfin server using the configured
+     * URL and API key from environment variables.
+     *
+     * @returns A promise that resolves to the Jellyfin system configuration object
+     * @throws {Error} When the API request fails or returns a non-ok response
+     */
+    const getSystemConfig = useCallback(async () => {
+        if (!user.current) await login();
+
+        const response = await fetch(
+            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/System/Configuration?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch system configuration.');
+
+        return (await response.json()) as JellyfinConfig;
+    }, [api, login]);
+
     return {
         login,
         findMovieByName,
@@ -267,9 +346,12 @@ export function useJellyfin() {
         getImageForId,
         getStreamUrl,
         getResumePositionSeconds,
+        getTrickPlayImageUrl,
+        getTrickPlayImageUrls,
         updatePlaybackProgress,
         startPlaybackSession,
         stopPlaybackSession,
+        getSystemConfig,
     };
 
     /**

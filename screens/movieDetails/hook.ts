@@ -19,10 +19,14 @@ export function useMovieDetails() {
         try {
             setBusy(true);
 
+            // Retrieve the movie details.
             const localMovie = await getMovieDetails(id);
             if (!localMovie) throw new Error('Movie not found.');
 
+            // Store the movie information.
             setMovie(localMovie);
+
+            // Set the default audio stream.
             setSelectedAudio(
                 localMovie?.MediaStreams?.find(stream => stream.Type === MediaStreamType.Audio)?.Index?.toString() ||
                     null

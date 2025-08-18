@@ -1,6 +1,7 @@
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useVideoPlayer } from 'expo-video';
@@ -9,16 +10,17 @@ import { useEffect, useState } from 'react';
 export function useVideoScreen() {
     const params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
+        { getItemDetails, getStreamUrl, getResumePositionSeconds, getTrickPlayImageUrls } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
         player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
             player.play();
         });
 
-    // Handle resume position when video is ready
+    // Handle resume position when video is ready.
     useEffect(() => {
         if (!player || !item) return;
 
+        // Retrieve the resume position in seconds, if available.
         const resumeSeconds = getResumePositionSeconds(item);
         if (resumeSeconds <= 0) return;
 
@@ -60,6 +62,16 @@ export function useVideoScreen() {
             setBusy(false);
         }
     }, []);
+
+    useAsyncEffect(async () => {
+        if (!item) return;
+
+        // Prefetch trick play images.
+        (await getTrickPlayImageUrls(item)).forEach(url => {
+            Image.prefetch(url);
+            console.log('Prefetch:', url);
+        });
+    }, [item]);
 
     return {
         player,

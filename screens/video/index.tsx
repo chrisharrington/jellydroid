@@ -7,7 +7,7 @@ import { useVideoScreen } from './hook';
 import style from './style';
 
 export function VideoScreen() {
-    const { isBusy, player } = useVideoScreen();
+    const { isBusy, player, trickPlayImage } = useVideoScreen();
 
     useEffect(() => {
         StatusBar.setHidden(true);
