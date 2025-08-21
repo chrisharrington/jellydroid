@@ -2,7 +2,6 @@ import { useToast } from '@/components/toast';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useVideoPlayer } from 'expo-video';
@@ -11,7 +10,7 @@ import { useEffect, useState } from 'react';
 export function useVideoScreen() {
     const params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails, getStreamUrl, getResumePositionSeconds, getTrickPlayImageUrls } = useJellyfin(),
+        { getItemDetails, getStreamUrl, getResumePositionSeconds, downloadTrickplayImages } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
         player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
             player.play();
@@ -52,7 +51,7 @@ export function useVideoScreen() {
             // Initialize the remote media client and fetch item details.
             setBusy(true);
 
-            // Ensure the client is available before proceeding.
+            // Retrieve the item details.
             const item = await getItemDetails(params.itemId);
             if (!item) throw new Error('Item not found.');
 
@@ -65,17 +64,9 @@ export function useVideoScreen() {
         }
     }, []);
 
-    useAsyncEffect(async () => {
-        if (!item) return;
-
-        // Prefetch trick play images.
-        (await getTrickPlayImageUrls(item)).forEach(url => {
-            Image.prefetch(url);
-        });
-    }, [item]);
-
     return {
         player,
+        item,
         isBusy,
     };
 }

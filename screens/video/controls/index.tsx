@@ -1,18 +1,22 @@
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
+import { formatTime } from '@/shared/formatTime';
 import { MaterialIcons } from '@expo/vector-icons';
+import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import Slider from '@react-native-community/slider';
 import { VideoPlayer } from 'expo-video';
 import React from 'react';
 import { Animated, Text, TouchableOpacity, View } from 'react-native';
+import { TrickPlayWindow } from '../trickPlayWindow';
 import { useVideoControls } from './hook';
 import style from './style';
 
 export type VideoControlsProps = {
+    item: BaseItemDto;
     player: VideoPlayer;
 };
 
-export function VideoControls({ player }: VideoControlsProps) {
+export function VideoControls(props: VideoControlsProps) {
     const {
         isVisible,
         isPlaying,
@@ -20,7 +24,6 @@ export function VideoControls({ player }: VideoControlsProps) {
         currentTime,
         duration,
         isSliding,
-        sliderValue,
         thumbPosition,
         fadeAnim,
         handleVideoPress,
@@ -30,9 +33,8 @@ export function VideoControls({ player }: VideoControlsProps) {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
-        formatTime,
         getSeekBarProgress,
-    } = useVideoControls({ player });
+    } = useVideoControls(props);
 
     return (
         <>
@@ -71,25 +73,11 @@ export function VideoControls({ player }: VideoControlsProps) {
                         </View>
 
                         <View style={style.bottomContainer}>
-                            {/* Thumb panel that follows the slider thumb when dragging */}
-                            {isSliding && (
-                                <View
-                                    style={[
-                                        style.thumbPanel,
-                                        {
-                                            left: `${thumbPosition}%`,
-                                            transform: [{ translateX: -40 }], // Center the panel on the thumb
-                                        },
-                                    ]}
-                                >
-                                    <View style={style.thumbPanelImage}>
-                                        <MaterialIcons name='image' size={24} style={style.placeholderIcon} />
-                                    </View>
-                                    <Text style={style.thumbPanelText}>
-                                        {formatTime((thumbPosition / 100) * duration)}
-                                    </Text>
-                                </View>
-                            )}
+                            <TrickPlayWindow
+                                percentagePosition={thumbPosition}
+                                item={props.item}
+                                isVisible={isSliding}
+                            />
 
                             <View style={style.timeContainer}>
                                 <Text style={[style.timeText, { marginLeft: 15 }]}>{formatTime(currentTime)}</Text>

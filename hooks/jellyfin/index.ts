@@ -7,6 +7,7 @@ import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
+import * as FileSystem from 'expo-file-system';
 import { useCallback, useMemo, useRef } from 'react';
 
 /**
@@ -255,58 +256,35 @@ export function useJellyfin() {
         [api, login]
     );
 
-    /**
-     * Generates a URL for a trick play image from the Jellyfin server.
-     *
-     * @param item - The base item DTO containing the media item information
-     * @param index - The index of the trick play image to retrieve
-     * @returns The URL string for the trick play image
-     *
-     * @example
-     * ```typescript
-     * const imageUrl = await getTrickPlayImageUrl(mediaItem, 5);
-     * ```
-     */
-    const getTrickPlayImageUrl = useCallback(
-        (item: BaseItemDto, index: number) =>
-            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
-        [api, login]
-    );
-
-    /**
-     * Retrieves URLs for trick play images associated with a media item.
-     *
-     * This function calculates the number of trick play image sheets needed based on the item's
-     * duration and the system's trick play configuration, then generates URLs for each sheet.
-     *
-     * @param item - The media item to get trick play images for
-     * @returns A promise that resolves to an array of trick play image URLs
-     *
-     * @example
-     * ```typescript
-     * const urls = await getTrickPlayImageUrls(mediaItem);
-     * ```
-     */
-    const getTrickPlayImageUrls = useCallback(
+    const downloadTrickplayImages = useCallback(
         async (item: BaseItemDto) => {
-            // Retrieve the system configuration so we can determine how many trick play images are in
-            // a single sheet.
-            const config = await getSystemConfig();
+            const date = new Date();
 
-            // Calculate the number of seconds in the provided item.
-            const durationInSeconds = Math.floor((item.RunTimeTicks || 0) / 10_000_000);
+            const tileWidth = 10,
+                tileHeight = 10,
+                interval = 10_000;
 
-            // Calculate the number of trick play images needed.
-            const totalImages = Math.ceil(durationInSeconds / (config.TrickplayOptions.Interval / 1_000));
+            // Calculate the number of trickplay images based on the length of the given item.
+            const numImages = Math.ceil((item.RunTimeTicks || 0) / 10_000_000 / (interval / 1_000)),
+                numSpriteSheets = Math.ceil(numImages / (tileWidth * tileHeight));
 
-            // Using that and the tile width and height, calculate how many sheets are needed.
-            const imagesPerSheet = config.TrickplayOptions.TileWidth * config.TrickplayOptions.TileHeight;
+            // Ensure the trickplay directory exists
+            const trickplayDir = `${FileSystem.cacheDirectory}trickplay/${item.Id}/`,
+                dirInfo = await FileSystem.getInfoAsync(trickplayDir);
 
-            // Derive the number of sheets.
-            const numSheets = Math.ceil(totalImages / imagesPerSheet);
+            // If the directory does exist, exit early, as trickplay images are already downloaded. If not, create it.
+            if (dirInfo.exists) return;
+            if (!dirInfo.exists) await FileSystem.makeDirectoryAsync(trickplayDir, { intermediates: true });
 
-            // Generate the array of trick play image URLs.
-            return Array.from({ length: numSheets }, (_, i) => getTrickPlayImageUrl(item, i));
+            // Download each sprite sheet and save it to file system.
+            await Promise.all(
+                Array.from({ length: numSpriteSheets }, (_, index) =>
+                    FileSystem.downloadAsync(
+                        `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+                        `${FileSystem.cacheDirectory}trickplay/${item.Id}/`
+                    )
+                )
+            );
         },
         [api, login]
     );
@@ -342,12 +320,11 @@ export function useJellyfin() {
         getImageForId,
         getStreamUrl,
         getResumePositionSeconds,
-        getTrickPlayImageUrl,
-        getTrickPlayImageUrls,
         updatePlaybackProgress,
         startPlaybackSession,
         stopPlaybackSession,
         getSystemConfig,
+        downloadTrickplayImages,
     };
 
     /**

@@ -28,7 +28,7 @@ export function useVideoControls({ player }: VideoControlsProps) {
 
         // Set initial auto-hide timer
         hideTimeoutRef.current = setTimeout(() => {
-            if (!isAnimatingRef.current) {
+            if (!isAnimatingRef.current && !isBusy) {
                 isAnimatingRef.current = true;
 
                 if (hideTimeoutRef.current) {
@@ -102,6 +102,14 @@ export function useVideoControls({ player }: VideoControlsProps) {
         };
     }, [player, isSliding]);
 
+    // Clear hide timer when video becomes busy
+    useEffect(() => {
+        if (isBusy && hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+    }, [isBusy]);
+
     // Clear timeout on cleanup.
     useEffect(() => {
         return () => {
@@ -121,7 +129,7 @@ export function useVideoControls({ player }: VideoControlsProps) {
 
             // Reset auto-hide timer
             hideTimeoutRef.current = setTimeout(() => {
-                if (!isAnimatingRef.current) {
+                if (!isAnimatingRef.current && !isBusy) {
                     hideControls();
                 }
             }, 2000);
@@ -147,7 +155,7 @@ export function useVideoControls({ player }: VideoControlsProps) {
 
         // Set timeout to hide controls after two seconds.
         hideTimeoutRef.current = setTimeout(() => {
-            if (!isAnimatingRef.current) {
+            if (!isAnimatingRef.current && !isBusy) {
                 // Call hideControls directly to avoid dependency issues
                 isAnimatingRef.current = true;
 
@@ -167,9 +175,14 @@ export function useVideoControls({ player }: VideoControlsProps) {
                 });
             }
         }, 2000);
-    }, [fadeAnim, isVisible]);
+    }, [fadeAnim, isVisible, isBusy]);
 
     const hideControls = useCallback(() => {
+        // Don't hide controls if video is busy
+        if (isBusy) {
+            return;
+        }
+
         // Prevent multiple rapid calls
         if (isAnimatingRef.current || !isVisible) {
             return;
@@ -191,7 +204,7 @@ export function useVideoControls({ player }: VideoControlsProps) {
             setIsVisible(false);
             isAnimatingRef.current = false;
         });
-    }, [fadeAnim, isVisible]);
+    }, [fadeAnim, isVisible, isBusy]);
 
     const handleVideoPress = useCallback(() => {
         if (isVisible) {
@@ -255,17 +268,6 @@ export function useVideoControls({ player }: VideoControlsProps) {
         [player, duration, showControls]
     );
 
-    const formatTime = useCallback((timeInSeconds: number): string => {
-        const hours = Math.floor(timeInSeconds / 3600);
-        const minutes = Math.floor((timeInSeconds % 3600) / 60);
-        const seconds = Math.floor(timeInSeconds % 60);
-
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }, []);
-
     const handleSliderStart = useCallback(() => {
         setIsSliding(true);
         // Initialize thumb position to current progress when starting to drag
@@ -312,6 +314,24 @@ export function useVideoControls({ player }: VideoControlsProps) {
         return (currentTime / duration) * 100;
     }, [currentTime, duration]);
 
+    // Auto-hide controls when video finishes loading and starts playing
+    useEffect(() => {
+        if (!isBusy && isPlaying && isVisible && !isSliding) {
+            // Clear any existing timeout
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+                hideTimeoutRef.current = null;
+            }
+
+            // Set new auto-hide timer
+            hideTimeoutRef.current = setTimeout(() => {
+                if (!isAnimatingRef.current && !isBusy) {
+                    hideControls();
+                }
+            }, 2000);
+        }
+    }, [isBusy, isPlaying, isVisible, isSliding, hideControls]);
+
     return {
         isVisible,
         isPlaying,
@@ -330,7 +350,6 @@ export function useVideoControls({ player }: VideoControlsProps) {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
-        formatTime,
         getSeekBarProgress,
     };
 }
