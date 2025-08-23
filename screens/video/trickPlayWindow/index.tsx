@@ -22,8 +22,8 @@ export function TrickplayWindow(props: TrickPlayWindowProps) {
                     style.thumbPanel,
                     {
                         left: Math.max(
-                            screenWidth * 0.05,
-                            Math.min(screenWidth * 0.68, (props.percentagePosition / 100) * (screenWidth - 140))
+                            55,
+                            Math.min(screenWidth - 320 - 94, (props.percentagePosition / 100) * (screenWidth - 140))
                         ),
                         transform: [
                             {

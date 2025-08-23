@@ -3,9 +3,9 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
     thumbPanel: {
         position: 'absolute',
-        bottom: 100,
-        width: 213,
-        height: 88,
+        bottom: 60,
+        width: 320,
+        height: 132,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         borderRadius: 8,
         borderWidth: 1,
