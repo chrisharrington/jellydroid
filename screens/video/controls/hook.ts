@@ -1,8 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 import { VideoControlsProps } from '.';
 
 /**
+ * Custom hook for managing video player controls state and interactions.
+ * Handles control visibility, playback state, seek operations, and auto-hide functionality.
+ *
+ * @param {VideoPlayer} props.player - Video player instance for controlling playback
+ *
+ * @returns {Object} Object containing:
+ * - isVisible: Whether controls are currently visible
+ * - isPlaying: Current playback state (computed from player.playing)
+ * - isBusy: Whether video is loading/buffering
+ * - currentTime: Current playback position in seconds
+ * - isSliding: Whether user is actively dragging seek bar
+ * - sliderValue: Current slider position value
+ * - thumbPosition: Position of trickplay thumbnail
+ * - fadeAnim: Animated value for control fade in/out
  * Custom hook for managing video player controls state and interactions.
  * Handles control visibility, playback state, seeking, and auto-hide functionality.
  *
@@ -29,13 +43,17 @@ import { VideoControlsProps } from '.';
  * - getSeekBarProgress: Function to calculate current progress percentage
  */
 export function useVideoControls({ player }: VideoControlsProps) {
-    const [isVisible, setIsVisible] = useState(false),
-        [isBusy, setBusy] = useState<boolean>(true),
-        [isPlaying, setIsPlaying] = useState(false),
+    const [isVisible, setIsVisible] = useState<boolean>(false),
+        [isSliding, setSliding] = useState<boolean>(false),
+        [isBusy, setBusy] = useState<boolean>(false),
         [currentTime, setCurrentTime] = useState(0),
-        [isSliding, setIsSliding] = useState(false),
         [sliderValue, setSliderValue] = useState(0),
         [thumbPosition, setThumbPosition] = useState(0);
+
+    // Compute playing state directly from player to avoid duplicate state.
+    const isPlaying = useMemo(() => {
+        return player?.playing || false;
+    }, [player?.playing]);
 
     const fadeAnim = useRef(new Animated.Value(0)).current,
         hideTimeoutRef = useRef<NodeJS.Timeout | null>(null),
@@ -55,9 +73,28 @@ export function useVideoControls({ player }: VideoControlsProps) {
     useEffect(() => {
         if (!player) return;
 
-        setCurrentTime(player.currentTime || 0);
-        setIsPlaying(player.playing || false);
-    }, [player]);
+        // On initial load, ensure that the user is aware video is loading.
+        setBusy(true);
+
+        // Set the time update interval to four times a second.
+        player.timeUpdateEventInterval = 0.25;
+
+        // Listen for time updates.
+        const timeUpdateListener = player.addListener('timeUpdate', payload => {
+            if (!isSliding) setCurrentTime(payload.currentTime || 0);
+        });
+
+        // Listen for status updates so the user knows when the video is loading.
+        const statusChangeListener = player.addListener('statusChange', payload => {
+            setBusy(payload.status !== 'readyToPlay');
+        });
+
+        // Clean up listeners when unmounting.
+        return () => {
+            timeUpdateListener.remove();
+            statusChangeListener.remove();
+        };
+    }, [player, isSliding]);
 
     // Listen to player status changes and periodically update playback state.
     useEffect(() => {
@@ -66,23 +103,10 @@ export function useVideoControls({ player }: VideoControlsProps) {
         // Subscribe to player status events.
         const subscription = player.addListener('statusChange', status => {
             if (status.status !== 'readyToPlay') return;
-
-            setBusy(false);
-            setIsPlaying(true);
+            // Playing state is now computed from player.playing, no need to set it
         });
 
-        // Poll for playback state changes every 500ms.
-        const interval = setInterval(() => {
-            setIsPlaying(player.playing || false);
-
-            // Update current time only when not actively seeking.
-            if (!isSliding) setCurrentTime(player.currentTime || 0);
-        }, 500);
-
-        return () => {
-            subscription?.remove();
-            clearInterval(interval);
-        };
+        return () => subscription?.remove();
     }, [player, isSliding]);
 
     // Clear hide timer when video becomes busy and cleanup on unmount.
@@ -179,13 +203,8 @@ export function useVideoControls({ player }: VideoControlsProps) {
     const handlePlayPause = useCallback(() => {
         if (!player) return;
 
-        if (isPlaying) {
-            player.pause();
-            setIsPlaying(false);
-        } else {
-            player.play();
-            setIsPlaying(true);
-        }
+        if (isPlaying) player.pause();
+        else player.play();
 
         showControls();
     }, [player, isPlaying, showControls]);
@@ -197,36 +216,40 @@ export function useVideoControls({ player }: VideoControlsProps) {
     const handleSeekBackward = useCallback(() => {
         if (!player) return;
 
-        const newTime = Math.max(0, (player.currentTime || 0) - 10);
-        player.currentTime = newTime;
-        setCurrentTime(newTime);
+        // Seek to the current time minus 10 seconds.
+        player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
+
+        // Show controls after seeking.
         showControls();
     }, [player, showControls]);
 
     /**
-     * Handles forward seek button to jump ahead 30 seconds.
+     * Handles forward seek button to jump ahead 10 seconds.
      * Clamps to maximum of video duration and resets auto-hide timer.
      */
     const handleSeekForward = useCallback(() => {
-        if (!player) return;
+        if (!player || !player.duration) return;
 
-        const newTime = Math.min(player.duration || 0, (player.currentTime || 0) + 30);
-        player.currentTime = newTime;
-        setCurrentTime(newTime);
+        // Seek to the current time plus 30 seconds.
+        player.currentTime = Math.max(0, (player.currentTime || 0) + 30);
+
+        // Show controls after seeking.
         showControls();
     }, [player, showControls]);
 
     /**
-     * Handles seek bar value changes for direct time seeking.
+     * Handles drag changes on the seek bar to update video position.
      * Calculates new time based on percentage and resets auto-hide timer.
      */
     const handleSeekBarChange = useCallback(
         (value: number) => {
             if (!player) return;
 
-            const newTime = (value / 100) * (player.duration || 0);
-            player.currentTime = newTime;
-            setCurrentTime(newTime);
+            console.log('Current Time:', (value / 100) * (player.duration || 0));
+            // Seek to the new time based on the slider value.
+            player.currentTime = (value / 100) * (player.duration || 0);
+
+            // Show controls after seeking.
             showControls();
         },
         [player, showControls]
@@ -237,7 +260,7 @@ export function useVideoControls({ player }: VideoControlsProps) {
      * Pauses playback, calculates initial thumb position, and clears auto-hide timer.
      */
     const handleSliderStart = useCallback(() => {
-        setIsSliding(true);
+        setSliding(true);
 
         // Calculate current progress percentage for thumb positioning.
         const playerDuration = player?.duration || 0;
@@ -262,9 +285,12 @@ export function useVideoControls({ player }: VideoControlsProps) {
         (value: number) => {
             if (!player || !isSliding) return;
 
-            // Calculate new time for preview but don't commit to player yet.
+            // Seek to the new time based on the slider value.
             const newTime = (value / 100) * (player.duration || 0);
+            player.currentTime = newTime;
             setCurrentTime(newTime);
+
+            // Update slider state values.
             setSliderValue(value);
             setThumbPosition(value);
         },
@@ -279,13 +305,8 @@ export function useVideoControls({ player }: VideoControlsProps) {
         (value: number) => {
             if (!player) return;
 
-            // Calculate and commit final seek time to player.
-            const newTime = (value / 100) * (player.duration || 0);
-            player.currentTime = newTime;
-            setCurrentTime(newTime);
-
             // Reset seeking state.
-            setIsSliding(false);
+            setSliding(false);
             setSliderValue(value);
             setThumbPosition(0);
 
@@ -295,7 +316,6 @@ export function useVideoControls({ player }: VideoControlsProps) {
         },
         [player, showControls]
     );
-
     /**
      * Calculates current playback progress as percentage.
      * Returns 0 if no duration available to prevent division by zero.
@@ -320,11 +340,11 @@ export function useVideoControls({ player }: VideoControlsProps) {
         sliderValue,
         thumbPosition,
         fadeAnim,
+        duration: useMemo(() => player?.duration || 0, [player]),
         handleVideoPress,
         handlePlayPause,
         handleSeekBackward,
         handleSeekForward,
-        handleSeekBarChange,
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
