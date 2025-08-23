@@ -9,6 +9,7 @@ export function useVideoControls({ player }: VideoControlsProps) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isSliding, setIsSliding] = useState(false);
+    const [wasPlaying, setWasPlaying] = useState<boolean>(false);
     const [sliderValue, setSliderValue] = useState(0);
     const [thumbPosition, setThumbPosition] = useState(0);
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -51,13 +52,10 @@ export function useVideoControls({ player }: VideoControlsProps) {
     // Initialize player values when player is available
     useEffect(() => {
         if (player) {
-            if (player.duration) {
-                setDuration(player.duration);
-            }
-            if (player.currentTime) {
-                setCurrentTime(player.currentTime);
-            }
-            // Initialize playing state
+            if (player.duration) setDuration(player.duration);
+            if (player.currentTime) setCurrentTime(player.currentTime);
+
+            // Initialize playing state.
             setIsPlaying(player.playing || false);
         }
     }, [player]);
@@ -270,14 +268,18 @@ export function useVideoControls({ player }: VideoControlsProps) {
 
     const handleSliderStart = useCallback(() => {
         setIsSliding(true);
-        // Initialize thumb position to current progress when starting to drag
+        // Initialize thumb position to current progress when starting to drag.
         const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
         setThumbPosition(currentProgress);
-        // Clear auto-hide timer while sliding
+
+        // Clear auto-hide timer while sliding.
         if (hideTimeoutRef.current) {
             clearTimeout(hideTimeoutRef.current);
             hideTimeoutRef.current = null;
         }
+
+        // Pause playback while sliding.
+        player.pause();
     }, [currentTime, duration]);
 
     const handleSliderChange = useCallback(
@@ -301,10 +303,13 @@ export function useVideoControls({ player }: VideoControlsProps) {
             setCurrentTime(newTime);
             setIsSliding(false);
             setSliderValue(value);
-            setThumbPosition(0); // Reset thumb position when not sliding
+            setThumbPosition(0);
 
-            // Reset auto-hide timer
+            // Reset auto-hide timer.
             showControls();
+
+            // Unpause playback after sliding has finished.
+            player.play();
         },
         [player, duration, showControls]
     );

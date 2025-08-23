@@ -149,8 +149,6 @@ export function CastProvider({ children }: CastProviderProps) {
 
                 if (resumePlayback) streamUrl += `&StartTimeTicks=${item.UserData?.PlaybackPositionTicks || 0}`;
 
-                console.log('Stream URL:', streamUrl);
-
                 // Cast media to the connected device.
                 await client.loadMedia({
                     autoplay: true,

@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 export function useVideoScreen() {
     const params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails, getStreamUrl, getResumePositionSeconds, downloadTrickplayImages } = useJellyfin(),
+        { getItemDetails, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
         player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
             player.play();

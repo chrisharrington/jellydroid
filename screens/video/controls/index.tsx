@@ -7,7 +7,7 @@ import Slider from '@react-native-community/slider';
 import { VideoPlayer } from 'expo-video';
 import React from 'react';
 import { Animated, Text, TouchableOpacity, View } from 'react-native';
-import { TrickPlayWindow } from '../trickPlayWindow';
+import { TrickplayWindow } from '../trickPlayWindow';
 import { useVideoControls } from './hook';
 import style from './style';
 
@@ -73,7 +73,7 @@ export function VideoControls(props: VideoControlsProps) {
                         </View>
 
                         <View style={style.bottomContainer}>
-                            <TrickPlayWindow
+                            <TrickplayWindow
                                 percentagePosition={thumbPosition}
                                 item={props.item}
                                 isVisible={isSliding}

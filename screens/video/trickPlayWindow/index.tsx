@@ -1,7 +1,6 @@
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-// import { Image } from 'expo-image';
-import Spinner from '@/components/spinner';
-import { Image, View } from 'react-native';
+import { Image } from 'expo-image';
+import { View } from 'react-native';
 import { useTrickPlayWindow } from './hook';
 import style from './style';
 
@@ -11,8 +10,10 @@ export type TrickPlayWindowProps = {
     percentagePosition: number;
 };
 
-export function TrickPlayWindow(props: TrickPlayWindowProps) {
-    const { imageUri, isBusy } = useTrickPlayWindow(props);
+export function TrickplayWindow(props: TrickPlayWindowProps) {
+    const { imageUri, horizontalOffset, verticalOffset, screenWidth } = useTrickPlayWindow(props);
+
+    console.log('Trickplay Window:', props.percentagePosition, (props.percentagePosition / 100) * screenWidth);
 
     return (
         props.isVisible && (
@@ -20,12 +21,29 @@ export function TrickPlayWindow(props: TrickPlayWindowProps) {
                 style={[
                     style.thumbPanel,
                     {
-                        left: `${props.percentagePosition}%`,
-                        transform: [{ translateX: -40 }],
+                        left: Math.max(
+                            screenWidth * 0.05,
+                            Math.min(screenWidth * 0.68, (props.percentagePosition / 100) * (screenWidth - 140))
+                        ),
+                        transform: [
+                            {
+                                translateX: -40,
+                            },
+                        ],
                     },
                 ]}
             >
-                {isBusy ? <Spinner /> : imageUri && <Image src={imageUri} style={style.trickPlayImage} />}
+                {imageUri && (
+                    <Image
+                        source={imageUri}
+                        style={[
+                            style.trickPlayImage,
+                            {
+                                transform: [{ translateX: horizontalOffset }, { translateY: verticalOffset }],
+                            },
+                        ]}
+                    />
+                )}
             </View>
         )
     );
