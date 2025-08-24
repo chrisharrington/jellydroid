@@ -47,7 +47,6 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
     const [isVisible, setIsVisible] = useState<boolean>(false),
         [isSliding, setSliding] = useState<boolean>(false),
         [isBusy, setBusy] = useState<boolean>(false),
-        [currentTime, setCurrentTime] = useState(0),
         [sliderValue, setSliderValue] = useState(0),
         [thumbPosition, setThumbPosition] = useState(0),
         playbackProgressCounter = useRef<number>(0),
@@ -57,6 +56,11 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
     const isPlaying = useMemo(() => {
         return player?.playing || false;
     }, [player?.playing]);
+
+    // Compute current time directly from player to avoid duplicate state.
+    const currentTime = useMemo(() => {
+        return player?.currentTime || 0;
+    }, [player?.currentTime]);
 
     const fadeAnim = useRef(new Animated.Value(0)).current,
         hideTimeoutRef = useRef<NodeJS.Timeout | null>(null),
@@ -84,8 +88,7 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
 
         // Listen for time updates.
         const timeUpdateListener = player.addListener('timeUpdate', payload => {
-            // Set the current time if the user isn't sliding the seek bar.
-            if (!isSliding) setCurrentTime(payload.currentTime || 0);
+            // Time is now computed from player.currentTime, no need to set state
 
             // Update playback progress counter.
             playbackProgressCounter.current++;
@@ -304,7 +307,7 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
             // Seek to the new time based on the slider value.
             const newTime = (value / 100) * (player.duration || 0);
             player.currentTime = newTime;
-            setCurrentTime(newTime);
+            // currentTime is now computed from player, no need to set state
 
             // Update slider state values.
             setSliderValue(value);
