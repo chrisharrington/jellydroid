@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { Image } from 'react-native';
 import { CustomCastButton } from './components/customCastButton';
 import { DeviceSelector } from './components/deviceSelector';
 import { useCastSelector } from './components/deviceSelector/hook';
@@ -16,6 +17,12 @@ export function BaseLayout() {
                         backgroundColor: Colours.background2,
                     },
                     headerTintColor: Colours.text,
+                    headerLeft: () => (
+                        <Image
+                            source={require('./assets/images/icon.png')}
+                            style={{ width: 40, height: 40, marginTop: 4 }}
+                        />
+                    ),
                     headerRight: () => <CustomCastButton tintColor={Colours.text} onPress={handleCastButtonPress} />,
                 }}
             >
