@@ -7,7 +7,7 @@ import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
-import { Image } from 'expo-image';
+import * as FileSystem from 'expo-file-system';
 import { useCallback, useMemo, useRef } from 'react';
 
 /**
@@ -20,7 +20,8 @@ import { useCallback, useMemo, useRef } from 'react';
  */
 export function useJellyfin() {
     const api = useMemo(createApi, []),
-        user = useRef<UserDto | null>(null);
+        user = useRef<UserDto | null>(null),
+        config = useRef<JellyfinConfig | null>(null);
 
     /**
      * Authenticates a user with the provided username and password.
@@ -257,46 +258,79 @@ export function useJellyfin() {
     );
 
     /**
-     * Prefetches trickplay image sprites for a given media item.
-     * Trickplay images are organized in sprite sheets, with each sheet containing a grid of frames.
+     * Downloads trickplay images for a given media item. Trickplay images are sprite sheets used
+     * for video scrubbing previews.
      *
-     * @param item - The Jellyfin media item to prefetch trickplay images for
+     * The function first checks if images already exist by looking for a trickplay folder.
+     * If not found, it creates the directory and downloads all required sprite sheets based on
+     * the video duration and system configuration parameters.
+     *
+     * @param item - The Jellyfin media item (BaseItemDto) to download trickplay images for
+     * @returns Promise<void> - Resolves when all trickplay images have been downloaded
+     * @throws May throw errors if file system operations fail or network requests fail
      *
      * @remarks
-     * The function:
-     * - Calculates total number of trickplay images needed based on media duration
-     * - Determines required number of sprite sheets to hold all frames
-     * - Prefetches all sprite sheets using the React Native Image API
-     *
-     * Grid dimensions are fixed at 10x10 tiles per sprite sheet
-     * Frame interval is set to 10 seconds between frames
+     * - Requires user to be logged in
+     * - Uses system configuration for trickplay parameters (interval, tile width/height)
+     * - Downloads multiple sprite sheets in parallel
+     * - Creates a directory structure for storing the downloaded images
      */
-    const prefetchTrickplayImages = useCallback(
-        (item: BaseItemDto) => {
-            const tileWidth = 10,
-                tileHeight = 10,
-                interval = 10_000;
+    const downloadTrickplayImages = useCallback(
+        async (item: BaseItemDto) => {
+            if (!user.current) await login();
+            if (!config.current) config.current = await getSystemConfig();
+
+            // Check for the existence of the trickplay folder. If it's there, trickplay images have already been downloaded.
+            const trickplayFolder = getTrickplayFolderUri(item),
+                folderInfo = await FileSystem.getInfoAsync(trickplayFolder);
+            if (folderInfo.exists) return;
+
+            // Create download folder as it doesn't exist.
+            await FileSystem.makeDirectoryAsync(trickplayFolder, { intermediates: true });
+
+            // Pull the interval, tile width and tile height configuration parameters.
+            const interval = config.current.TrickplayOptions.Interval,
+                tileWidth = config.current.TrickplayOptions.TileWidth,
+                tileHeight = config.current.TrickplayOptions.TileHeight;
 
             // Calculate the number of trickplay images based on the length of the given item.
             const numImages = Math.ceil((item.RunTimeTicks || 0) / 10_000_000 / (interval / 1_000)),
                 numSpriteSheets = Math.ceil(numImages / (tileWidth * tileHeight));
 
-            // Prefetch all trickplay images.
-            Image.prefetch(Array.from({ length: numSpriteSheets }, (_, index) => getTrickplayTileFileUri(item, index)));
+            // Download all trickplay images in parallel.
+            await Promise.all(
+                Array.from({ length: numSpriteSheets }, (_, index) =>
+                    FileSystem.downloadAsync(
+                        `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+                        getTrickplayTileFileUri(item, index)
+                    )
+                )
+            );
         },
         [api, login]
     );
 
     /**
      * Creates a file URI for a trickplay tile image in the local cache directory.
+     * On Android, expo-image sometimes has issues with direct file:// URIs from cache directory,
+     * so we provide a function that can convert to base64 data URI if needed.
      *
      * @param item - The BaseItemDto object containing the media item information
      * @param index - The index of the trickplay tile image
      * @returns The local file system URI path for the cached trickplay tile image
      */
     const getTrickplayTileFileUri = useCallback(
-        (item: BaseItemDto, index: number) =>
-            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+        (item: BaseItemDto, index: number) => `${getTrickplayFolderUri(item)}/${index}.jpg`,
+        [api, login]
+    );
+
+    /**
+     * Returns the URI for the trickplay folder of a specific Jellyfin item.
+     * @param item - The Jellyfin item for which to get the trickplay folder URI
+     * @returns A string representing the full path to the trickplay folder for the given item
+     */
+    const getTrickplayFolderUri = useCallback(
+        (item: BaseItemDto) => `${FileSystem.cacheDirectory}trickplay/${item.Id}`,
         [api, login]
     );
 
@@ -312,13 +346,17 @@ export function useJellyfin() {
      */
     const getSystemConfig = useCallback(async () => {
         if (!user.current) await login();
+        if (config.current) return config.current;
 
         const response = await fetch(
             `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/System/Configuration?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`
         );
         if (!response.ok) throw new Error('Failed to fetch system configuration.');
 
-        return (await response.json()) as JellyfinConfig;
+        // Cache the retrieved configuration.
+        const localConfig = (await response.json()) as JellyfinConfig;
+        config.current = localConfig;
+        return config.current;
     }, [api, login]);
 
     return {
@@ -335,7 +373,7 @@ export function useJellyfin() {
         startPlaybackSession,
         stopPlaybackSession,
         getSystemConfig,
-        prefetchTrickplayImages,
+        downloadTrickplayImages,
         getTrickplayTileFileUri,
     };
 

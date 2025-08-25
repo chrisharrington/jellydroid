@@ -1,25 +1,26 @@
+import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useJellyfin } from '@/hooks/jellyfin';
-import { useEffect, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { useState } from 'react';
+import { Image, useWindowDimensions } from 'react-native';
 import { TrickPlayWindowProps } from '.';
 
+const TICKS_PER_SECOND = 10_000_000;
+
 export function useTrickPlayWindow(props: TrickPlayWindowProps) {
-    const { getTrickplayTileFileUri } = useJellyfin(),
+    const { getTrickplayTileFileUri, getSystemConfig } = useJellyfin(),
         [horizontalOffset, setHorizontalOffset] = useState<number>(0),
         [verticalOffset, setVerticalOffset] = useState<number>(0),
         [imageUri, setImageUri] = useState<string | null>(null),
-        { width } = useWindowDimensions();
+        { width } = useWindowDimensions(),
+        [spriteSheetSize, setSpriteSheetSize] = useState<{ width: number; height: number } | null>(null);
 
-    useEffect(() => {
+    useAsyncEffect(async () => {
         if (!props.item.RunTimeTicks) return;
 
-        // Constants.
-        const TICKS_PER_SECOND = 10_000_000,
-            SECONDS_PER_TRICKPLAY_IMAGE = 10,
-            IMAGES_PER_SPRITE_SHEET = 100,
-            SPRITE_SHEET_COLUMNS = 10,
-            IMAGE_WIDTH = 320,
-            IMAGE_HEIGHT = 132;
+        // Pull the Jellyfin config to determine the trickplay settings.
+        const config = await getSystemConfig(),
+            interval = config.TrickplayOptions.Interval / 1000,
+            imagesPerSpriteSheet = config.TrickplayOptions.TileWidth * config.TrickplayOptions.TileHeight;
 
         // Calculate total video duration in seconds.
         const totalSeconds = props.item.RunTimeTicks / TICKS_PER_SECOND;
@@ -28,32 +29,42 @@ export function useTrickPlayWindow(props: TrickPlayWindowProps) {
         const currentSeconds = (props.percentagePosition / 100) * totalSeconds;
 
         // Calculate which trickplay image index this corresponds to.
-        const imageIndex = Math.floor(currentSeconds / SECONDS_PER_TRICKPLAY_IMAGE);
+        const imageIndex = Math.floor(currentSeconds / interval);
 
         // Calculate which sprite sheet this image is in.
-        const spriteSheetIndex = Math.floor(imageIndex / IMAGES_PER_SPRITE_SHEET);
+        const spriteSheetIndex = Math.floor(imageIndex / imagesPerSpriteSheet);
+
+        // Generate the trickplay sprite sheet URI.
+        const spriteSheetUri = getTrickplayTileFileUri(props.item, spriteSheetIndex);
 
         // Calculate position within the sprite sheet (0-99).
-        const positionInSheet = imageIndex % IMAGES_PER_SPRITE_SHEET;
+        const positionInSheet = imageIndex % imagesPerSpriteSheet;
 
         // Calculate row and column within the sprite sheet.
-        const column = positionInSheet % SPRITE_SHEET_COLUMNS,
-            row = Math.floor(positionInSheet / SPRITE_SHEET_COLUMNS);
+        const column = positionInSheet % config.TrickplayOptions.TileWidth,
+            row = Math.floor(positionInSheet / config.TrickplayOptions.TileWidth);
+
+        // Derive the size of the sprite sheet and calculate image width and height.
+        const size = await Image.getSize(spriteSheetUri);
+        setSpriteSheetSize(size);
 
         // Calculate horizontal and vertical offsets.
-        const calculatedHorizontalOffset = column * IMAGE_WIDTH * -1,
-            calculatedVerticalOffset = row * IMAGE_HEIGHT * -1;
+        const calculatedHorizontalOffset = config.TrickplayOptions.TileWidth * column * -1,
+            calculatedVerticalOffset = config.TrickplayOptions.TileHeight * row * -1;
 
         // Update the offset states.
         setHorizontalOffset(calculatedHorizontalOffset);
         setVerticalOffset(calculatedVerticalOffset);
-        setImageUri(getTrickplayTileFileUri(props.item, spriteSheetIndex));
-    }, [props.percentagePosition, props.item.RunTimeTicks]);
+
+        // Set the image URI to be the file trickplay URI.
+        setImageUri(spriteSheetUri);
+    }, [props.percentagePosition, props.item.RunTimeTicks, getTrickplayTileFileUri]);
 
     return {
         imageUri,
         horizontalOffset,
         verticalOffset,
         screenWidth: width,
+        spriteSheetSize,
     };
 }

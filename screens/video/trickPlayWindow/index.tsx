@@ -11,7 +11,7 @@ export type TrickPlayWindowProps = {
 };
 
 export function TrickplayWindow(props: TrickPlayWindowProps) {
-    const { imageUri, horizontalOffset, verticalOffset, screenWidth } = useTrickPlayWindow(props);
+    const { imageUri, horizontalOffset, verticalOffset, screenWidth, spriteSheetSize } = useTrickPlayWindow(props);
 
     return (
         props.isVisible && (
@@ -30,6 +30,7 @@ export function TrickplayWindow(props: TrickPlayWindowProps) {
                             },
                         ],
                     },
+                    spriteSheetSize && { aspectRatio: spriteSheetSize.width / spriteSheetSize.height },
                 ]}
             >
                 {imageUri && (
@@ -37,8 +38,14 @@ export function TrickplayWindow(props: TrickPlayWindowProps) {
                         source={imageUri}
                         style={[
                             style.trickPlayImage,
+                            spriteSheetSize && {
+                                aspectRatio: spriteSheetSize.width / spriteSheetSize.height,
+                            },
                             {
-                                transform: [{ translateX: horizontalOffset }, { translateY: verticalOffset }],
+                                transform: [
+                                    { translateX: `${horizontalOffset}%` },
+                                    { translateY: `${verticalOffset}%` },
+                                ],
                             },
                         ]}
                     />

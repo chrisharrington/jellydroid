@@ -12,7 +12,7 @@ export function useMovieDetails() {
         [selectedSubtitle, setSelectedSubtitle] = useState<string | null>(null),
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails: getMovieDetails, prefetchTrickplayImages } = useJellyfin(),
+        { getItemDetails: getMovieDetails, downloadTrickplayImages } = useJellyfin(),
         toast = useToast();
 
     useAsyncEffect(async () => {
@@ -23,8 +23,8 @@ export function useMovieDetails() {
             const localMovie = await getMovieDetails(id);
             if (!localMovie) throw new Error('Movie not found.');
 
-            // Prefetch trickplay images.
-            prefetchTrickplayImages(localMovie);
+            // Download trickplay images.
+            await downloadTrickplayImages(localMovie);
 
             // Store the movie information.
             setMovie(localMovie);

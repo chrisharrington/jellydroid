@@ -257,24 +257,6 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
     }, [player, showControls]);
 
     /**
-     * Handles drag changes on the seek bar to update video position.
-     * Calculates new time based on percentage and resets auto-hide timer.
-     */
-    const handleSeekBarChange = useCallback(
-        (value: number) => {
-            if (!player) return;
-
-            console.log('Current Time:', (value / 100) * (player.duration || 0));
-            // Seek to the new time based on the slider value.
-            player.currentTime = (value / 100) * (player.duration || 0);
-
-            // Show controls after seeking.
-            showControls();
-        },
-        [player, showControls]
-    );
-
-    /**
      * Handles seek bar drag start to begin interactive seeking.
      * Pauses playback, calculates initial thumb position, and clears auto-hide timer.
      */
@@ -304,11 +286,6 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         (value: number) => {
             if (!player || !isSliding) return;
 
-            // Seek to the new time based on the slider value.
-            const newTime = (value / 100) * (player.duration || 0);
-            player.currentTime = newTime;
-            // currentTime is now computed from player, no need to set state
-
             // Update slider state values.
             setSliderValue(value);
             setThumbPosition(value);
@@ -328,6 +305,9 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
             setSliding(false);
             setSliderValue(value);
             setThumbPosition(0);
+
+            // Seek to the new time based on the slider value.
+            player.currentTime = (value / 100) * (player.duration || 0);
 
             // Resume playback and reset auto-hide timer.
             showControls();

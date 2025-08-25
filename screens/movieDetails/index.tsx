@@ -36,7 +36,12 @@ export function MovieDetailsScreen() {
             ) : (
                 movie && (
                     <ScrollView>
-                        <Image source={{ uri: backdrop }} style={style.backdrop} />
+                        <Image
+                            source={{
+                                uri: backdrop,
+                            }}
+                            style={style.backdrop}
+                        />
                         <View style={{ padding: 16, gap: 24, paddingBottom: 48 }}>
                             <View>
                                 <View style={style.subHeader}>

@@ -4,19 +4,17 @@ export default StyleSheet.create({
     thumbPanel: {
         position: 'absolute',
         bottom: 60,
-        width: 320,
-        height: 132,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         borderRadius: 8,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.3)',
         overflow: 'hidden',
         zIndex: 12,
+        width: 320,
     },
 
     trickPlayImage: {
         width: 3200,
-        height: 1320,
         transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
     },
 
