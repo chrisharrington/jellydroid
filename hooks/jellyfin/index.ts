@@ -95,6 +95,30 @@ export function useJellyfin() {
     }, [api]);
 
     /**
+     * Retrieves the shows of the 30 most recently added episodes.
+     *
+     * Uses the Jellyfin API to fetch shows sorted by creation date in descending order.
+     * The query is recursive, meaning it searches through all libraries and folders.
+     *
+     * @throws {Error} When the API response contains no items
+     * @returns {Promise<BaseItemDto[]>} A promise that resolves to an array of episode items
+     */
+    const getRecentlyAddedEpisodes = useCallback(async () => {
+        const itemsApi = getItemsApi(api);
+        const response = await itemsApi.getItems({
+            sortBy: [ItemSortBy.DateCreated],
+            sortOrder: [SortOrder.Descending],
+            includeItemTypes: [BaseItemKind.Series],
+            recursive: true,
+            limit: 30,
+        });
+
+        if (!response.data.Items) throw new Error('No items found in response.');
+
+        return response.data.Items;
+    }, [api]);
+
+    /**
      * Retrieves a list of movies that can be resumed/continued watching.
      *
      * @returns A promise that resolves to an array of resumable movie items, sorted by date played in descending order
@@ -364,6 +388,7 @@ export function useJellyfin() {
         findMovieByName,
         getMediaInfo,
         getRecentlyAddedMovies,
+        getRecentlyAddedEpisodes,
         getContinueWatchingItems,
         getItemDetails,
         getImageForId,
