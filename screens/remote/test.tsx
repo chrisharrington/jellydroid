@@ -1,3 +1,4 @@
+import { ToastProvider } from '@/components/toast';
 import { CastProvider } from '@/contexts/cast';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
@@ -158,7 +159,11 @@ jest.mock('@react-native-community/slider', () => ({
 
 // Test wrapper component to provide context
 function TestWrapper({ children }: { children: React.ReactNode }) {
-    return <CastProvider>{children}</CastProvider>;
+    return (
+        <ToastProvider>
+            <CastProvider>{children}</CastProvider>
+        </ToastProvider>
+    );
 }
 
 // Suppress act() warnings for behavior-driven tests
