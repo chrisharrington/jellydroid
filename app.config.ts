@@ -39,7 +39,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 image: './assets/images/splash-icon.png',
                 imageWidth: 200,
                 resizeMode: 'contain',
-                backgroundColor: '#ffffff',
+                backgroundColor: '#151718',
             },
         ],
         'react-native-google-cast',

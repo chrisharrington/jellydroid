@@ -9,17 +9,13 @@ type TvSectionProps = Omit<SectionProps, 'children'> & {
 
     /** Optional. A flag indicating that each item poster should display a progress indicator. Defaults to false. */
     withProgressIndicator?: boolean;
+
+    /** Optional. A flag indicating that skeleton loaders should be shown instead of poster content. Defaults to false. */
+    isBusy?: boolean;
 };
 
 export function TvSection(props: TvSectionProps) {
     const { navigateToTvShowDetails } = useTvSection();
 
-    return (
-        <ItemSection
-            label={props.label}
-            items={props.episodes}
-            onItemSelected={navigateToTvShowDetails}
-            withProgressIndicator={props.withProgressIndicator}
-        />
-    );
+    return <ItemSection {...props} items={props.episodes} onItemSelected={navigateToTvShowDetails} />;
 }

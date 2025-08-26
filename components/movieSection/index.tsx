@@ -9,17 +9,13 @@ type MovieSectionProps = Omit<SectionProps, 'children'> & {
 
     /** Optional. A flag indicating that each item poster should display a progress indicator. Defaults to false. */
     withProgressIndicator?: boolean;
+
+    /** Optional. A flag indicating that skeleton loaders should be shown instead of poster content. Defaults to false. */
+    isBusy?: boolean;
 };
 
 export function MovieSection(props: MovieSectionProps) {
     const { navigateToMovieDetails } = useMovieSection();
 
-    return (
-        <ItemSection
-            label={props.label}
-            items={props.movies}
-            onItemSelected={navigateToMovieDetails}
-            withProgressIndicator={props.withProgressIndicator}
-        />
-    );
+    return <ItemSection {...props} items={props.movies} onItemSelected={navigateToMovieDetails} />;
 }
