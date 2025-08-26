@@ -7,11 +7,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     slug: 'jellydroid',
     version: '1.0.0',
     orientation: 'portrait',
+    icon: './assets/images/icon.png',
     scheme: 'jellydroid',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     ios: {
         supportsTablet: true,
+        bundleIdentifier: 'com.chrisharrington.jellydroid',
     },
     android: {
         adaptiveIcon: {
@@ -34,10 +36,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         [
             'expo-splash-screen',
             {
-                image: './assets/images/adaptive-icon.png',
+                image: './assets/images/splash-icon.png',
                 imageWidth: 200,
                 resizeMode: 'contain',
-                backgroundColor: '#151718',
+                backgroundColor: '#ffffff',
             },
         ],
         'react-native-google-cast',

@@ -138,7 +138,7 @@ export function CastProvider({ children }: CastProviderProps) {
      * @param resumePlayback - Whether to resume playback if the item is already playing.
      */
     const cast = useCallback(
-        async (item: BaseItemDto, resumePlayback?: boolean) => {
+        async (item: BaseItemDto) => {
             try {
                 if (!client) throw new Error('Cannot cast; no client available.');
 
@@ -146,8 +146,6 @@ export function CastProvider({ children }: CastProviderProps) {
                 let itemId = item.Id,
                     streamUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${itemId}/master.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
                     posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
-
-                if (resumePlayback) streamUrl += `&StartTimeTicks=${item.UserData?.PlaybackPositionTicks || 0}`;
 
                 // Cast media to the connected device.
                 await client.loadMedia({
@@ -162,6 +160,10 @@ export function CastProvider({ children }: CastProviderProps) {
                         },
                     },
                 });
+
+                // Seek to the last known position, if necessary.
+                const lastKnownPosition = item.UserData?.PlaybackPositionTicks || 0;
+                if (lastKnownPosition > 0) seekToPosition(lastKnownPosition / 10_000_000);
             } catch (e) {
                 toast.error('Failed to cast media. Please try again later.', e);
             }
@@ -184,7 +186,7 @@ export function CastProvider({ children }: CastProviderProps) {
             await availableClient.pause();
             setStatus(prev => ({ ...prev, isBusy: false }));
         } catch (error) {
-            toast.error('Failed to pause:', error);
+            toast.error('Failed to pause.', error);
             setStatus(prev => ({ ...prev, isPlaying: true, isBusy: false }));
         }
     }, [client]);
@@ -204,7 +206,7 @@ export function CastProvider({ children }: CastProviderProps) {
             await availableClient.play();
             setStatus(prev => ({ ...prev, isBusy: false }));
         } catch (error) {
-            toast.error('Failed to resume:', error);
+            toast.error('Failed to resume.', error);
             setStatus(prev => ({ ...prev, isPlaying: false, isBusy: false }));
         }
     }, [client]);
@@ -229,7 +231,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 await availableClient.seek({ position: newPosition });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                toast.error('Failed to seek forward:', error);
+                toast.error('Failed to seek forward.', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
@@ -257,7 +259,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 await availableClient.seek({ position: newPosition });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                toast.error('Failed to seek backward:', error);
+                toast.error('Failed to seek backward.', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
@@ -282,7 +284,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 await availableClient.seek({ position });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                toast.error('Failed to seek to position:', error);
+                toast.error('Failed to seek to position.', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },
@@ -298,7 +300,7 @@ export function CastProvider({ children }: CastProviderProps) {
         try {
             await getCastClient().stop();
         } catch (error) {
-            toast.error('Failed to stop the casting session:', error);
+            toast.error('Failed to stop the casting session.', error);
         }
     }, [client]);
 
@@ -350,7 +352,7 @@ export function CastProvider({ children }: CastProviderProps) {
 
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
-                toast.error('Failed to handle device selection:', error);
+                toast.error('Failed to handle device selection.', error);
                 setStatus(prev => ({ ...prev, isBusy: false }));
             }
         },

@@ -109,7 +109,6 @@ export function useRemoteScreen() {
     const changeAudio = useCallback(async (audioValue: string | null) => {
         try {
             // TODO: Implement actual audio track switching logic with Google Cast
-            // await client.setActiveTrackIds([audioTrackId]);
             setSelectedAudio(audioValue);
         } catch (error) {
             console.error('Failed to change audio track:', error);
@@ -151,86 +150,4 @@ export function useRemoteScreen() {
         maxTime: useMemo(() => formatTimeFromSeconds(status.maxPosition), [item]),
         isBusy,
     };
-
-    /**
-     * Updates the media status by fetching current playback information from the remote media client.
-     * This includes play state, stream position, duration, and formatted time strings.
-     */
-    // async function updateMediaStatus() {
-    //     try {
-    //         if (!client) return;
-
-    //         // Retrieve the current media status from the client.
-    //         const mediaStatus = await client.getMediaStatus();
-    //         if (!mediaStatus) return;
-
-    //         // Extract media info and current position.
-    //         const mediaInfo = mediaStatus.mediaInfo,
-    //             duration = mediaInfo?.streamDuration || 0,
-    //             position = (await client.getStreamPosition()) || 0,
-    //             playerState = mediaStatus.playerState;
-
-    //         // Update local time and last update timestamp.
-    //         const now = Date.now();
-    //         setLastUpdateTime(now);
-    //         setLocalTime(position);
-
-    //         // Update playback status based on media state.
-    //         setStatus({
-    //             isPlaying: playerState === MediaPlayerState.PLAYING,
-    //             isLoading: playerState !== MediaPlayerState.PLAYING && playerState !== MediaPlayerState.PAUSED,
-    //             streamPosition: position,
-    //             maxPosition: duration,
-    //             currentTime: formatTimeFromSeconds(position),
-    //             maxTime: formatTimeFromSeconds(duration),
-    //         });
-
-    //         // Update playback progress with Jellyfin every 10 updates to prevent
-    //         // bombarding the server.
-    //         progressCounter.current += 1;
-    //         if (progressCounter.current >= 10) {
-    //             updatePlaybackProgress(
-    //                 params.itemId,
-    //                 params.mediaSourceId,
-    //                 playback.playbackSessionId,
-    //                 position,
-    //                 status.isPlaying
-    //             );
-    //             progressCounter.current = 0;
-    //         }
-    //     } catch (error) {
-    //         console.error('Failed to update media status:', error);
-    //     }
-    // }
-
-    /**
-     * Formats a time duration in seconds into a human-readable string format.
-     * Returns time in either "MM:SS" or "HH:MM:SS" format depending on the duration.
-     *
-     * @param seconds - The number of seconds to format
-     * @returns A formatted string representation of the time duration
-     * - Returns "00:00" if seconds is null or negative
-     * - Returns "HH:MM:SS" format if hours > 0
-     * - Returns "MM:SS" format if hours = 0
-     *
-     * @example
-     * formatTimeForDrag(3661) // returns "01:01:01"
-     * formatTimeForDrag(61) // returns "01:01"
-     * formatTimeForDrag(-1) // returns "00:00"
-     */
-    function formatTimeForDrag(seconds: number | null): string {
-        if (seconds == null || seconds < 0) return '00:00';
-
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-
-        if (hours > 0) {
-            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
-                .toString()
-                .padStart(2, '0')}`;
-        }
-
-        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
 }

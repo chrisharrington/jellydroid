@@ -6,7 +6,9 @@
     "start": "bunx expo start",
     "build:dev": "bunx dotenv -- eas build --profile development --platform android --local --output dev-build.apk && qrcp dev-build.apk",
     "test": "bunx jest",
-    "type-check": "bunx tsc --noEmit"
+    "type-check": "bunx tsc --noEmit",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",

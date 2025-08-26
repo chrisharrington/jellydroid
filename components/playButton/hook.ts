@@ -21,9 +21,7 @@ export function usePlayButton(props: PlayButtonProps) {
                 push(`/remote/${props.item.Id}/${props.item.MediaSources?.[0].Id}`);
 
                 // Cast the item to the remote media client.
-                cast(props.item, true);
-
-                return;
+                cast(props.item);
             } else {
                 push(`/video/${props.item.Id}/${props.item.MediaSources?.[0].Id}`);
             }

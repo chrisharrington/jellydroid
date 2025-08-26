@@ -1,6 +1,6 @@
+import { useCast } from '@/contexts/cast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
-import { useCustomCastButton } from './hook';
 
 export type CustomCastButtonProps = {
     style?: any;
@@ -10,7 +10,7 @@ export type CustomCastButtonProps = {
 };
 
 export function CustomCastButton({ style, tintColor = 'white', size = 24, onPress }: CustomCastButtonProps) {
-    const { isConnected } = useCustomCastButton();
+    const { isConnected } = useCast();
 
     return (
         <TouchableOpacity
