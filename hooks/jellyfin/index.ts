@@ -383,6 +383,28 @@ export function useJellyfin() {
         return config.current;
     }, [api, login]);
 
+    /**
+     * Toggles the watched status of a Jellyfin media item.
+     * @param item - The Jellyfin media item to update
+     * @param isWatched - The current watched status of the item. If true, marks item as unwatched. If false, marks item as watched.
+     * @throws Will throw an error if the user is not logged in and login attempt fails
+     * @returns Promise that resolves when the watched status has been updated
+     */
+    const toggleItemWatched = useCallback(
+        async (item: BaseItemDto, isWatched: boolean) => {
+            if (!user.current) await login();
+
+            const playstateApi = getPlaystateApi(api),
+                parameters = { itemId: item.Id!, userId: user.current!.Id };
+
+            if (isWatched) await playstateApi.markUnplayedItem(parameters);
+            else await playstateApi.markPlayedItem(parameters);
+
+            return !isWatched;
+        },
+        [api, login]
+    );
+
     return {
         login,
         findMovieByName,
@@ -400,6 +422,7 @@ export function useJellyfin() {
         getSystemConfig,
         downloadTrickplayImages,
         getTrickplayTileFileUri,
+        toggleItemWatched,
     };
 
     /**

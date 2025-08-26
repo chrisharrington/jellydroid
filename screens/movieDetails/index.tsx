@@ -1,12 +1,12 @@
 import { AudioSelector } from '@/components/audio';
-import { SecondaryButton } from '@/components/button';
 import { CastList } from '@/components/castList';
 import { InfoTable } from '@/components/infoTable';
 import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
 import { SubtitleSelector } from '@/components/subtitles';
+import { ToggleWatchedButton } from '@/components/toggleWatchedButton';
 import { Colours } from '@/constants/colours';
-import { AntDesign, FontAwesome } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { ScrollView, Text, View } from 'react-native';
 import { useMovieDetails } from './hook';
@@ -22,7 +22,6 @@ export function MovieDetailsScreen() {
         selectedAudio,
         backdrop,
         duration,
-        onMovieWatchedPress,
         onSubtitleSelected,
         onAudioSelected,
     } = useMovieDetails();
@@ -85,9 +84,7 @@ export function MovieDetailsScreen() {
                                     </View>
 
                                     <View style={style.additionalButton}>
-                                        <SecondaryButton onPress={onMovieWatchedPress}>
-                                            <AntDesign name='checkcircle' size={18} color='white' />
-                                        </SecondaryButton>
+                                        <ToggleWatchedButton item={movie} />
                                     </View>
                                 </View>
 

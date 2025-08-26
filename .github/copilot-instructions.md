@@ -107,7 +107,7 @@ describe('AppUpdatePrompt', () => {
 -   Use proper punctuation, including periods at the end.
 -   When asked to write inline comments for a props type (that is, a type ending with "Props"), ensure the following. Regular variables within a hook should not use these comment rules.
     -   Comments are prefixed with "Required." or "Optional." based on whether the prop in question is required or optional.
-    -   Use /\*\* \*/ comment style.
+    -   Use /\*\* \*/ comment style on a single line.
     -   Each prop and its comment should be grouped together. Each group should be separated by a newline.
 -   For inline comments:
     -   Group logical code pieces together and provide one inline comment per group.
@@ -169,11 +169,12 @@ Here's an example of a function header comment:
 -   A component over 200 lines is too large and should be split up.
 -   Boolean state variables should be defined as such: `[isBusy, setBusy] = useState<boolean>(false)`.
 -   When defining state variables via `useState`, ensure they are typed correctly.
--   When creating code with consecutive variables, always use a single `const` with comma separated variable declarations.
+-   Always use a single `const` with comma separated variable declarations.
 -   When creating a component inside an index.tsx file, declare and export a props file named similarly to the component: "BalloonPopper" should have "BalloonPopperProps".
 -   When creating a component's hook inside hook.ts, ensure the hook name follows the pattern `use<ComponentName>`. The hook should take one parameter: the `props` provided to the component inside index.tsx. Do not generate an additional type for the props.
 -   `console.log` and `console.error` outputs are ok while debugging a particularly problematic issue, but final code should contain no debugging statements.
 -   If statements containing just one line of code should omit the curly braces and keep everything on one line.
+-   Always use `type` instead of `interface`.
 
 Here's an example of an appropriate folder structure for an example component:
 

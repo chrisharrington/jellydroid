@@ -12,7 +12,7 @@ export function useMovieDetails() {
         [selectedSubtitle, setSelectedSubtitle] = useState<string | null>(null),
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails: getMovieDetails, downloadTrickplayImages } = useJellyfin(),
+        { getItemDetails: getMovieDetails, downloadTrickplayImages, toggleItemWatched } = useJellyfin(),
         toast = useToast();
 
     useAsyncEffect(async () => {
@@ -42,33 +42,32 @@ export function useMovieDetails() {
         }
     }, [name]);
 
-    const onMovieWatchedPress = useCallback(() => {
-        if (!movie) return;
-        toast.success(`${movie.Name} has been marked as watched.`);
+    const getSubtitleOptions = useCallback(() => {
+        const subtitleStreams =
+            movie?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Subtitle).map(
+                subtitle => ({
+                    value: subtitle.Index?.toString() || (subtitle.DisplayTitle as string),
+                    label: subtitle.DisplayTitle || 'Unknown',
+                })
+            ) || [];
+
+        return [{ value: null, label: 'None' }, ...subtitleStreams];
+    }, [movie]);
+
+    const getAudioOptions = useCallback(() => {
+        const audioStreams =
+            movie?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Audio).map(audio => ({
+                value: audio.Index?.toString() || (audio.DisplayTitle as string),
+                label: audio.DisplayTitle || 'Unknown',
+            })) || [];
+
+        return [{ value: null, label: 'None' }, ...audioStreams];
     }, [movie]);
 
     return {
         movie,
-        subtitleOptions: useMemo(() => {
-            const subtitleStreams =
-                movie?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Subtitle).map(
-                    subtitle => ({
-                        value: subtitle.Index?.toString() || (subtitle.DisplayTitle as string),
-                        label: subtitle.DisplayTitle || 'Unknown',
-                    })
-                ) || [];
-
-            return [{ value: null, label: 'None' }, ...subtitleStreams];
-        }, [movie]),
-        audioOptions: useMemo(() => {
-            const audioStreams =
-                movie?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Audio).map(audio => ({
-                    value: audio.Index?.toString() || (audio.DisplayTitle as string),
-                    label: audio.DisplayTitle || 'Unknown',
-                })) || [];
-
-            return [{ value: null, label: 'None' }, ...audioStreams];
-        }, [movie]),
+        subtitleOptions: getSubtitleOptions(),
+        audioOptions: getAudioOptions(),
         selectedSubtitle,
         selectedAudio,
         duration: useMemo(() => formatDuration(movie?.RunTimeTicks || 0), [movie]),
@@ -79,6 +78,5 @@ export function useMovieDetails() {
         ),
         onSubtitleSelected: useCallback((subtitle: string | null) => setSelectedSubtitle(subtitle), [movie]),
         onAudioSelected: useCallback((audio: string | null) => setSelectedAudio(audio), [movie]),
-        onMovieWatchedPress,
     };
 }
