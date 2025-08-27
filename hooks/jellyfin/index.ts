@@ -1,6 +1,7 @@
 import { JellyfinConfig } from '@/models';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { Jellyfin } from '@jellyfin/sdk';
-import { BaseItemDto, BaseItemKind, ItemSortBy, SortOrder, UserDto } from '@jellyfin/sdk/lib/generated-client/models';
+import { BaseItemDto, BaseItemKind, ItemSortBy, SortOrder } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
 import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
@@ -20,24 +21,67 @@ import { useCallback, useMemo, useRef } from 'react';
  */
 export function useJellyfin() {
     const api = useMemo(createApi, []),
-        user = useRef<UserDto | null>(null),
-        config = useRef<JellyfinConfig | null>(null);
+        config = useRef<JellyfinConfig | null>(null),
+        { user, isAuthenticated, isSessionValid, setAuth, clearAuth } = useAuthStore();
 
     /**
      * Authenticates a user with the provided username and password.
-     * On successful authentication, updates the user state with the response data.
+     * On successful authentication, updates the auth store with the response data.
      *
-     * @param username - The username of the user to authenticate.
-     * @param password - The password of the user to authenticate.
      * @returns A promise that resolves when the authentication process is complete.
      */
     const login = useCallback(async () => {
-        const response = await api.authenticateUserByName(
-            process.env.EXPO_PUBLIC_JELLYFIN_USERNAME || '',
-            process.env.EXPO_PUBLIC_JELLYFIN_PASSWORD || ''
-        );
-        user.current = response.data.User || null;
-    }, [api]);
+        try {
+            const response = await api.authenticateUserByName(
+                process.env.EXPO_PUBLIC_JELLYFIN_USERNAME || '',
+                process.env.EXPO_PUBLIC_JELLYFIN_PASSWORD || ''
+            );
+
+            const userData = response.data.User;
+            const accessToken = response.data.AccessToken;
+
+            if (!userData || !accessToken) {
+                throw new Error('Invalid authentication response');
+            }
+
+            setAuth(userData, accessToken);
+        } catch (error) {
+            clearAuth();
+            throw error;
+        }
+    }, [api, setAuth, clearAuth]);
+
+    /**
+     * Ensures the user is authenticated before making API calls.
+     * Checks session validity and re-authenticates if necessary.
+     */
+    const ensureAuthenticated = useCallback(async () => {
+        if (!isAuthenticated || !isSessionValid()) {
+            await login();
+        }
+    }, [isAuthenticated, isSessionValid, login]);
+
+    /**
+     * Wrapper for API calls that handles 401 authentication errors.
+     * Automatically retries once with re-authentication if a 401 error occurs.
+     */
+    const withAuthRetry = useCallback(
+        async <T>(apiCall: () => Promise<T>): Promise<T> => {
+            try {
+                await ensureAuthenticated();
+                return await apiCall();
+            } catch (error: any) {
+                // If we get a 401 error, clear auth and retry once
+                if (error?.response?.status === 401 || error?.status === 401) {
+                    clearAuth();
+                    await login();
+                    return await apiCall();
+                }
+                throw error;
+            }
+        },
+        [ensureAuthenticated, clearAuth, login]
+    );
 
     /**
      * Finds a movie by its name (title).
@@ -46,6 +90,8 @@ export function useJellyfin() {
      */
     const findMovieByName = useCallback(
         async (year: number, name: string) => {
+            await ensureAuthenticated();
+
             const itemsApi = getItemsApi(api);
             const response = await itemsApi.getItems({
                 searchTerm: name,
@@ -58,7 +104,7 @@ export function useJellyfin() {
             const items = response.data.Items;
             return items && items.length > 0 ? items[0] : undefined;
         },
-        [api]
+        [api, ensureAuthenticated]
     );
 
     /**
@@ -68,8 +114,17 @@ export function useJellyfin() {
      * @returns A promise that resolves to the playback information data of the requested media item.
      */
     const getMediaInfo = useCallback(
-        async (itemId: string) => (await getMediaInfoApi(api).getPlaybackInfo({ itemId })).data,
-        [api]
+        async (itemId: string) => {
+            await ensureAuthenticated();
+
+            const mediaInfoApi = getMediaInfoApi(api);
+            const response = await mediaInfoApi.getPlaybackInfo({
+                itemId,
+            });
+
+            return response.data;
+        },
+        [api, ensureAuthenticated]
     );
 
     /**
@@ -80,19 +135,20 @@ export function useJellyfin() {
      * @returns {Promise<Item[]>} A promise that resolves to an array of recently added movie items.
      */
     const getRecentlyAddedMovies = useCallback(async () => {
-        const itemsApi = getItemsApi(api);
-        const response = await itemsApi.getItems({
-            sortBy: [ItemSortBy.DateCreated],
-            sortOrder: [SortOrder.Descending],
-            includeItemTypes: [BaseItemKind.Movie],
-            recursive: true,
-            limit: 30,
+        return withAuthRetry(async () => {
+            const itemsApi = getItemsApi(api);
+            const response = await itemsApi.getItems({
+                sortBy: [ItemSortBy.DateCreated],
+                sortOrder: [SortOrder.Descending],
+                includeItemTypes: [BaseItemKind.Movie],
+                recursive: true,
+                limit: 30,
+            });
+
+            if (!response.data.Items) throw new Error('No items found in response.');
+            return response.data.Items;
         });
-
-        if (!response.data.Items) throw new Error('No items found in response.');
-
-        return response.data.Items;
-    }, [api]);
+    }, [api, withAuthRetry]);
 
     /**
      * Retrieves the shows of the 30 most recently added episodes.
@@ -104,19 +160,20 @@ export function useJellyfin() {
      * @returns {Promise<BaseItemDto[]>} A promise that resolves to an array of episode items
      */
     const getRecentlyAddedEpisodes = useCallback(async () => {
-        const itemsApi = getItemsApi(api);
-        const response = await itemsApi.getItems({
-            sortBy: [ItemSortBy.DateCreated],
-            sortOrder: [SortOrder.Descending],
-            includeItemTypes: [BaseItemKind.Series],
-            recursive: true,
-            limit: 30,
+        return withAuthRetry(async () => {
+            const itemsApi = getItemsApi(api);
+            const response = await itemsApi.getItems({
+                sortBy: [ItemSortBy.DateCreated],
+                sortOrder: [SortOrder.Descending],
+                includeItemTypes: [BaseItemKind.Series],
+                recursive: true,
+                limit: 30,
+            });
+
+            if (!response.data.Items) throw new Error('No items found in response.');
+            return response.data.Items;
         });
-
-        if (!response.data.Items) throw new Error('No items found in response.');
-
-        return response.data.Items;
-    }, [api]);
+    }, [api, withAuthRetry]);
 
     /**
      * Retrieves a list of movies that can be resumed/continued watching.
@@ -131,18 +188,18 @@ export function useJellyfin() {
      * - Searches recursively through all libraries
      */
     const getContinueWatchingItems = useCallback(async () => {
-        if (!user.current) await login();
+        await ensureAuthenticated();
 
         const itemsApi = getItemsApi(api);
         const response = await itemsApi.getResumeItems({
-            userId: user.current!.Id,
+            userId: user!.Id,
             includeItemTypes: [BaseItemKind.Movie],
             mediaTypes: ['Video'],
             limit: 30,
         });
         if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
-    }, [api]);
+    }, [api, ensureAuthenticated, user]);
 
     /**
      * Retrieves detailed information about a movie item from the Jellyfin API.
@@ -152,13 +209,13 @@ export function useJellyfin() {
      */
     const getItemDetails = useCallback(
         async (id: string) => {
-            if (!user.current) await login();
+            await ensureAuthenticated();
 
             const userLibraryApi = getUserLibraryApi(api);
-            const item = await userLibraryApi.getItem({ itemId: id, userId: user.current!.Id });
+            const item = await userLibraryApi.getItem({ itemId: id, userId: user!.Id });
             return item.data as BaseItemDto;
         },
-        [api, user]
+        [api, ensureAuthenticated, user]
     );
 
     /**
@@ -215,7 +272,7 @@ export function useJellyfin() {
             position: number,
             isPaused: boolean = false
         ) => {
-            if (!user.current) await login();
+            await ensureAuthenticated();
 
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackProgress({
@@ -228,7 +285,7 @@ export function useJellyfin() {
                 },
             });
         },
-        [api, login]
+        [api, ensureAuthenticated]
     );
 
     /**
@@ -240,7 +297,7 @@ export function useJellyfin() {
      */
     const startPlaybackSession = useCallback(
         async (itemId: string, mediaSourceId: string, playSessionId: string | null) => {
-            if (!user.current) await login();
+            await ensureAuthenticated();
 
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStart({
@@ -253,7 +310,7 @@ export function useJellyfin() {
                 },
             });
         },
-        [api, login]
+        [api, ensureAuthenticated]
     );
 
     /**
@@ -266,7 +323,7 @@ export function useJellyfin() {
      */
     const stopPlaybackSession = useCallback(
         async (itemId: string, mediaSourceId: string, playSessionId: string | null, positionTicks: number) => {
-            if (!user.current) await login();
+            await ensureAuthenticated();
 
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStopped({
@@ -278,7 +335,7 @@ export function useJellyfin() {
                 },
             });
         },
-        [api, login]
+        [api, ensureAuthenticated]
     );
 
     /**
@@ -301,7 +358,7 @@ export function useJellyfin() {
      */
     const downloadTrickplayImages = useCallback(
         async (item: BaseItemDto) => {
-            if (!user.current) await login();
+            await ensureAuthenticated();
             if (!config.current) config.current = await getSystemConfig();
 
             // Check for the existence of the trickplay folder. If it's there, trickplay images have already been downloaded.
@@ -331,7 +388,7 @@ export function useJellyfin() {
                 )
             );
         },
-        [api, login]
+        [api, ensureAuthenticated]
     );
 
     /**
@@ -345,7 +402,7 @@ export function useJellyfin() {
      */
     const getTrickplayTileFileUri = useCallback(
         (item: BaseItemDto, index: number) => `${getTrickplayFolderUri(item)}/${index}.jpg`,
-        [api, login]
+        []
     );
 
     /**
@@ -355,7 +412,7 @@ export function useJellyfin() {
      */
     const getTrickplayFolderUri = useCallback(
         (item: BaseItemDto) => `${FileSystem.cacheDirectory}trickplay/${item.Id}`,
-        [api, login]
+        []
     );
 
     /**
@@ -369,7 +426,7 @@ export function useJellyfin() {
      * @throws {Error} When the API request fails or returns a non-ok response
      */
     const getSystemConfig = useCallback(async () => {
-        if (!user.current) await login();
+        await ensureAuthenticated();
         if (config.current) return config.current;
 
         const response = await fetch(
@@ -381,7 +438,7 @@ export function useJellyfin() {
         const localConfig = (await response.json()) as JellyfinConfig;
         config.current = localConfig;
         return config.current;
-    }, [api, login]);
+    }, [ensureAuthenticated]);
 
     /**
      * Toggles the watched status of a Jellyfin media item.
@@ -392,17 +449,17 @@ export function useJellyfin() {
      */
     const toggleItemWatched = useCallback(
         async (item: BaseItemDto, isWatched: boolean) => {
-            if (!user.current) await login();
+            await ensureAuthenticated();
 
             const playstateApi = getPlaystateApi(api),
-                parameters = { itemId: item.Id!, userId: user.current!.Id };
+                parameters = { itemId: item.Id!, userId: user!.Id };
 
             if (isWatched) await playstateApi.markUnplayedItem(parameters);
             else await playstateApi.markPlayedItem(parameters);
 
             return !isWatched;
         },
-        [api, login]
+        [api, ensureAuthenticated, user]
     );
 
     return {

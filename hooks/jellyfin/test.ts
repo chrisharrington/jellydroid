@@ -46,6 +46,24 @@ jest.mock('expo-device', () => ({
     deviceName: 'Mock Device',
 }));
 
+// Mock expo-secure-store
+jest.mock('expo-secure-store', () => ({
+    getItemAsync: jest.fn(),
+    setItemAsync: jest.fn(),
+    deleteItemAsync: jest.fn(),
+}));
+
+// Mock the auth store
+jest.mock('@/stores/useAuthStore', () => ({
+    useAuthStore: jest.fn(() => ({
+        user: { Id: 'user-123', Name: 'Test User' },
+        isAuthenticated: true,
+        isSessionValid: jest.fn(() => true),
+        setAuth: jest.fn(),
+        clearAuth: jest.fn(),
+    })),
+}));
+
 import { useJellyfin } from './index';
 
 afterAll(() => {
@@ -57,6 +75,7 @@ describe('useJellyfin', () => {
     let mockItemsApi: any;
     let mockMediaInfoApi: any;
     let mockUserLibraryApi: any;
+    let mockAuthStore: any;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -78,7 +97,24 @@ describe('useJellyfin', () => {
             getItem: jest.fn(),
         };
 
-        // Mock the SDK imports
+        // Setup default auth store
+        mockAuthStore = {
+            user: { Id: 'user-123', Name: 'Test User' },
+            isAuthenticated: true,
+            isSessionValid: jest.fn(() => true),
+            setAuth: jest.fn(),
+            clearAuth: jest.fn(),
+        };
+
+        // Override the auth store mock for each test
+        require('@/stores/useAuthStore').useAuthStore.mockReturnValue(mockAuthStore);
+
+        // Setup default successful authentication for all tests
+        // Individual tests can override this if needed
+        const mockUser: UserDto = { Id: 'user-123', Name: 'Test User' };
+        mockApi.authenticateUserByName.mockResolvedValue({
+            data: { User: mockUser, AccessToken: 'test-token' },
+        }); // Mock the SDK imports
         const { Jellyfin } = require('@jellyfin/sdk');
         Jellyfin.mockImplementation(() => ({
             createApi: jest.fn().mockReturnValue(mockApi),
@@ -128,7 +164,7 @@ describe('useJellyfin', () => {
         it('should authenticate user with credentials from environment', async () => {
             const mockUser: UserDto = { Id: 'user-123', Name: 'Test User' };
             mockApi.authenticateUserByName.mockResolvedValue({
-                data: { User: mockUser },
+                data: { User: mockUser, AccessToken: 'test-token' },
             });
 
             const { result } = renderHook(() => useJellyfin());
@@ -136,6 +172,7 @@ describe('useJellyfin', () => {
             await result.current.login();
 
             expect(mockApi.authenticateUserByName).toHaveBeenCalledWith('testuser', 'testpass');
+            expect(mockAuthStore.setAuth).toHaveBeenCalledWith(mockUser, 'test-token');
         });
 
         it('should handle authentication failure', async () => {
@@ -144,6 +181,7 @@ describe('useJellyfin', () => {
             const { result } = renderHook(() => useJellyfin());
 
             await expect(result.current.login()).rejects.toThrow('Authentication failed');
+            expect(mockAuthStore.clearAuth).toHaveBeenCalled();
         });
 
         it('should handle missing user in response', async () => {
@@ -153,10 +191,8 @@ describe('useJellyfin', () => {
 
             const { result } = renderHook(() => useJellyfin());
 
-            await result.current.login();
-
-            expect(mockApi.authenticateUserByName).toHaveBeenCalled();
-            // Should not throw, user.current should be null
+            await expect(result.current.login()).rejects.toThrow('Invalid authentication response');
+            expect(mockAuthStore.clearAuth).toHaveBeenCalled();
         });
     });
 
@@ -293,7 +329,7 @@ describe('useJellyfin', () => {
 
             // Setup authenticated user
             mockApi.authenticateUserByName.mockResolvedValue({
-                data: { User: mockUser },
+                data: { User: mockUser, AccessToken: 'test-token' },
             });
 
             mockUserLibraryApi.getItem.mockResolvedValue({
@@ -318,8 +354,12 @@ describe('useJellyfin', () => {
             const mockUser: UserDto = { Id: 'user-123', Name: 'Test User' };
             const mockItem: BaseItemDto = { Id: 'item-123', Name: 'Test Item' };
 
+            // Set up auth store to indicate user is not authenticated
+            mockAuthStore.isAuthenticated = false;
+            mockAuthStore.isSessionValid.mockReturnValue(false);
+
             mockApi.authenticateUserByName.mockResolvedValue({
-                data: { User: mockUser },
+                data: { User: mockUser, AccessToken: 'test-token' },
             });
 
             mockUserLibraryApi.getItem.mockResolvedValue({

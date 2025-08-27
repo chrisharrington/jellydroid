@@ -33,6 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         'expo-router',
         'expo-video',
         'expo-screen-orientation',
+        'expo-secure-store',
         [
             'expo-splash-screen',
             {
