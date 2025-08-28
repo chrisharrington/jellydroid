@@ -1,4 +1,4 @@
-import { useJellyfin } from '@/hooks/jellyfin';
+import { useJellyfin } from '@/contexts/jellyfin';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 import { VideoControlsProps } from '.';

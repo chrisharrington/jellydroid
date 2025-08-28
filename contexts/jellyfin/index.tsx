@@ -1,3 +1,12 @@
+/**
+ * Jellyfin Context for API interactions and session management.
+ *
+ * This context provides a centralized way to access Jellyfin API functionality
+ * throughout the application, with persistent authentication and session management.
+ *
+ * @module JellyfinContext
+ */
+
 import { JellyfinConfig } from '@/models';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Jellyfin } from '@jellyfin/sdk';
@@ -9,18 +18,110 @@ import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api'
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as FileSystem from 'expo-file-system';
-import { useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 
 /**
- * React hook for interacting with the Jellyfin API.
- *
- * This hook memoizes the Jellyfin API instance and provides utility methods
- * for querying media items, such as finding a movie by its name.
- *
- * @returns An object containing utility methods for interacting with Jellyfin.
+ * Type defining the Jellyfin context value with all available API methods.
  */
-export function useJellyfin() {
+type JellyfinContextValue = {
+    /** Authenticates user with stored credentials. */
+    login: () => Promise<void>;
+
+    /** Retrieves the item using the given ID and stores it in `selectedItem`. */
+    loadItem: (id: string) => Promise<BaseItemDto | null>;
+
+    /** The currently selected media item. Null if no item is selected. */
+    selectedItem: BaseItemDto | null;
+
+    /** Finds a movie by name and year. */
+    findMovieByName: (year: number, name: string) => Promise<BaseItemDto | undefined>;
+
+    /** Retrieves playback information for a media item. */
+    getMediaInfo: (itemId: string) => Promise<any>;
+
+    /** Gets recently added movies from Jellyfin server. */
+    getRecentlyAddedMovies: () => Promise<BaseItemDto[]>;
+
+    /** Gets recently added TV series from Jellyfin server. */
+    getRecentlyAddedEpisodes: () => Promise<BaseItemDto[]>;
+
+    /** Gets items that can be resumed/continued watching. */
+    getContinueWatchingItems: () => Promise<BaseItemDto[]>;
+
+    /** Generates image URL for a Jellyfin item. */
+    getImageForId: (itemId: string) => string;
+
+    /** Gets streaming URL for a media item. */
+    getStreamUrl: (item: BaseItemDto) => string;
+
+    /** Gets resume position in seconds for a media item. */
+    getResumePositionSeconds: (item: BaseItemDto) => number;
+
+    /** Updates playback progress for a media item. */
+    updatePlaybackProgress: (
+        itemId: string,
+        mediaSourceId: string,
+        playSessionId: string | null,
+        position: number,
+        isPaused?: boolean
+    ) => Promise<void>;
+
+    /** Reports start of playback session to Jellyfin. */
+    startPlaybackSession: (itemId: string, mediaSourceId: string, playSessionId: string | null) => Promise<void>;
+
+    /** Reports end of playback session to Jellyfin. */
+    stopPlaybackSession: (
+        itemId: string,
+        mediaSourceId: string,
+        playSessionId: string | null,
+        positionTicks: number
+    ) => Promise<void>;
+
+    /** Retrieves Jellyfin system configuration. */
+    getSystemConfig: () => Promise<JellyfinConfig>;
+
+    /** Downloads trickplay images for video scrubbing. */
+    downloadTrickplayImages: (item: BaseItemDto) => Promise<void>;
+
+    /** Gets file URI for trickplay tile image. */
+    getTrickplayTileFileUri: (item: BaseItemDto, index: number) => string;
+
+    /** Toggles watched status of a media item. */
+    toggleItemWatched: (item: BaseItemDto, isWatched: boolean) => Promise<boolean>;
+
+    /** Updates item user data. */
+    updateItem: (itemId: string, item: BaseItemDto) => Promise<void>;
+};
+
+/**
+ * Jellyfin React Context for API access.
+ */
+const JellyfinContext = createContext<JellyfinContextValue | undefined>(undefined);
+
+/**
+ * Props for the JellyfinProvider component.
+ */
+type JellyfinProviderProps = {
+    /** Child components that will have access to the Jellyfin context. */
+    children: React.ReactNode;
+};
+
+/**
+ * Provider component that wraps the application to provide Jellyfin API access.
+ *
+ * @param props - The provider props containing children
+ * @returns JSX element providing Jellyfin context to children
+ *
+ * @example
+ * ```tsx
+ * <JellyfinProvider>
+ *   <App />
+ * </JellyfinProvider>
+ * ```
+ */
+export function JellyfinProvider({ children }: JellyfinProviderProps) {
     const api = useMemo(createApi, []),
+        [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
         config = useRef<JellyfinConfig | null>(null),
         { user, isAuthenticated, isSessionValid, setAuth, clearAuth } = useAuthStore();
 
@@ -66,7 +167,7 @@ export function useJellyfin() {
      * Automatically retries once with re-authentication if a 401 error occurs.
      */
     const withAuthRetry = useCallback(
-        async <T>(apiCall: () => Promise<T>): Promise<T> => {
+        async <T,>(apiCall: () => Promise<T>): Promise<T> => {
             try {
                 await ensureAuthenticated();
                 return await apiCall();
@@ -207,13 +308,16 @@ export function useJellyfin() {
      * @param id - The unique identifier of the movie item to fetch.
      * @returns A promise that resolves to the movie item's data.
      */
-    const getItemDetails = useCallback(
+    const loadItem = useCallback(
         async (id: string) => {
             await ensureAuthenticated();
 
-            const userLibraryApi = getUserLibraryApi(api);
-            const item = await userLibraryApi.getItem({ itemId: id, userId: user!.Id });
-            return item.data as BaseItemDto;
+            const userLibraryApi = getUserLibraryApi(api),
+                response = await userLibraryApi.getItem({ itemId: id, userId: user!.Id }),
+                item = response.data;
+
+            setSelectedItem(item);
+            return item as BaseItemDto;
         },
         [api, ensureAuthenticated, user]
     );
@@ -241,7 +345,7 @@ export function useJellyfin() {
     const getStreamUrl = useCallback(
         (item: BaseItemDto) =>
             `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/main.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
-        [api]
+        []
     );
 
     /**
@@ -388,7 +492,7 @@ export function useJellyfin() {
                 )
             );
         },
-        [api, ensureAuthenticated]
+        [ensureAuthenticated]
     );
 
     /**
@@ -462,14 +566,38 @@ export function useJellyfin() {
         [api, ensureAuthenticated, user]
     );
 
-    return {
+    /**
+     * Updates item user data in Jellyfin.
+     * @param itemId - The unique identifier of the item to update
+     * @param item - The item data containing user data to update
+     * @returns Promise that resolves when the update is complete
+     */
+    const updateItem = useCallback(
+        async (itemId: string, item: BaseItemDto) => {
+            await ensureAuthenticated();
+
+            if (!item.UserData) return;
+
+            const itemsApi = getItemsApi(api);
+            itemsApi.updateItemUserData({
+                userId: user!.Id,
+                itemId,
+                updateUserItemDataDto: item.UserData,
+            });
+        },
+        [api, ensureAuthenticated, user]
+    );
+
+    const contextValue: JellyfinContextValue = {
         login,
+        loadItem,
+        updateItem,
+        selectedItem,
         findMovieByName,
         getMediaInfo,
         getRecentlyAddedMovies,
         getRecentlyAddedEpisodes,
         getContinueWatchingItems,
-        getItemDetails,
         getImageForId,
         getStreamUrl,
         getResumePositionSeconds,
@@ -481,6 +609,8 @@ export function useJellyfin() {
         getTrickplayTileFileUri,
         toggleItemWatched,
     };
+
+    return <JellyfinContext.Provider value={contextValue}>{children}</JellyfinContext.Provider>;
 
     /**
      * Creates and configures a Jellyfin API instance using environment variables.
@@ -515,4 +645,29 @@ export function useJellyfin() {
         });
         return jellyfin.createApi(jellyfinUrl, jellyfinApiKey);
     }
+}
+
+/**
+ * Custom hook to access the Jellyfin context.
+ *
+ * @returns The Jellyfin context value with all API methods
+ * @throws {Error} If used outside of JellyfinProvider
+ *
+ * @example
+ * ```tsx
+ * function MyComponent() {
+ *   const { getRecentlyAddedMovies, getImageForId } = useJellyfin();
+ *
+ *   useEffect(() => {
+ *     getRecentlyAddedMovies().then(setMovies);
+ *   }, []);
+ *
+ *   return <div>...</div>;
+ * }
+ * ```
+ */
+export function useJellyfin(): JellyfinContextValue {
+    const context = useContext(JellyfinContext);
+    if (context === undefined) throw new Error('useJellyfin must be used within a JellyfinProvider');
+    return context;
 }

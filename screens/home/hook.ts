@@ -1,5 +1,5 @@
 import { useToast } from '@/components/toast';
-import { useJellyfin } from '@/hooks/jellyfin';
+import { useJellyfin } from '@/contexts/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';

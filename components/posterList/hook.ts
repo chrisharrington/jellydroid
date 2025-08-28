@@ -1,4 +1,4 @@
-import { useJellyfin } from '@/hooks/jellyfin';
+import { useJellyfin } from '@/contexts/jellyfin';
 
 export function usePosterList() {
     const { getImageForId } = useJellyfin();

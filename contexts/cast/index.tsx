@@ -382,7 +382,7 @@ export function CastProvider({ children }: CastProviderProps) {
             devices: getDevices(),
             playbackSessionId: playbackSessionId.current,
             onDeviceSelected,
-            isConnected: !!session,
+            isConnected: !!client,
             selectedDeviceId: selectedDeviceId || 'local',
         }),
         [

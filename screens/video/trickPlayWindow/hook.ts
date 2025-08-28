@@ -1,5 +1,5 @@
+import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { useJellyfin } from '@/hooks/jellyfin';
 import { useState } from 'react';
 import { Image, useWindowDimensions } from 'react-native';
 import { TrickPlayWindowProps } from '.';

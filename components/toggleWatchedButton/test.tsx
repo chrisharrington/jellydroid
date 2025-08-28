@@ -5,7 +5,7 @@ import React from 'react';
 import { ToggleWatchedButton } from '.';
 
 // Mock the jellyfin hook
-jest.mock('@/hooks/jellyfin', () => ({
+jest.mock('@/contexts/jellyfin', () => ({
     useJellyfin: jest.fn(() => ({
         toggleItemWatched: jest.fn(),
     })),
@@ -83,7 +83,7 @@ describe('ToggleWatchedButton', () => {
         jest.clearAllMocks();
 
         // Get the mocked functions
-        const { useJellyfin } = require('@/hooks/jellyfin');
+        const { useJellyfin } = require('@/contexts/jellyfin');
         mockToggleItemWatched = jest.fn().mockResolvedValue(undefined);
         useJellyfin.mockReturnValue({
             toggleItemWatched: mockToggleItemWatched,

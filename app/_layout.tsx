@@ -1,5 +1,6 @@
 import { ToastProvider } from '@/components/toast';
 import { CastProvider } from '@/contexts/cast';
+import { JellyfinProvider } from '@/contexts/jellyfin';
 import { BaseLayout } from '@/layout';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -24,21 +25,19 @@ export default function RootLayout() {
     });
 
     useEffect(() => {
-        if (fontsLoaded) {
-            SplashScreen.hideAsync();
-        }
+        if (fontsLoaded) SplashScreen.hideAsync();
     }, [fontsLoaded]);
 
-    if (!fontsLoaded) {
-        return null;
-    }
+    if (!fontsLoaded) return null;
 
     return (
         <Host>
             <ToastProvider>
-                <CastProvider>
-                    <BaseLayout />
-                </CastProvider>
+                <JellyfinProvider>
+                    <CastProvider>
+                        <BaseLayout />
+                    </CastProvider>
+                </JellyfinProvider>
             </ToastProvider>
         </Host>
     );

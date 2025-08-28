@@ -13,11 +13,15 @@ export type ToggleWatchedButtonProps = {
 };
 
 export function ToggleWatchedButton({ item, onToggleComplete }: ToggleWatchedButtonProps) {
-    const { isToggling, handleToggleWatched } = useToggleWatchedButton({ item, onToggleComplete });
+    const { isToggling, isWatched, handleToggleWatched } = useToggleWatchedButton({ item, onToggleComplete });
 
     return (
         <SecondaryButton onPress={handleToggleWatched} isDisabled={isToggling}>
-            {isToggling ? <Spinner size='sm' /> : <AntDesign name='checkcircle' size={18} color='white' />}
+            {isToggling ? (
+                <Spinner size='sm' />
+            ) : (
+                <AntDesign name={isWatched ? 'checkcircleo' : 'checkcircle'} size={18} color='white' />
+            )}
         </SecondaryButton>
     );
 }

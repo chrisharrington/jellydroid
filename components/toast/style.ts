@@ -30,7 +30,7 @@ export default StyleSheet.create({
     },
 
     toastText: {
-        color: '#FFFFFF',
+        color: Colours.text,
         fontSize: 16,
         fontWeight: '500',
         textAlign: 'left',

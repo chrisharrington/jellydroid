@@ -1,7 +1,8 @@
 import { SelectorOption } from '@/components/selector';
+import { useToast } from '@/components/toast';
 import { useCast } from '@/contexts/cast';
+import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -29,7 +30,7 @@ const audioOptions: SelectorOption[] = [
 ];
 
 export function useRemoteScreen() {
-    const { getItemDetails, getImageForId } = useJellyfin(),
+    const { loadItem, getImageForId } = useJellyfin(),
         { status } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
@@ -40,7 +41,8 @@ export function useRemoteScreen() {
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         playback = useCast(),
-        navigation = useNavigation();
+        navigation = useNavigation(),
+        toast = useToast();
 
     useAsyncEffect(async () => {
         try {
@@ -48,14 +50,14 @@ export function useRemoteScreen() {
             setBusy(true);
 
             // Ensure the client is available before proceeding.
-            const item = await getItemDetails(params.itemId);
+            const item = await loadItem(params.itemId);
             if (!item) throw new Error('Item not found.');
 
             // Set the item and poster for the current playback.
             setItem(item);
             setPoster(getImageForId(item.Id!));
         } catch (e) {
-            console.error('Error retrieving item details:', e);
+            toast.error('Error retrieving item details:', e);
         } finally {
             setBusy(false);
         }
@@ -93,7 +95,7 @@ export function useRemoteScreen() {
             // await client.setActiveTrackIds([subtitleTrackId]);
             setSelectedSubtitle(subtitleValue);
         } catch (error) {
-            console.error('Failed to change subtitle:', error);
+            toast.error('Failed to change subtitle:', error);
         }
     }, []);
 
@@ -111,7 +113,7 @@ export function useRemoteScreen() {
             // TODO: Implement actual audio track switching logic with Google Cast
             setSelectedAudio(audioValue);
         } catch (error) {
-            console.error('Failed to change audio track:', error);
+            toast.error('Failed to change audio track:', error);
         }
     }, []);
 

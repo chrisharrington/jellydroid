@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import { useVideoControls } from './hook';
 
 // Mock the Jellyfin hook.
-jest.mock('@/hooks/jellyfin', () => ({
+jest.mock('@/contexts/jellyfin', () => ({
     useJellyfin: jest.fn(),
 }));
 
@@ -49,7 +49,7 @@ jest.mock('react-native', () => {
 });
 
 // Import the mocked hook after mocking.
-const { useJellyfin } = require('@/hooks/jellyfin');
+const { useJellyfin } = require('@/contexts/jellyfin');
 
 // Mock video player with all required properties.
 const createMockPlayer = () =>

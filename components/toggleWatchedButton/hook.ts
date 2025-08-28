@@ -1,11 +1,12 @@
 import { useToast } from '@/components/toast';
-import { useJellyfin } from '@/hooks/jellyfin';
+import { useJellyfin } from '@/contexts/jellyfin';
 import { useCallback, useState } from 'react';
 import { ToggleWatchedButtonProps } from '.';
 
 export function useToggleWatchedButton(props: ToggleWatchedButtonProps) {
     const [isToggling, setToggling] = useState<boolean>(false),
-        { toggleItemWatched } = useJellyfin(),
+        [isWatched, setWatched] = useState<boolean>(props.item.UserData?.Played || false),
+        { updateItem } = useJellyfin(),
         toast = useToast();
 
     /**
@@ -20,14 +21,21 @@ export function useToggleWatchedButton(props: ToggleWatchedButtonProps) {
         try {
             setToggling(true);
 
-            // Derive whether the item is currently watched or unwatched.
-            const isWatched = (props.item.UserData?.PlaybackPositionTicks || 0) > 0;
-
             // Make the API call to Jellyfin to update the provided item.
-            await toggleItemWatched(props.item, !isWatched);
+            updateItem(props.item.Id!, {
+                ...props.item,
+                UserData: {
+                    ...props.item.UserData,
+                    PlaybackPositionTicks: isWatched ? 0 : props.item.UserData?.PlaybackPositionTicks,
+                    Played: !isWatched,
+                },
+            });
 
             // Indicate to the user that the Jellyfin call completed successfully.
             toast.success(`${props.item.Name} has been marked as ${!isWatched ? 'watched' : 'unwatched'}.`);
+
+            // Flip the watched state variable.
+            setWatched(!isWatched);
 
             // Call the optional callback if provided.
             if (props.onToggleComplete) props.onToggleComplete();
@@ -36,10 +44,11 @@ export function useToggleWatchedButton(props: ToggleWatchedButtonProps) {
         } finally {
             setToggling(false);
         }
-    }, [props.item, props.onToggleComplete, toggleItemWatched, toast, isToggling]);
+    }, [props.item, props.onToggleComplete, toast, isToggling]);
 
     return {
         isToggling,
+        isWatched,
         handleToggleWatched,
     };
 }

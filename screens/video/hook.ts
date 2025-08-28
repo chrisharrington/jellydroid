@@ -1,6 +1,6 @@
 import { useToast } from '@/components/toast';
+import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { useJellyfin } from '@/hooks/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 export function useVideoScreen() {
     const params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
-        { getItemDetails, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
+        { loadItem, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
         player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
             player.play();
@@ -52,7 +52,7 @@ export function useVideoScreen() {
             setBusy(true);
 
             // Retrieve the item details.
-            const item = await getItemDetails(params.itemId);
+            const item = await loadItem(params.itemId);
             if (!item) throw new Error('Item not found.');
 
             // Set the item for the current playback.
