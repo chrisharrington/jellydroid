@@ -16,9 +16,21 @@ export default function HomeScreen() {
                 </View>
             ) : (
                 <ScrollView style={{ flex: 1 }}>
-                    <MovieSection label='Continue Watching' movies={continueWatchingItems} withProgressIndicator />
-                    <MovieSection label='Recently Added Movies' movies={recentlyAddedMovies} />
-                    <TvSection label='Recently Added Episodes' episodes={recentlyAddedEpisodes} />
+                    {continueWatchingItems.length > 0 ? (
+                        <MovieSection label='Continue Watching' movies={continueWatchingItems} withProgressIndicator />
+                    ) : (
+                        <></>
+                    )}
+                    {recentlyAddedMovies.length > 0 ? (
+                        <MovieSection label='Recently Added Movies' movies={recentlyAddedMovies} />
+                    ) : (
+                        <></>
+                    )}
+                    {recentlyAddedEpisodes.length > 0 ? (
+                        <TvSection label='Recently Added Episodes' episodes={recentlyAddedEpisodes} />
+                    ) : (
+                        <></>
+                    )}
                 </ScrollView>
             )}
         </View>
