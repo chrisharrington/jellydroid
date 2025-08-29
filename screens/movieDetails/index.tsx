@@ -4,7 +4,7 @@ import { InfoTable } from '@/components/infoTable';
 import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
 import { SubtitleSelector } from '@/components/subtitles';
-import { ToggleWatchedButton } from '@/components/toggleWatchedButton';
+import { TogglePlayedButton } from '@/components/togglePlayedButton';
 import { Colours } from '@/constants/colours';
 import { FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -84,7 +84,7 @@ export function MovieDetailsScreen() {
                                     </View>
 
                                     <View style={style.additionalButton}>
-                                        <ToggleWatchedButton item={movie} />
+                                        <TogglePlayedButton item={movie} />
                                     </View>
                                 </View>
 
