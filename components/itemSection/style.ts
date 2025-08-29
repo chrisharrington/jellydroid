@@ -44,4 +44,12 @@ export default StyleSheet.create({
         height: 4,
         backgroundColor: Colours.primary,
     },
+
+    playedIndicator: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: 'white',
+        borderRadius: 18,
+    },
 });

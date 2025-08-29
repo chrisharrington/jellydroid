@@ -1,4 +1,6 @@
+import { Colours } from '@/constants/colours';
 import { Section } from '@/screens/home/section';
+import { AntDesign } from '@expo/vector-icons';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import Poster from '../poster';
@@ -46,6 +48,15 @@ export function ItemSection(props: ItemSectionProps) {
                                         ]}
                                     />
                                 </View>
+                            )}
+
+                            {item.UserData?.Played && (
+                                <AntDesign
+                                    style={style.playedIndicator}
+                                    name='checkcircle'
+                                    size={18}
+                                    color={Colours.primary}
+                                />
                             )}
                         </View>
 
