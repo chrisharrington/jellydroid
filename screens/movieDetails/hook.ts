@@ -11,7 +11,7 @@ export function useMovieDetails() {
         [selectedSubtitle, setSelectedSubtitle] = useState<string | null>(null),
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         [isBusy, setBusy] = useState<boolean>(false),
-        { loadItem, selectedItem, downloadTrickplayImages } = useJellyfin(),
+        { loadItem, item: selectedItem, downloadTrickplayImages } = useJellyfin(),
         toast = useToast();
 
     useAsyncEffect(async () => {

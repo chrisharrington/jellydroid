@@ -31,7 +31,7 @@ type JellyfinContextValue = {
     loadItem: (id: string) => Promise<BaseItemDto | null>;
 
     /** The currently selected media item. Null if no item is selected. */
-    selectedItem: BaseItemDto | null;
+    item: BaseItemDto | null;
 
     /** Finds a movie by name and year. */
     findMovieByName: (year: number, name: string) => Promise<BaseItemDto | undefined>;
@@ -121,7 +121,7 @@ type JellyfinProviderProps = {
  */
 export function JellyfinProvider({ children }: JellyfinProviderProps) {
     const api = useMemo(createApi, []),
-        [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
+        [item, setItem] = useState<BaseItemDto | null>(null),
         config = useRef<JellyfinConfig | null>(null),
         { user, isAuthenticated, isSessionValid, setAuth, clearAuth } = useAuthStore();
 
@@ -312,14 +312,44 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         async (id: string) => {
             await ensureAuthenticated();
 
+            // Use the Jellyfin API to retrieve the requested item.
             const userLibraryApi = getUserLibraryApi(api),
                 response = await userLibraryApi.getItem({ itemId: id, userId: user!.Id }),
                 item = response.data;
 
-            setSelectedItem(item);
+            // Load the item into state.
+            setItem(item);
+
+            // Return the item data.
             return item as BaseItemDto;
         },
         [api, ensureAuthenticated, user]
+    );
+
+    /**
+     * Updates item user data in Jellyfin.
+     * @param itemId - The unique identifier of the item to update
+     * @param item - The item data containing user data to update
+     * @returns Promise that resolves when the update is complete
+     */
+    const updateItem = useCallback(
+        async (itemId: string, itemToUpdate: BaseItemDto) => {
+            await ensureAuthenticated();
+
+            if (!itemToUpdate.UserData) return;
+
+            // Update the item with the Jellyfin API.
+            const itemsApi = getItemsApi(api);
+            itemsApi.updateItemUserData({
+                userId: user!.Id,
+                itemId,
+                updateUserItemDataDto: itemToUpdate.UserData,
+            });
+
+            // If we've updated the currently loaded item, update it in state, too.
+            if (itemToUpdate.Id === item?.Id) setItem(itemToUpdate);
+        },
+        [api, ensureAuthenticated, user, item]
     );
 
     /**
@@ -566,33 +596,11 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         [api, ensureAuthenticated, user]
     );
 
-    /**
-     * Updates item user data in Jellyfin.
-     * @param itemId - The unique identifier of the item to update
-     * @param item - The item data containing user data to update
-     * @returns Promise that resolves when the update is complete
-     */
-    const updateItem = useCallback(
-        async (itemId: string, item: BaseItemDto) => {
-            await ensureAuthenticated();
-
-            if (!item.UserData) return;
-
-            const itemsApi = getItemsApi(api);
-            itemsApi.updateItemUserData({
-                userId: user!.Id,
-                itemId,
-                updateUserItemDataDto: item.UserData,
-            });
-        },
-        [api, ensureAuthenticated, user]
-    );
-
     const contextValue: JellyfinContextValue = {
         login,
         loadItem,
         updateItem,
-        selectedItem,
+        item,
         findMovieByName,
         getMediaInfo,
         getRecentlyAddedMovies,
