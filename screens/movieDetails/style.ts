@@ -50,6 +50,11 @@ export default StyleSheet.create({
         color: Colours.subtext,
     },
 
+    criticIcon: {
+        width: 16,
+        height: 16,
+    },
+
     selectorsContainer: {
         gap: 16,
         paddingVertical: 8,

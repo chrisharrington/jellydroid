@@ -68,6 +68,19 @@ export function MovieDetailsScreen() {
                                                 <Text style={style.subHeaderEntry}>
                                                     {movie.CommunityRating.toFixed(1)}
                                                 </Text>
+                                                <Text style={style.divider}>/</Text>
+                                            </>
+                                        )}
+                                        {movie.CriticRating && (
+                                            <>
+                                                <Image
+                                                    source={require('@/assets/images/critic-icon.svg')}
+                                                    style={style.criticIcon}
+                                                    contentFit='contain'
+                                                />
+                                                <Text style={style.subHeaderEntry}>
+                                                    {movie.CriticRating.toFixed(1)}
+                                                </Text>
                                             </>
                                         )}
                                     </View>
