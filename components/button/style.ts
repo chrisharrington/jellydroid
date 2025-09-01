@@ -18,4 +18,8 @@ export default StyleSheet.create({
     secondaryButton: {
         backgroundColor: Colours.background3,
     },
+
+    text: {
+        color: Colours.text,
+    },
 });

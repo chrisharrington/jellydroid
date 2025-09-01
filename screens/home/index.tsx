@@ -1,3 +1,4 @@
+import { PrimaryButton } from '@/components/button';
 import { MovieSection } from '@/components/movieSection';
 import Spinner from '@/components/spinner';
 import { TvSection } from '@/components/tvSection';
@@ -6,7 +7,14 @@ import { ScrollView, View } from 'react-native';
 import { useHome } from './hook';
 
 export default function HomeScreen() {
-    const { isBusy, recentlyAddedMovies, recentlyAddedEpisodes, continueWatchingItems } = useHome();
+    const {
+        isBusy,
+        recentlyAddedMovies,
+        recentlyAddedEpisodes,
+        continueWatchingItems,
+        navigateToMovies,
+        navigateToTvShows,
+    } = useHome();
 
     return (
         <View style={{ flex: 1, backgroundColor: Colours.background }}>
@@ -15,7 +23,7 @@ export default function HomeScreen() {
                     <Spinner />
                 </View>
             ) : (
-                <ScrollView style={{ flex: 1 }}>
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
                     {continueWatchingItems.length > 0 ? (
                         <MovieSection label='Continue Watching' movies={continueWatchingItems} withProgressIndicator />
                     ) : (
@@ -31,6 +39,15 @@ export default function HomeScreen() {
                     ) : (
                         <></>
                     )}
+
+                    <View style={{ flex: 1, marginHorizontal: 16, flexDirection: 'row', gap: 24 }}>
+                        <View style={{ flex: 1 }}>
+                            <PrimaryButton text='See All Movies' onPress={navigateToMovies} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <PrimaryButton text='See All TV Shows' onPress={navigateToTvShows} />
+                        </View>
+                    </View>
                 </ScrollView>
             )}
         </View>

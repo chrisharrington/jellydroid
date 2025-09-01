@@ -2,11 +2,14 @@ import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 export function useHome() {
     const { getRecentlyAddedMovies, getRecentlyAddedEpisodes, getContinueWatchingItems } = useJellyfin(),
         toast = useToast(),
+        { navigate } = useNavigation(),
+        { push } = useRouter(),
         [isBusy, setBusy] = useState<boolean>(false),
         [recentlyAddedMovies, setRecentlyAddedMovies] = useState<BaseItemDto[]>([]),
         [recentlyAddedEpisodes, setRecentlyAddedEpisodes] = useState<BaseItemDto[]>([]),
@@ -26,12 +29,7 @@ export function useHome() {
                 setRecentlyAddedEpisodes(result[1]);
                 setContinueWatchingItems(result[2]);
             } catch (error: any) {
-                // Handle authentication errors gracefully.
-                if (error?.response?.status === 401 || error?.status === 401) {
-                    toast.error('Authentication failed. Please check your credentials.');
-                } else {
-                    toast.error('Failed to load home screen data.', error);
-                }
+                toast.error('Failed to load home screen data.', error);
             } finally {
                 setBusy(false);
             }
@@ -40,5 +38,12 @@ export function useHome() {
 
     useFocusEffect(loadData);
 
-    return { isBusy, recentlyAddedMovies, recentlyAddedEpisodes, continueWatchingItems };
+    return {
+        isBusy,
+        recentlyAddedMovies,
+        recentlyAddedEpisodes,
+        continueWatchingItems,
+        navigateToMovies: useCallback(() => push('/movies'), [push]),
+        navigateToTvShows: useCallback(() => push('/tv-shows'), [push]),
+    };
 }
