@@ -154,7 +154,7 @@ describe('useVideoControls', () => {
 
         unmount();
 
-        expect(mockRemove).toHaveBeenCalledTimes(3); // timeUpdate and 2 statusChange listeners
+        expect(mockRemove).toHaveBeenCalledTimes(5); // timeUpdate, statusChange, availableSubtitleTracksChange, playingChange listeners
     });
 
     it('updates current time from timeUpdate events when not sliding', () => {

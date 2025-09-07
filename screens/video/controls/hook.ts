@@ -49,25 +49,16 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
     const [isVisible, setIsVisible] = useState<boolean>(false),
         [isSliding, setSliding] = useState<boolean>(false),
         [isBusy, setBusy] = useState<boolean>(false),
+        [isPlaying, setPlaying] = useState<boolean>(false),
         [sliderValue, setSliderValue] = useState(0),
         [thumbPosition, setThumbPosition] = useState(0),
         playbackProgressCounter = useRef<number>(0),
         { updatePlaybackProgress, getSubtitleTrackMetadata } = useJellyfin(),
         [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<(SubtitleTrack & SubtitleMetadata)[]>([]),
         [isForcedSubtitlesEnabled, setForcedSubtitlesEnabled] = useState<boolean>(false),
-        [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false);
-
-    // Compute playing state directly from player to avoid duplicate state.
-    const isPlaying = useMemo(() => {
-        return player?.playing || false;
-    }, [player?.playing]);
-
-    // Compute current time directly from player to avoid duplicate state.
-    const currentTime = useMemo(() => {
-        return player?.currentTime || 0;
-    }, [player?.currentTime]);
-
-    const fadeAnim = useRef(new Animated.Value(0)).current,
+        [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false),
+        currentTime = useMemo(() => player?.currentTime || 0, [player?.currentTime]),
+        fadeAnim = useRef(new Animated.Value(0)).current,
         hideTimeoutRef = useRef<NodeJS.Timeout | null>(null),
         isAnimatingRef = useRef(false);
 
@@ -77,9 +68,6 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
 
         const listener = player.addListener('availableSubtitleTracksChange', event => {
             const subtitleMetadata = getSubtitleTrackMetadata(item);
-
-            // console.log('Metadata:', subtitleMetadata);
-            // console.log('Tracks:', event.availableSubtitleTracks);
 
             setAvailableSubtitleTracks(
                 event.availableSubtitleTracks
@@ -99,12 +87,6 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
 
         return () => listener?.remove();
     }, [player]);
-
-    useEffect(() => {
-        if (!player) return;
-
-        console.log('Subtitle Track:', player.subtitleTrack);
-    }, [player.subtitleTrack]);
 
     // Show controls initially when component mounts.
     useEffect(() => {
@@ -148,10 +130,19 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
             setBusy(payload.status !== 'readyToPlay');
         });
 
+        // Listen for playback state changes to update play/pause button.
+        const playingChangeListener = player.addListener('playingChange', payload => {
+            setPlaying(payload.isPlaying);
+        });
+
+        // Initialize playing state from player.
+        setPlaying(player.playing || false);
+
         // Clean up listeners when unmounting.
         return () => {
             timeUpdateListener.remove();
             statusChangeListener.remove();
+            playingChangeListener.remove();
         };
     }, [player, isSliding]);
 
