@@ -2,6 +2,7 @@ import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
+import * as NavigationBar from 'expo-navigation-bar';
 import { useGlobalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useVideoPlayer } from 'expo-video';
@@ -46,6 +47,10 @@ export function useVideoScreen() {
     useEffect(() => {
         // Lock screen to landscape orientation when component mounts.
         ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
+
+        // Hide the navigation bar.
+        NavigationBar.setVisibilityAsync('hidden');
+        NavigationBar.setBehaviorAsync('overlay-swipe');
 
         // Cleanup: restore to default orientation when component unmounts.
         return () => {
