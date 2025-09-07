@@ -1,7 +1,7 @@
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { formatTime } from '@/shared/formatTime';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import Slider from '@react-native-community/slider';
 import { VideoPlayer } from 'expo-video';
@@ -21,7 +21,9 @@ export function VideoControls(props: VideoControlsProps) {
         isVisible,
         isPlaying,
         isBusy,
-        isClosedCaptionsEnabled,
+        isForcedSubtitlesAvailable,
+        isForcedSubtitlesEnabled,
+        isSubtitlesAvailable,
         isSubtitlesEnabled,
         currentTime,
         duration,
@@ -35,7 +37,7 @@ export function VideoControls(props: VideoControlsProps) {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
-        handleClosedCaptionsToggle,
+        handleForcedSubtitlesToggle,
         handleSubtitlesToggle,
         getSeekBarProgress,
     } = useVideoControls(props);
@@ -47,6 +49,37 @@ export function VideoControls(props: VideoControlsProps) {
             {isVisible && (
                 <Animated.View style={[style.visibleOverlay, { opacity: fadeAnim }]}>
                     <TouchableOpacity style={style.overlayTouchArea} onPress={handleVideoPress} activeOpacity={1}>
+                        {/* Top-right buttons */}
+                        <View style={style.topRightContainer}>
+                            {isForcedSubtitlesAvailable && (
+                                <TouchableOpacity
+                                    style={style.topRightButton}
+                                    onPress={() => handleForcedSubtitlesToggle(!isForcedSubtitlesEnabled)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Feather
+                                        name='globe'
+                                        size={24}
+                                        color={isForcedSubtitlesEnabled ? Colours.primary : Colours.text}
+                                    />
+                                </TouchableOpacity>
+                            )}
+
+                            {isSubtitlesAvailable && (
+                                <TouchableOpacity
+                                    style={style.topRightButton}
+                                    onPress={() => handleSubtitlesToggle(!isSubtitlesEnabled)}
+                                    activeOpacity={0.7}
+                                >
+                                    <MaterialIcons
+                                        name='subtitles'
+                                        size={24}
+                                        color={isSubtitlesEnabled ? Colours.primary : Colours.text}
+                                    />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
                         <View style={style.controlsContainer}>
                             <TouchableOpacity
                                 style={style.controlButton}

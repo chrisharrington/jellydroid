@@ -122,4 +122,21 @@ export default StyleSheet.create({
         width: '100%',
         height: 20,
     },
+
+    topRightContainer: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        flexDirection: 'row',
+        gap: 12,
+    },
+
+    topRightButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });

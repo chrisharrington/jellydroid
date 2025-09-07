@@ -1,4 +1,5 @@
 import { useJellyfin } from '@/contexts/jellyfin';
+import { SubtitleMetadata } from '@/contexts/jellyfin/models';
 import { SubtitleTrack } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
@@ -51,9 +52,9 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         [sliderValue, setSliderValue] = useState(0),
         [thumbPosition, setThumbPosition] = useState(0),
         playbackProgressCounter = useRef<number>(0),
-        { updatePlaybackProgress } = useJellyfin(),
-        [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<SubtitleTrack[]>([]),
-        [isClosedCaptionsEnabled, setClosedCaptionsEnabled] = useState<boolean>(false),
+        { updatePlaybackProgress, getSubtitleTrackMetadata } = useJellyfin(),
+        [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<(SubtitleTrack & SubtitleMetadata)[]>([]),
+        [isForcedSubtitlesEnabled, setForcedSubtitlesEnabled] = useState<boolean>(false),
         [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false);
 
     // Compute playing state directly from player to avoid duplicate state.
@@ -75,12 +76,35 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         if (!player) return;
 
         const listener = player.addListener('availableSubtitleTracksChange', event => {
-            setAvailableSubtitleTracks(event.availableSubtitleTracks || []);
-            console.log('✅ Subtitle Tracks Changed:', event.availableSubtitleTracks);
+            const subtitleMetadata = getSubtitleTrackMetadata(item);
+
+            // console.log('Metadata:', subtitleMetadata);
+            // console.log('Tracks:', event.availableSubtitleTracks);
+
+            setAvailableSubtitleTracks(
+                event.availableSubtitleTracks
+                    .map(track => {
+                        const metadata = subtitleMetadata?.find(
+                            meta => meta.displayTitle === track.id.replace('subs:', '')
+                        );
+                        if (!metadata) throw new Error('Unable to find matching subtitle metadata.');
+                        return {
+                            ...metadata,
+                            ...track,
+                        };
+                    })
+                    .filter(track => track.language === 'en') || []
+            );
         });
 
         return () => listener?.remove();
     }, [player]);
+
+    useEffect(() => {
+        if (!player) return;
+
+        console.log('Subtitle Track:', player.subtitleTrack);
+    }, [player.subtitleTrack]);
 
     // Show controls initially when component mounts.
     useEffect(() => {
@@ -341,15 +365,62 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         return (currentTime / playerDuration) * 100;
     }, [currentTime, player]);
 
-    const handleClosedCaptionsToggle = useCallback((isEnabled: boolean) => {
-        setClosedCaptionsEnabled(isEnabled);
-        if (isEnabled) setSubtitlesEnabled(false);
-    }, []);
+    /**
+     * Toggles forced subtitles on/off and updates the player's subtitle track accordingly.
+     * When forced subtitles are enabled, regular subtitles are disabled and the first forced subtitle track is selected.
+     * When forced subtitles are disabled, the subtitle track is cleared.
+     * Controls are shown after the toggle.
+     *
+     * @param isEnabled - Boolean indicating whether forced subtitles should be enabled
+     */
+    const handleForcedSubtitlesToggle = useCallback(
+        (isEnabled: boolean) => {
+            // Update forced subtitles enabled state.
+            setForcedSubtitlesEnabled(isEnabled);
 
-    const handleSubtitlesToggle = useCallback((isEnabled: boolean) => {
-        setSubtitlesEnabled(isEnabled);
-        if (isEnabled) setClosedCaptionsEnabled(false);
-    }, []);
+            if (isEnabled) {
+                // Disable regular subtitles and find the first forced subtitle track.
+                setSubtitlesEnabled(false);
+                player.subtitleTrack = availableSubtitleTracks.find(track => track.isForced) || null;
+            } else {
+                // Clear the subtitle track when forced subtitles are disabled.
+                player.subtitleTrack = null;
+            }
+
+            // Show controls after toggle.
+            showControls();
+        },
+        [showControls]
+    );
+
+    /**
+     * Handles the toggling of subtitles in the video player.
+     * When enabled, it sets the subtitle track to the default track if available.
+     * When disabled, it removes the subtitle track.
+     * Also disables forced subtitles when regular subtitles are enabled.
+     *
+     * @param isEnabled - Boolean indicating whether subtitles should be enabled
+     * @returns void
+     */
+    const handleSubtitlesToggle = useCallback(
+        (isEnabled: boolean) => {
+            // Update regular subtitles enabled state.
+            setSubtitlesEnabled(isEnabled);
+
+            if (isEnabled) {
+                // Disable forced subtitles and set the default subtitle track.
+                setForcedSubtitlesEnabled(false);
+                player.subtitleTrack = availableSubtitleTracks.filter(track => !track.isForced)[0] || null;
+            } else {
+                // Clear the subtitle track when subtitles are disabled.
+                player.subtitleTrack = null;
+            }
+
+            // Show controls after toggle.
+            showControls();
+        },
+        [showControls]
+    );
 
     // Auto-hide controls when video finishes loading and starts playing.
     useEffect(() => {
@@ -360,7 +431,12 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         isVisible,
         isPlaying,
         isBusy,
-        isClosedCaptionsEnabled,
+        isForcedSubtitlesAvailable: useMemo(
+            () => availableSubtitleTracks.filter(track => track.isForced).length > 0,
+            [item, availableSubtitleTracks]
+        ),
+        isForcedSubtitlesEnabled,
+        isSubtitlesAvailable: useMemo(() => availableSubtitleTracks.length > 0, [item, availableSubtitleTracks]),
         isSubtitlesEnabled,
         currentTime,
         isSliding,
@@ -375,7 +451,7 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
-        handleClosedCaptionsToggle,
+        handleForcedSubtitlesToggle,
         handleSubtitlesToggle,
         getSeekBarProgress,
     };

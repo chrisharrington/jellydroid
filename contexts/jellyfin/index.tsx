@@ -26,79 +26,7 @@ import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as FileSystem from 'expo-file-system';
 import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react';
-
-/**
- * Type defining the Jellyfin context value with all available API methods.
- */
-type JellyfinContextValue = {
-    /** Authenticates user with stored credentials. */
-    login: () => Promise<MinimalUser>;
-
-    /** Retrieves the item using the given ID and stores it in `selectedItem`. */
-    loadItem: (id: string) => Promise<BaseItemDto | null>;
-
-    /** Finds a movie by name and year. */
-    findMovieByName: (year: number, name: string) => Promise<BaseItemDto | undefined>;
-
-    /** Retrieves playback information for a media item. */
-    getMediaInfo: (itemId: string) => Promise<any>;
-
-    /** Gets recently added movies from Jellyfin server. */
-    getRecentlyAddedMovies: () => Promise<BaseItemDto[]>;
-
-    /** Gets recently added TV series from Jellyfin server. */
-    getRecentlyAddedEpisodes: () => Promise<BaseItemDto[]>;
-
-    /** Gets items that can be resumed/continued watching. */
-    getContinueWatchingItems: () => Promise<BaseItemDto[]>;
-
-    /** Generates image URL for a Jellyfin item. */
-    getImageForId: (itemId: string) => string;
-
-    /** Gets streaming URL for a media item by its ID. */
-    getStreamUrlFromItemId: (itemId: string, subtitleStreamIndex?: number) => Promise<string | null>;
-
-    /** Gets streaming URL for a media item with optional burned-in subtitles. */
-    getStreamUrl: (item: BaseItemDto, subtitleIndex?: number) => Promise<string | null>;
-
-    /** Gets resume position in seconds for a media item. */
-    getResumePositionSeconds: (item: BaseItemDto) => number;
-
-    /** Updates playback progress for a media item. */
-    updatePlaybackProgress: (
-        itemId: string,
-        mediaSourceId: string,
-        playSessionId: string | null,
-        position: number,
-        isPaused?: boolean
-    ) => Promise<void>;
-
-    /** Reports start of playback session to Jellyfin. */
-    startPlaybackSession: (itemId: string, mediaSourceId: string, playSessionId: string | null) => Promise<void>;
-
-    /** Reports end of playback session to Jellyfin. */
-    stopPlaybackSession: (
-        itemId: string,
-        mediaSourceId: string,
-        playSessionId: string | null,
-        positionTicks: number
-    ) => Promise<void>;
-
-    /** Retrieves Jellyfin system configuration. */
-    getSystemConfig: () => Promise<JellyfinConfig>;
-
-    /** Downloads trickplay images for video scrubbing. */
-    downloadTrickplayImages: (item: BaseItemDto) => Promise<void>;
-
-    /** Gets file URI for trickplay tile image. */
-    getTrickplayTileFileUri: (item: BaseItemDto, index: number) => string;
-
-    /** Toggles watched status of a media item. */
-    toggleItemWatched: (item: BaseItemDto, isWatched: boolean) => Promise<boolean>;
-
-    /** Updates item user data. */
-    updateItem: (itemId: string, item: BaseItemDto) => Promise<void>;
-};
+import { JellyfinContextValue } from './models';
 
 /**
  * Jellyfin React Context for API access.
@@ -437,6 +365,27 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     }, []);
 
     /**
+     * Gets subtitle track metadata including default, forced, and other properties.
+     * @param item - The Jellyfin BaseItemDto object containing media information
+     * @returns Array of subtitle track metadata objects
+     */
+    const getSubtitleTrackMetadata = useCallback((item: BaseItemDto) => {
+        const mediaSource = item.MediaSources?.[0];
+        if (!mediaSource?.MediaStreams) return [];
+
+        return mediaSource.MediaStreams.filter(stream => stream.Type === 'Subtitle').map(stream => ({
+            index: stream.Index || 0,
+            language: stream.Language || 'Unknown',
+            displayTitle: stream.DisplayTitle || `Subtitle ${stream.Index}`,
+            isDefault: stream.IsDefault || false,
+            isForced: stream.IsForced || false,
+            codec: stream.Codec || 'Unknown',
+            deliveryMethod: stream.DeliveryMethod,
+            isExternal: stream.IsExternal || false,
+        }));
+    }, []);
+
+    /**
      * Gets external subtitle URL for a specific subtitle stream.
      * Used when subtitles need to be loaded separately (e.g., SRT files).
      * @param item - The Jellyfin BaseItemDto object containing media information
@@ -677,6 +626,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         downloadTrickplayImages,
         getTrickplayTileFileUri,
         toggleItemWatched,
+        getSubtitleTrackMetadata,
     };
 
     return <JellyfinContext.Provider value={contextValue}>{children}</JellyfinContext.Provider>;
