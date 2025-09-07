@@ -1,17 +1,20 @@
 import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
+import { LabelValue } from '@/models';
 import { formatDuration } from '@/shared/formatDuration';
 import { MediaStreamType } from '@jellyfin/sdk/lib/generated-client/models';
 import { useRoute } from '@react-navigation/native';
+import { Parser } from 'm3u8-parser';
 import { useCallback, useMemo, useState } from 'react';
 
 export function useMovieDetails() {
     const { id, name } = useRoute().params as { id: string; name: string },
         [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<number | null>(null),
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
+        [subtitleOptions, setSubtitleOptions] = useState<Array<LabelValue>>([]),
         [isBusy, setBusy] = useState<boolean>(false),
-        { loadItem, item: selectedItem, downloadTrickplayImages } = useJellyfin(),
+        { loadItem, item: selectedItem, downloadTrickplayImages, getStreamUrlFromItemId } = useJellyfin(),
         toast = useToast();
 
     useAsyncEffect(async () => {
@@ -22,8 +25,8 @@ export function useMovieDetails() {
             const localMovie = await loadItem(id);
             if (!localMovie) throw new Error('Movie not found.');
 
-            // Download trickplay images.
-            await downloadTrickplayImages(localMovie);
+            // Download trickplay images and parse subtitle options from the HLS manifest.
+            await Promise.all([downloadTrickplayImages(localMovie), getSubtitleOptions()]);
 
             // Set the default audio stream.
             setSelectedAudio(
@@ -50,16 +53,22 @@ export function useMovieDetails() {
      * //   { value: '2', label: 'Spanish' }
      * // ]
      */
-    const getSubtitleOptions = useCallback(() => {
-        const subtitleStreams =
-            selectedItem?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Subtitle).map(
-                subtitle => ({
-                    value: subtitle.Index as number,
-                    label: subtitle.DisplayTitle || 'Unknown',
-                })
-            ) || [];
+    const getSubtitleOptions = useCallback(async () => {
+        const url = await getStreamUrlFromItemId(selectedItem?.Id!);
+        if (!url) throw new Error('Unable to get stream URL while looking for subtitles.');
 
-        return [{ value: null, label: 'None' }, ...subtitleStreams];
+        const res = await fetch(url),
+            text = await res.text(),
+            parser = new Parser();
+
+        parser.push(text);
+        parser.end();
+
+        const subtitles = parser.manifest.mediaGroups?.SUBTITLES;
+
+        console.log('Parsed subtitles from M3U8:', subtitles);
+
+        setSubtitleOptions([{ value: null, label: 'None' }]);
     }, [selectedItem]);
 
     /**
@@ -85,8 +94,8 @@ export function useMovieDetails() {
 
     return {
         movie: selectedItem,
-        subtitleOptions: getSubtitleOptions(),
-        audioOptions: getAudioOptions(),
+        subtitleOptions,
+        audioOptions: useMemo(() => getAudioOptions(), [selectedItem]),
         selectedSubtitleIndex,
         selectedAudio,
         duration: useMemo(() => formatDuration(selectedItem?.RunTimeTicks || 0), [selectedItem]),

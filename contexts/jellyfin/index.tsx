@@ -58,6 +58,9 @@ type JellyfinContextValue = {
     /** Generates image URL for a Jellyfin item. */
     getImageForId: (itemId: string) => string;
 
+    /** Gets streaming URL for a media item by its ID. */
+    getStreamUrlFromItemId: (itemId: string, subtitleStreamIndex?: number) => Promise<string | null>;
+
     /** Gets streaming URL for a media item with optional burned-in subtitles. */
     getStreamUrl: (item: BaseItemDto, subtitleIndex?: number) => Promise<string | null>;
 
@@ -287,14 +290,26 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns A promise that resolves to the movie item's data.
      */
     const loadItem = useCallback(
-        async (id: string) => {
-            // Use the Jellyfin API to retrieve the requested item.
-            const userLibraryApi = getUserLibraryApi(api),
-                response = await userLibraryApi.getItem({ itemId: id, userId: user!.Id }),
-                item = response.data;
-
-            // Load the item into state.
+        async (itemId: string) => {
+            const item = await getItem(itemId);
             setItem(item);
+            return item;
+        },
+        [api, user]
+    );
+
+    /**
+     * Retrieves a specific item from the Jellyfin user library
+     * @param itemId - The unique identifier of the item to retrieve
+     * @returns Promise that resolves to the BaseItemDto representing the requested item
+     * @throws Will throw an error if the API call fails or if user is not authenticated
+     */
+    const getItem = useCallback(
+        async (itemId: string) => {
+            const userLibraryApi = getUserLibraryApi(api),
+                user = await getUser(),
+                response = await userLibraryApi.getItem({ itemId, userId: user!.Id }),
+                item = response.data;
 
             // Return the item data.
             return item as BaseItemDto;
@@ -341,6 +356,25 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     );
 
     /**
+     * Retrieves the streaming URL for a given item ID.
+     *
+     * @param itemId - The unique identifier of the media item
+     * @param subtitleStreamIndex - Optional index for subtitle stream selection
+     * @returns Promise that resolves to the streaming URL for the specified item
+     *
+     * @remarks
+     * This function first loads the item details using the itemId, then generates
+     * the appropriate streaming URL with optional subtitle selection.
+     */
+    const getStreamUrlFromItemId = useCallback(
+        async (itemId: string, subtitleStreamIndex?: number) => {
+            const item = await loadItem(itemId);
+            return getStreamUrl(item, subtitleStreamIndex);
+        },
+        [api]
+    );
+
+    /**
      * Gets streaming URL for a media item with optional subtitle configuration.
      * @param item - The Jellyfin BaseItemDto object containing media information
      * @param subtitleStreamIndex - Optional subtitle stream index to include in playback
@@ -373,15 +407,19 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 TranscodeReasons: `ContainerNotSupported, VideoCodecNotSupported, AudioCodecNotSupported ${
                     subtitleStreamIndex !== undefined ? `, SubtitleCodecNotSupported` : ''
                 }`,
+                SubtitleMethod: SubtitleDeliveryMethod.Hls,
             });
 
             // Add subtitle parameters if subtitle stream is specified
             if (subtitleStreamIndex !== undefined && subtitleStreamIndex >= 0) {
                 params.append('SubtitleStreamIndex', subtitleStreamIndex.toString());
-                params.append('SubtitleMethod', SubtitleDeliveryMethod.Encode);
+                params.append('SubtitleMethod', SubtitleDeliveryMethod.Hls);
             }
 
+            // console.log('Stream URL:', `${baseUrl}?${params.toString()}`);
+
             return `${baseUrl}?${params.toString()}`;
+            // return 'https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
         },
         [api, login]
     );
@@ -637,6 +675,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         getRecentlyAddedEpisodes,
         getContinueWatchingItems,
         getImageForId,
+        getStreamUrlFromItemId,
         getStreamUrl,
         getResumePositionSeconds,
         updatePlaybackProgress,

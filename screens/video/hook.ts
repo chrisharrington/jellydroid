@@ -11,7 +11,7 @@ export function useVideoScreen() {
     const params = useGlobalSearchParams<{ itemId: string; mediaSourceId: string; subtitleIndex?: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
         [streamUrl, setStreamUrl] = useState<string | null>(null),
-        { loadItem, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
+        { loadItem, getStreamUrlFromItemId, getResumePositionSeconds } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
         subtitleIndex = useMemo(
             () => (params.subtitleIndex ? parseInt(params.subtitleIndex) : undefined),
@@ -22,7 +22,28 @@ export function useVideoScreen() {
         }),
         toast = useToast();
 
-    // Handle resume position when video is ready.
+    // Add comprehensive event listeners for debugging subtitle tracks and source loading.
+    useEffect(() => {
+        if (!player) return;
+
+        const subtitleListener = player.addListener('availableSubtitleTracksChange', event => {
+            console.log('✅ Subtitle Tracks Changed:', {
+                tracks: event.availableSubtitleTracks,
+                count: event.availableSubtitleTracks?.length || 0,
+                trackDetails: event.availableSubtitleTracks?.map(track => ({
+                    id: track.id,
+                    language: track.language,
+                    label: track.label || 'Unknown',
+                })),
+            });
+
+            player.subtitleTrack = event.availableSubtitleTracks?.[0] || null;
+        });
+
+        return () => subtitleListener?.remove();
+    }, [player]);
+
+    // Handle resume position when video is ready and item is loaded.
     useEffect(() => {
         if (!player || !item) return;
 
@@ -31,14 +52,16 @@ export function useVideoScreen() {
         if (resumeSeconds <= 0) return;
 
         // Add a status listener that seeks to the resume position when the video is ready to play.
-        const statusListener = player.addListener('statusChange', event => {
+        const resumeListener = player.addListener('statusChange', event => {
             if (event.status !== 'readyToPlay') return;
 
             player.currentTime = resumeSeconds;
-            statusListener.remove();
+            resumeListener.remove();
         });
 
-        return () => statusListener?.remove();
+        return () => {
+            resumeListener?.remove();
+        };
     }, [player, item, getResumePositionSeconds]);
 
     useEffect(() => {
@@ -59,7 +82,7 @@ export function useVideoScreen() {
             // Retrieve item details and media info.
             const [item, streamUrl] = await Promise.all([
                 loadItem(params.itemId),
-                getStreamUrl(params.itemId, subtitleIndex),
+                getStreamUrlFromItemId(params.itemId, subtitleIndex),
             ]);
 
             // Throw an error if either the item or streamUrl are missing.
