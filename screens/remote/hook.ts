@@ -1,4 +1,3 @@
-import { SelectorOption } from '@/components/selector';
 import { useToast } from '@/components/toast';
 import { useCast } from '@/contexts/cast';
 import { useJellyfin } from '@/contexts/jellyfin';
@@ -6,28 +5,6 @@ import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-
-const subtitleOptions: SelectorOption[] = [
-    { label: 'None', value: null },
-    { label: 'English', value: 'en' },
-    { label: 'Spanish', value: 'es' },
-    { label: 'French', value: 'fr' },
-    { label: 'German', value: 'de' },
-    { label: 'Italian', value: 'it' },
-    { label: 'Portuguese', value: 'pt' },
-    { label: 'Japanese', value: 'ja' },
-];
-
-const audioOptions: SelectorOption[] = [
-    { label: 'English', value: 'en' },
-    { label: 'Spanish', value: 'es' },
-    { label: 'French', value: 'fr' },
-    { label: 'German', value: 'de' },
-    { label: 'Italian', value: 'it' },
-    { label: 'Portuguese', value: 'pt' },
-    { label: 'Japanese', value: 'ja' },
-    { label: 'Russian', value: 'ru' },
-];
 
 export function useRemoteScreen() {
     const { loadItem, getImageForId } = useJellyfin(),
@@ -37,8 +14,6 @@ export function useRemoteScreen() {
         [dragPosition, setDragPosition] = useState<number>(0),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
-        [selectedSubtitle, setSelectedSubtitle] = useState<string | null>(null),
-        [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         playback = useCast(),
         navigation = useNavigation(),
@@ -81,43 +56,6 @@ export function useRemoteScreen() {
     }, []);
 
     /**
-     * Changes the subtitle track for the current media playback.
-     *
-     * @param subtitleValue - The value of the subtitle track to switch to.
-     * @remarks
-     * - If the client is not available, the function exits early.
-     * - Updates the selected subtitle state when successful.
-     * - Any errors encountered during the operation are logged to the console.
-     */
-    const changeSubtitle = useCallback(async (subtitleValue: string | null) => {
-        try {
-            // TODO: Implement actual subtitle switching logic with Google Cast
-            // await client.setActiveTrackIds([subtitleTrackId]);
-            setSelectedSubtitle(subtitleValue);
-        } catch (error) {
-            toast.error('Failed to change subtitle:', error);
-        }
-    }, []);
-
-    /**
-     * Changes the audio track for the current media playback.
-     *
-     * @param audioValue - The value of the audio track to switch to.
-     * @remarks
-     * - If the client is not available, the function exits early.
-     * - Updates the selected audio state when successful.
-     * - Any errors encountered during the operation are logged to the console.
-     */
-    const changeAudio = useCallback(async (audioValue: string | null) => {
-        try {
-            // TODO: Implement actual audio track switching logic with Google Cast
-            setSelectedAudio(audioValue);
-        } catch (error) {
-            toast.error('Failed to change audio track:', error);
-        }
-    }, []);
-
-    /**
      * Handles the completion of slider movement by updating dragging state and seeking to a new position.
      * @param value - The position value to seek to, represented as a number
      * @returns void
@@ -136,14 +74,8 @@ export function useRemoteScreen() {
             playback.stop();
             navigation.goBack();
         },
-        changeSubtitle,
-        changeAudio,
         item,
         poster,
-        selectedSubtitle,
-        subtitleOptions,
-        selectedAudio,
-        audioOptions,
         status,
         handleSliderStart: () => setDragging(true),
         handleSliderChange: setDragPosition,

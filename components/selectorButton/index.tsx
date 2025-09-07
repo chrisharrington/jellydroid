@@ -11,10 +11,10 @@ type SelectorButtonProps = {
     options: Array<LabelValue>;
 
     /** Required. Currently selected value, or null if none selected. */
-    selectedValue: string | number | null;
+    selectedValue: string | null;
 
     /** Required. Callback function when a value is selected. */
-    onSelectValue: (value: string | number | null) => void;
+    onSelectValue: (value: string | null) => void;
 
     /** Required. Title displayed at the top of the selector modal. */
     title: string;

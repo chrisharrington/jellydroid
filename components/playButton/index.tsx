@@ -8,9 +8,6 @@ import style from './style';
 export type PlayButtonProps = Omit<ButtonProps, 'onPress'> & {
     /** Required. The item to play or resume on press. */
     item: BaseItemDto;
-
-    /** Required. The selected subtitle index, if any. */
-    subtitleIndex: number | null;
 };
 
 export function PlayButton(props: PlayButtonProps) {

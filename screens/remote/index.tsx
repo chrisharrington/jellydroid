@@ -2,8 +2,6 @@ import { Spinner } from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import Slider from '@react-native-community/slider';
 import { Image, Text, View } from 'react-native';
-import { AudioSelector } from '../../components/audio';
-import { SubtitleSelector } from '../../components/subtitles';
 import { ControlBar } from './controlBar';
 import { useRemoteScreen } from './hook';
 import style from './style';
@@ -15,13 +13,7 @@ export function RemoteScreen() {
         seekForward,
         seekBackward,
         stop,
-        changeSubtitle,
-        changeAudio,
         poster,
-        selectedSubtitle,
-        subtitleOptions,
-        selectedAudio,
-        audioOptions,
         status,
         currentTime,
         maxTime,
@@ -40,20 +32,6 @@ export function RemoteScreen() {
             <View style={style.content}>
                 <View style={style.posterContainer}>
                     {poster && <Image source={{ uri: poster }} style={style.poster} />}
-                </View>
-
-                <View style={style.selectorsContainer}>
-                    <AudioSelector
-                        audioOptions={audioOptions}
-                        selectedAudio={selectedAudio}
-                        onSelectAudio={changeAudio}
-                    />
-
-                    <SubtitleSelector
-                        subtitleOptions={subtitleOptions}
-                        selectedSubtitleIndex={selectedSubtitle}
-                        onSelectSubtitle={changeSubtitle}
-                    />
                 </View>
 
                 <View style={style.progressControl}>

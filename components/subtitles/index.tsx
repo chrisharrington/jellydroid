@@ -6,10 +6,10 @@ type SubtitleSelectorProps = {
     subtitleOptions: Array<LabelValue>;
 
     /** Required. Currently selected subtitle index, null if none selected. */
-    selectedSubtitleIndex: number | null;
+    selectedSubtitleIndex: string | null;
 
     /** Required. Callback fired when a subtitle option is selected. */
-    onSelectSubtitle: (value: string | number | null) => void;
+    onSelectSubtitle: (value: string | null) => void;
 };
 
 export function SubtitleSelector({ subtitleOptions, selectedSubtitleIndex, onSelectSubtitle }: SubtitleSelectorProps) {

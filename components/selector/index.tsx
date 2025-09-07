@@ -23,10 +23,10 @@ type SelectorProps = {
     options: LabelValue[];
 
     /** Required. The currently selected value, or null if no selection. */
-    selectedValue: string | number | null;
+    selectedValue: string | null;
 
     /** Required. Callback function invoked when a new value is selected. */
-    onSelectValue: (value: string | number | null) => void;
+    onSelectValue: (value: string | null) => void;
 };
 
 export function Selector({ visible, onClose, title, icon, options, selectedValue, onSelectValue }: SelectorProps) {

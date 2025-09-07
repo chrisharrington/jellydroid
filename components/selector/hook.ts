@@ -25,11 +25,7 @@ const { height: screenHeight } = Dimensions.get('window');
  * When the selector becomes visible, it slides up from the bottom and fades in.
  * When hidden, it slides down and fades out.
  */
-export function useSelector(
-    visible: boolean,
-    onSelectValue?: (value: string | number | null) => void,
-    onClose?: () => void
-) {
+export function useSelector(visible: boolean, onSelectValue?: (value: string | null) => void, onClose?: () => void) {
     const slideAnim = useRef(new Animated.Value(screenHeight)).current,
         fadeAnim = useRef(new Animated.Value(0)).current,
         [isVisible, setIsVisible] = useState(false),
@@ -114,7 +110,7 @@ export function useSelector(
      * 2. Calls the onClose handler if it exists
      */
     const handleSelectValue = useCallback(
-        (value: string | number | null) => {
+        (value: string | null) => {
             if (onSelectValue) onSelectValue(value);
             if (onClose) onClose();
         },

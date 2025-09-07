@@ -23,7 +23,6 @@ export function usePlayButton(props: PlayButtonProps) {
 
             // Construct the navigation URL based on whether a cast device is connected.
             let url = `/${props.item.Id}/${props.item.MediaSources?.[0].Id}`;
-            if (props.subtitleIndex !== undefined) url += `?subtitleIndex=${props.subtitleIndex}`;
 
             // If a client is available, cast the video.
             if (client) cast(props.item);

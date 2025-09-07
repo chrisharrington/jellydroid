@@ -1,9 +1,7 @@
-import { AudioSelector } from '@/components/audio';
 import { CastList } from '@/components/castList';
 import { InfoTable } from '@/components/infoTable';
 import { PlayButton } from '@/components/playButton';
 import Spinner from '@/components/spinner';
-import { SubtitleSelector } from '@/components/subtitles';
 import { TogglePlayedButton } from '@/components/togglePlayedButton';
 import { Colours } from '@/constants/colours';
 import { FontAwesome } from '@expo/vector-icons';
@@ -13,18 +11,7 @@ import { useMovieDetails } from './hook';
 import style from './style';
 
 export function MovieDetailsScreen() {
-    const {
-        isBusy,
-        movie,
-        subtitleOptions,
-        audioOptions,
-        selectedSubtitleIndex,
-        selectedAudio,
-        backdrop,
-        duration,
-        onSubtitleSelected,
-        onAudioSelected,
-    } = useMovieDetails();
+    const { isBusy, movie, backdrop, duration } = useMovieDetails();
 
     return (
         <View style={{ flex: 1, backgroundColor: Colours.background }}>
@@ -93,7 +80,7 @@ export function MovieDetailsScreen() {
 
                                 <View style={style.buttonContainer}>
                                     <View style={style.playButton}>
-                                        <PlayButton item={movie} subtitleIndex={selectedSubtitleIndex} />
+                                        <PlayButton item={movie} />
                                     </View>
 
                                     <View style={style.additionalButton}>
@@ -102,26 +89,6 @@ export function MovieDetailsScreen() {
                                 </View>
 
                                 <Text style={style.overview}>{movie.Overview}</Text>
-                            </View>
-
-                            <View style={style.selectorsContainer}>
-                                <View>
-                                    <Text style={style.selectorLabel}>Audio</Text>
-                                    <AudioSelector
-                                        audioOptions={audioOptions}
-                                        selectedAudio={selectedAudio}
-                                        onSelectAudio={onAudioSelected}
-                                    />
-                                </View>
-
-                                <View>
-                                    <Text style={style.selectorLabel}>Subtitles</Text>
-                                    <SubtitleSelector
-                                        subtitleOptions={subtitleOptions}
-                                        selectedSubtitleIndex={selectedSubtitleIndex}
-                                        onSelectSubtitle={onSubtitleSelected}
-                                    />
-                                </View>
                             </View>
 
                             <View style={{ marginTop: 0 }}>

@@ -1,18 +1,13 @@
 import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
-import { LabelValue } from '@/models';
 import { formatDuration } from '@/shared/formatDuration';
-import { BaseItemDto, MediaStreamType } from '@jellyfin/sdk/lib/generated-client/models';
+import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useRoute } from '@react-navigation/native';
-import { Parser } from 'm3u8-parser';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export function useMovieDetails() {
     const { id, name } = useRoute().params as { id: string; name: string },
-        [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<number | null>(null),
-        [selectedAudio, setSelectedAudio] = useState<string | null>(null),
-        [subtitleOptions, setSubtitleOptions] = useState<Array<LabelValue>>([]),
         [isBusy, setBusy] = useState<boolean>(false),
         [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
         { loadItem, downloadTrickplayImages, getStreamUrlFromItemId } = useJellyfin(),
@@ -33,12 +28,6 @@ export function useMovieDetails() {
 
             // Download trickplay images and parse subtitle options from the HLS manifest.
             await downloadTrickplayImages(localMovie);
-
-            // Set the default audio stream.
-            setSelectedAudio(
-                localMovie?.MediaStreams?.find(stream => stream.Type === MediaStreamType.Audio)?.Index?.toString() ||
-                    null
-            );
         } catch (error) {
             toast.error('Failed to fetch movie details. Try again later.', error);
         } finally {
@@ -46,74 +35,13 @@ export function useMovieDetails() {
         }
     }, [id, name]);
 
-    /**
-     * Retrieves an array of subtitle options for a movie.
-     * @returns An array of subtitle options where each option has a value and label.
-     *          The first option is always "None" with a null value.
-     *          Subsequent options are derived from the movie's MediaStreams of type Subtitle.
-     * @example
-     * // Returns an array like:
-     * // [
-     * //   { value: null, label: 'None' },
-     * //   { value: '1', label: 'English' },
-     * //   { value: '2', label: 'Spanish' }
-     * // ]
-     */
-    const getSubtitleOptions = useCallback(async () => {
-        const url = await getStreamUrlFromItemId(selectedItem?.Id!);
-        if (!url) throw new Error('Unable to get stream URL while looking for subtitles.');
-
-        const res = await fetch(url),
-            text = await res.text(),
-            parser = new Parser();
-
-        parser.push(text);
-        parser.end();
-
-        const subtitles = parser.manifest.mediaGroups?.SUBTITLES;
-
-        console.log('Parsed subtitles from M3U8:', subtitles);
-
-        setSubtitleOptions([{ value: null, label: 'None' }]);
-    }, [selectedItem]);
-
-    /**
-     * Retrieves a list of audio stream options from the movie's media streams.
-     *
-     * @returns An array of audio options, where each option contains a value and label.
-     *          The first option is always "None" with a null value, followed by available audio streams.
-     *          Each audio stream option includes:
-     *          - value: The stream index or display title as string
-     *          - label: The display title or "Unknown" if not available
-     */
-    const getAudioOptions = useCallback(() => {
-        const audioStreams =
-            selectedItem?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Audio).map(
-                audio => ({
-                    value: audio.Index?.toString() || (audio.DisplayTitle as string),
-                    label: audio.DisplayTitle || 'Unknown',
-                })
-            ) || [];
-
-        return [{ value: null, label: 'None' }, ...audioStreams];
-    }, [selectedItem]);
-
     return {
         movie: selectedItem,
-        subtitleOptions,
-        audioOptions: useMemo(() => getAudioOptions(), [selectedItem]),
-        selectedSubtitleIndex,
-        selectedAudio,
         duration: useMemo(() => formatDuration(selectedItem?.RunTimeTicks || 0), [selectedItem]),
         isBusy,
         backdrop: useMemo(
             () => `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${selectedItem?.Id}/Images/Backdrop/0`,
             [selectedItem]
         ),
-        onSubtitleSelected: useCallback(
-            (subtitle: string | number | null) => setSelectedSubtitleIndex(subtitle as number | null),
-            [selectedItem]
-        ),
-        onAudioSelected: useCallback((audio: string | null) => setSelectedAudio(audio), [selectedItem]),
     };
 }
