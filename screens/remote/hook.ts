@@ -11,7 +11,7 @@ export function useRemoteScreen() {
         { status } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
-        [dragPosition, setDragPosition] = useState<number>(0),
+        [dragTime, setDragTime] = useState<number>(0),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
@@ -39,20 +39,25 @@ export function useRemoteScreen() {
     }, []);
 
     /**
-     * Formats seconds into MM:SS or HH:MM:SS format.
+     * Formats seconds into H:MM:SS format (always shows hours with single digit).
      */
     const formatTimeFromSeconds = useCallback((seconds: number): string => {
-        if (!seconds || seconds < 0) return '00:00';
+        if (!seconds || seconds < 0) return '0:00:00';
 
         const hours = Math.floor(seconds / 3600),
             minutes = Math.floor((seconds % 3600) / 60),
             secs = Math.floor(seconds % 60);
 
-        return hours > 0
-            ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
-                  .toString()
-                  .padStart(2, '0')}`
-            : `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, []);
+
+    /**
+     * Handles slider position changes during dragging.
+     * Updates both the drag position and the corresponding time.
+     * @param value - The new slider position value
+     */
+    const handleSliderChange = useCallback((value: number) => {
+        setDragTime(value);
     }, []);
 
     /**
@@ -78,9 +83,9 @@ export function useRemoteScreen() {
         poster,
         status,
         handleSliderStart: () => setDragging(true),
-        handleSliderChange: setDragPosition,
+        handleSliderChange,
         handleSliderComplete,
-        currentTime: formatTimeFromSeconds(status.streamPosition),
+        currentTime: formatTimeFromSeconds(isDragging ? dragTime : status.streamPosition),
         maxTime: useMemo(() => formatTimeFromSeconds(status.maxPosition), [item]),
         isBusy,
     };
