@@ -17,7 +17,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
  * Minimal user data interface optimized for secure storage.
  * Contains only essential fields needed for Jellyfin API authentication.
  */
-type MinimalUser = {
+export type MinimalUser = {
     /** Required. The unique identifier for the Jellyfin user. */
     Id: string;
 
@@ -41,10 +41,8 @@ type AuthState = {
     /** Optional. Timestamp of the last successful login, null if never logged in. */
     lastLoginTime: number | null;
 
-    // Actions
-
     /** Required. Stores user authentication data in secure storage. */
-    setAuth: (user: UserDto, accessToken: string) => void;
+    setAuth: (user: UserDto, accessToken: string) => MinimalUser;
 
     /** Required. Clears all authentication data from storage and memory. */
     clearAuth: () => void;
@@ -72,7 +70,6 @@ const secureStorage = {
         try {
             return await SecureStore.getItemAsync(name);
         } catch (error) {
-            console.warn(`Failed to get ${name} from SecureStore:`, error);
             return null;
         }
     },
@@ -88,7 +85,7 @@ const secureStorage = {
         try {
             await SecureStore.setItemAsync(name, value);
         } catch (error) {
-            console.warn(`Failed to set ${name} in SecureStore:`, error);
+            // Silently handle storage errors
         }
     },
 
@@ -102,7 +99,7 @@ const secureStorage = {
         try {
             await SecureStore.deleteItemAsync(name);
         } catch (error) {
-            console.warn(`Failed to remove ${name} from SecureStore:`, error);
+            // Silently handle storage errors
         }
     },
 };
@@ -166,6 +163,8 @@ export const useAuthStore = create<AuthState>()(
                     isAuthenticated: true,
                     lastLoginTime: Date.now(),
                 });
+
+                return minimalUser;
             },
 
             /**

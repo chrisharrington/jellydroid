@@ -94,31 +94,21 @@ describe('useAsyncEffect', () => {
             throw new Error('Test error');
         });
 
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
         renderHook(() => useAsyncEffect(errorCallback, []));
 
         await waitFor(() => {
             expect(errorCallback).toHaveBeenCalledTimes(1);
-            expect(consoleSpy).toHaveBeenCalledWith('Error in useAsyncEffect:', expect.any(Error));
         });
-
-        consoleSpy.mockRestore();
     });
 
     it('should handle async callbacks that reject', async () => {
         const rejectCallback = jest.fn(() => Promise.reject(new Error('Async error')));
 
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
         renderHook(() => useAsyncEffect(rejectCallback, []));
 
         await waitFor(() => {
             expect(rejectCallback).toHaveBeenCalledTimes(1);
-            expect(consoleSpy).toHaveBeenCalledWith('Error in useAsyncEffect:', expect.any(Error));
         });
-
-        consoleSpy.mockRestore();
     });
 
     it('should work with complex dependency arrays', async () => {

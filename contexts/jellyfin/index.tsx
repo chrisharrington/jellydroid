@@ -8,7 +8,7 @@
  */
 
 import { JellyfinConfig } from '@/models';
-import { useAuthStore } from '@/stores/useAuthStore';
+import { MinimalUser, useAuthStore } from '@/stores/useAuthStore';
 import { Jellyfin } from '@jellyfin/sdk';
 import { MediaInfoApiGetPostedPlaybackInfoRequest } from '@jellyfin/sdk/lib/generated-client/api/media-info-api';
 import {
@@ -32,7 +32,7 @@ import React, { createContext, useCallback, useContext, useMemo, useRef, useStat
  */
 type JellyfinContextValue = {
     /** Authenticates user with stored credentials. */
-    login: () => Promise<void>;
+    login: () => Promise<MinimalUser>;
 
     /** Retrieves the item using the given ID and stores it in `selectedItem`. */
     loadItem: (id: string) => Promise<BaseItemDto | null>;
@@ -130,7 +130,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     const api = useMemo(createApi, []),
         [item, setItem] = useState<BaseItemDto | null>(null),
         config = useRef<JellyfinConfig | null>(null),
-        { user, isAuthenticated, isSessionValid, setAuth, clearAuth } = useAuthStore();
+        { user, setAuth, clearAuth } = useAuthStore();
 
     /**
      * Authenticates a user with the provided username and password.
@@ -145,14 +145,12 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 process.env.EXPO_PUBLIC_JELLYFIN_PASSWORD || ''
             );
 
-            const userData = response.data.User;
-            const accessToken = response.data.AccessToken;
+            const userData = response.data.User,
+                accessToken = response.data.AccessToken;
 
-            if (!userData || !accessToken) {
-                throw new Error('Invalid authentication response');
-            }
+            if (!userData || !accessToken) throw new Error('Invalid authentication response');
 
-            setAuth(userData, accessToken);
+            return setAuth(userData, accessToken);
         } catch (error) {
             clearAuth();
             throw error;
@@ -160,36 +158,18 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     }, [api, setAuth, clearAuth]);
 
     /**
-     * Ensures the user is authenticated before making API calls.
-     * Checks session validity and re-authenticates if necessary.
+     * Retrieves the current user or performs a login if no user is authenticated.
+     * @returns A Promise that resolves to a MinimalUser object
+     * @remarks
+     * If a user is already authenticated, returns the existing user.
+     * Otherwise, initiates the login process and returns the newly authenticated user.
      */
-    const ensureAuthenticated = useCallback(async () => {
-        if (!isAuthenticated || !isSessionValid()) {
-            await login();
-        }
-    }, [isAuthenticated, isSessionValid, login]);
-
-    /**
-     * Wrapper for API calls that handles 401 authentication errors.
-     * Automatically retries once with re-authentication if a 401 error occurs.
-     */
-    const withAuthRetry = useCallback(
-        async <T,>(apiCall: () => Promise<T>): Promise<T> => {
-            try {
-                await ensureAuthenticated();
-                return await apiCall();
-            } catch (error: any) {
-                // If we get a 401 error, clear auth and retry once
-                if (error?.response?.status === 401 || error?.status === 401) {
-                    clearAuth();
-                    await login();
-                    return await apiCall();
-                }
-                throw error;
-            }
-        },
-        [ensureAuthenticated, clearAuth, login]
-    );
+    const getUser = useCallback(() => {
+        return new Promise<MinimalUser>(async resolve => {
+            if (user) resolve(user);
+            else resolve(await login());
+        });
+    }, [api]);
 
     /**
      * Finds a movie by its name (title).
@@ -198,8 +178,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const findMovieByName = useCallback(
         async (year: number, name: string) => {
-            await ensureAuthenticated();
-
             const itemsApi = getItemsApi(api);
             const response = await itemsApi.getItems({
                 searchTerm: name,
@@ -212,7 +190,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             const items = response.data.Items;
             return items && items.length > 0 ? items[0] : undefined;
         },
-        [api, ensureAuthenticated]
+        [api]
     );
 
     /**
@@ -223,8 +201,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const getMediaInfo = useCallback(
         async (itemId: string, options?: Partial<MediaInfoApiGetPostedPlaybackInfoRequest>) => {
-            await ensureAuthenticated();
-
             const mediaInfoApi = getMediaInfoApi(api);
             const response = await mediaInfoApi.getPostedPlaybackInfo({
                 itemId,
@@ -233,7 +209,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
 
             return response.data;
         },
-        [api, ensureAuthenticated]
+        [api]
     );
 
     /**
@@ -244,20 +220,18 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns {Promise<Item[]>} A promise that resolves to an array of recently added movie items.
      */
     const getRecentlyAddedMovies = useCallback(async () => {
-        return withAuthRetry(async () => {
-            const itemsApi = getItemsApi(api);
-            const response = await itemsApi.getItems({
-                sortBy: [ItemSortBy.DateCreated],
-                sortOrder: [SortOrder.Descending],
-                includeItemTypes: [BaseItemKind.Movie],
-                recursive: true,
-                limit: 30,
-            });
-
-            if (!response.data.Items) throw new Error('No items found in response.');
-            return response.data.Items;
+        const itemsApi = getItemsApi(api);
+        const response = await itemsApi.getItems({
+            sortBy: [ItemSortBy.DateCreated],
+            sortOrder: [SortOrder.Descending],
+            includeItemTypes: [BaseItemKind.Movie],
+            recursive: true,
+            limit: 30,
         });
-    }, [api, withAuthRetry]);
+
+        if (!response.data.Items) throw new Error('No items found in response.');
+        return response.data.Items;
+    }, [api]);
 
     /**
      * Retrieves the shows of the 30 most recently added episodes.
@@ -269,20 +243,18 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns {Promise<BaseItemDto[]>} A promise that resolves to an array of episode items
      */
     const getRecentlyAddedEpisodes = useCallback(async () => {
-        return withAuthRetry(async () => {
-            const itemsApi = getItemsApi(api);
-            const response = await itemsApi.getItems({
-                sortBy: [ItemSortBy.DateCreated],
-                sortOrder: [SortOrder.Descending],
-                includeItemTypes: [BaseItemKind.Series],
-                recursive: true,
-                limit: 30,
-            });
-
-            if (!response.data.Items) throw new Error('No items found in response.');
-            return response.data.Items;
+        const itemsApi = getItemsApi(api);
+        const response = await itemsApi.getItems({
+            sortBy: [ItemSortBy.DateCreated],
+            sortOrder: [SortOrder.Descending],
+            includeItemTypes: [BaseItemKind.Series],
+            recursive: true,
+            limit: 30,
         });
-    }, [api, withAuthRetry]);
+
+        if (!response.data.Items) throw new Error('No items found in response.');
+        return response.data.Items;
+    }, [api]);
 
     /**
      * Retrieves a list of movies that can be resumed/continued watching.
@@ -297,18 +269,16 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * - Searches recursively through all libraries
      */
     const getContinueWatchingItems = useCallback(async () => {
-        await ensureAuthenticated();
-
         const itemsApi = getItemsApi(api);
         const response = await itemsApi.getResumeItems({
-            userId: user!.Id,
+            userId: (await getUser())!.Id,
             includeItemTypes: [BaseItemKind.Movie],
             mediaTypes: ['Video'],
             limit: 30,
         });
         if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
-    }, [api, ensureAuthenticated, user]);
+    }, [api, user]);
 
     /**
      * Retrieves detailed information about a movie item from the Jellyfin API.
@@ -318,8 +288,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const loadItem = useCallback(
         async (id: string) => {
-            await ensureAuthenticated();
-
             // Use the Jellyfin API to retrieve the requested item.
             const userLibraryApi = getUserLibraryApi(api),
                 response = await userLibraryApi.getItem({ itemId: id, userId: user!.Id }),
@@ -331,7 +299,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             // Return the item data.
             return item as BaseItemDto;
         },
-        [api, ensureAuthenticated, user]
+        [api, user]
     );
 
     /**
@@ -342,8 +310,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const updateItem = useCallback(
         async (itemId: string, itemToUpdate: BaseItemDto) => {
-            await ensureAuthenticated();
-
             if (!itemToUpdate.UserData) return;
 
             // Update the item with the Jellyfin API.
@@ -357,7 +323,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             // If we've updated the currently loaded item, update it in state, too.
             if (itemToUpdate.Id === item?.Id) setItem(itemToUpdate);
         },
-        [api, ensureAuthenticated, user, item]
+        [api, user, item]
     );
 
     /**
@@ -415,11 +381,9 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 params.append('SubtitleMethod', SubtitleDeliveryMethod.Encode);
             }
 
-            console.log('Generated stream URL:', `${baseUrl}?${params.toString()}`);
-
             return `${baseUrl}?${params.toString()}`;
         },
-        [api, ensureAuthenticated, login]
+        [api, login]
     );
 
     /**
@@ -480,8 +444,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             position: number,
             isPaused: boolean = false
         ) => {
-            await ensureAuthenticated();
-
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackProgress({
                 playbackProgressInfo: {
@@ -493,7 +455,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 },
             });
         },
-        [api, ensureAuthenticated]
+        [api]
     );
 
     /**
@@ -505,8 +467,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const startPlaybackSession = useCallback(
         async (itemId: string, mediaSourceId: string, playSessionId: string | null) => {
-            await ensureAuthenticated();
-
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStart({
                 playbackStartInfo: {
@@ -518,7 +478,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 },
             });
         },
-        [api, ensureAuthenticated]
+        [api]
     );
 
     /**
@@ -531,8 +491,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const stopPlaybackSession = useCallback(
         async (itemId: string, mediaSourceId: string, playSessionId: string | null, positionTicks: number) => {
-            await ensureAuthenticated();
-
             const playstateApi = getPlaystateApi(api);
             await playstateApi.reportPlaybackStopped({
                 playbackStopInfo: {
@@ -543,7 +501,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 },
             });
         },
-        [api, ensureAuthenticated]
+        [api]
     );
 
     /**
@@ -566,7 +524,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const downloadTrickplayImages = useCallback(
         async (item: BaseItemDto) => {
-            await ensureAuthenticated();
             if (!config.current) config.current = await getSystemConfig();
 
             // Check for the existence of the trickplay folder. If it's there, trickplay images have already been downloaded.
@@ -596,7 +553,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 )
             );
         },
-        [ensureAuthenticated]
+        [api]
     );
 
     /**
@@ -634,7 +591,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @throws {Error} When the API request fails or returns a non-ok response
      */
     const getSystemConfig = useCallback(async () => {
-        await ensureAuthenticated();
         if (config.current) return config.current;
 
         const response = await fetch(
@@ -646,7 +602,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         const localConfig = (await response.json()) as JellyfinConfig;
         config.current = localConfig;
         return config.current;
-    }, [ensureAuthenticated]);
+    }, [api]);
 
     /**
      * Toggles the watched status of a Jellyfin media item.
@@ -657,17 +613,17 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      */
     const toggleItemWatched = useCallback(
         async (item: BaseItemDto, isWatched: boolean) => {
-            await ensureAuthenticated();
+            if (!item.Id) throw new Error('Item ID is required');
 
             const playstateApi = getPlaystateApi(api),
-                parameters = { itemId: item.Id!, userId: user!.Id };
+                parameters = { itemId: item.Id, userId: (await getUser()).Id };
 
             if (isWatched) await playstateApi.markUnplayedItem(parameters);
             else await playstateApi.markPlayedItem(parameters);
 
             return !isWatched;
         },
-        [api, ensureAuthenticated, user]
+        [api, getUser]
     );
 
     const contextValue: JellyfinContextValue = {

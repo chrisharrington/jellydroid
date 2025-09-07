@@ -5,9 +5,13 @@ import React from 'react';
 import { TogglePlayedButton } from '.';
 
 // Mock the jellyfin hook
+const mockUpdateItem = jest.fn();
+const mockToggleItemWatched = jest.fn();
+
 jest.mock('@/contexts/jellyfin', () => ({
     useJellyfin: jest.fn(() => ({
-        toggleItemWatched: jest.fn(),
+        updateItem: mockUpdateItem,
+        toggleItemWatched: mockToggleItemWatched,
     })),
 }));
 
@@ -76,7 +80,6 @@ describe('ToggleWatchedButton', () => {
         },
     };
 
-    let mockToggleItemWatched: jest.Mock;
     let mockOnToggleComplete: jest.Mock;
 
     beforeEach(() => {
@@ -84,9 +87,11 @@ describe('ToggleWatchedButton', () => {
 
         // Get the mocked functions
         const { useJellyfin } = require('@/contexts/jellyfin');
-        mockToggleItemWatched = jest.fn().mockResolvedValue(undefined);
+        mockToggleItemWatched.mockResolvedValue(true); // Returns the new watched state
+        mockUpdateItem.mockResolvedValue(undefined);
         useJellyfin.mockReturnValue({
             toggleItemWatched: mockToggleItemWatched,
+            updateItem: mockUpdateItem,
         });
 
         mockOnToggleComplete = jest.fn();
@@ -172,7 +177,6 @@ describe('ToggleWatchedButton', () => {
     });
 
     it('handles toggle failure gracefully', async () => {
-        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockToggleItemWatched.mockRejectedValue(new Error('Toggle failed'));
 
         const { getByTestId } = render(
@@ -184,11 +188,8 @@ describe('ToggleWatchedButton', () => {
         fireEvent.press(getByTestId('secondary-button'));
 
         await waitFor(() => {
-            expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to toggle watched status:', expect.any(Error));
             expect(mockOnToggleComplete).not.toHaveBeenCalled();
         });
-
-        consoleErrorSpy.mockRestore();
     });
 
     it('does not trigger toggle when already toggling', async () => {

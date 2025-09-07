@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useCallback, useContext, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Text, View } from 'react-native';
 import { Portal } from 'react-native-portalize';
 import styles from './style';
@@ -63,6 +63,16 @@ export function ToastProvider({ children }: ToastProviderProps) {
     const opacity = useRef(new Animated.Value(0)).current; // Start invisible
     const dismissTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isToastVisibleRef = useRef<boolean>(false);
+
+    // Cleanup effect to clear timers when component unmounts
+    useEffect(() => {
+        return () => {
+            if (dismissTimeoutRef.current) {
+                clearTimeout(dismissTimeoutRef.current);
+                dismissTimeoutRef.current = null;
+            }
+        };
+    }, []);
 
     /**
      * Creates and displays a toast notification with the specified message and type.
@@ -204,8 +214,6 @@ export function ToastProvider({ children }: ToastProviderProps) {
      */
     const error = useCallback(
         (message: string, error: any) => {
-            console.error(message);
-            error && console.trace(error);
             showToast(message, 'error');
         },
         [showToast]

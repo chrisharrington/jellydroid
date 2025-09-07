@@ -66,8 +66,6 @@ export function useVideoScreen() {
             if (!item) throw new Error('Item not found.');
             if (!streamUrl) throw new Error('Stream URL not found.');
 
-            console.log('Stream URL:', streamUrl);
-
             // Set the item for the current playback.
             setItem(item);
 

@@ -1,5 +1,7 @@
 import { ToastProvider } from '@/components/toast';
 import { CastProvider } from '@/contexts/cast';
+import { JellyfinProvider } from '@/contexts/jellyfin';
+import { NavigationContainer } from '@react-navigation/native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { RemoteScreen } from '.';
@@ -160,9 +162,13 @@ jest.mock('@react-native-community/slider', () => ({
 // Test wrapper component to provide context
 function TestWrapper({ children }: { children: React.ReactNode }) {
     return (
-        <ToastProvider>
-            <CastProvider>{children}</CastProvider>
-        </ToastProvider>
+        <NavigationContainer>
+            <JellyfinProvider>
+                <ToastProvider>
+                    <CastProvider>{children}</CastProvider>
+                </ToastProvider>
+            </JellyfinProvider>
+        </NavigationContainer>
     );
 }
 

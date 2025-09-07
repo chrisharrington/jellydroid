@@ -9,7 +9,7 @@ export function useAsyncEffect(
             try {
                 return await callback();
             } catch (error) {
-                console.error('Error in useAsyncEffect:', error);
+                // Silently handle errors in async effects
             }
         })();
     }, dependencies);

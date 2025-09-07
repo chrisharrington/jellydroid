@@ -5,8 +5,8 @@ import { TogglePlayedButtonProps } from '.';
 
 export function useTogglePlayedButton(props: TogglePlayedButtonProps) {
     const [isToggling, setToggling] = useState<boolean>(false),
-        [isPlayed, setPlayed] = useState<boolean>(props.item.UserData?.Played || false),
-        { updateItem } = useJellyfin(),
+        [isPlayed, setPlayed] = useState<boolean>(props.item?.UserData?.Played || false),
+        { toggleItemWatched } = useJellyfin(),
         toast = useToast();
 
     /**
@@ -21,21 +21,21 @@ export function useTogglePlayedButton(props: TogglePlayedButtonProps) {
         try {
             setToggling(true);
 
-            // Make the API call to Jellyfin to update the provided item.
-            updateItem(props.item.Id!, {
-                ...props.item,
-                UserData: {
-                    ...props.item.UserData,
-                    PlaybackPositionTicks: isPlayed ? 0 : props.item.UserData?.PlaybackPositionTicks,
-                    Played: !isPlayed,
-                },
-            });
+            // Check if item has playback progress
+            const hasProgress = (props.item.UserData?.PlaybackPositionTicks || 0) > 0;
+
+            // For items with progress, mark as watched (true)
+            // For items without progress, toggle current state (false for unplayed items)
+            const targetWatchedState = hasProgress ? true : false;
+
+            // Use the Jellyfin toggleItemWatched method
+            const newWatchedState = await toggleItemWatched(props.item, targetWatchedState);
 
             // Indicate to the user that the Jellyfin call completed successfully.
-            toast.success(`${props.item.Name} has been marked as ${!isPlayed ? 'played' : 'unplayed'}.`);
+            toast.success(`${props.item.Name} has been marked as ${newWatchedState ? 'played' : 'unplayed'}.`);
 
-            // Flip the played state variable.
-            setPlayed(!isPlayed);
+            // Update the played state based on the returned value.
+            setPlayed(newWatchedState);
 
             // Call the optional callback if provided.
             if (props.onToggleComplete) props.onToggleComplete();
@@ -44,7 +44,7 @@ export function useTogglePlayedButton(props: TogglePlayedButtonProps) {
         } finally {
             setToggling(false);
         }
-    }, [props.item, props.onToggleComplete, toast, isToggling]);
+    }, [props.item, props.onToggleComplete, toast, isToggling, toggleItemWatched]);
 
     return {
         isToggling,

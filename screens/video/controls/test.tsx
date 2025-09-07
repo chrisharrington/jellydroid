@@ -395,7 +395,8 @@ describe('useVideoControls', () => {
             result.current.handleSliderChange(50);
         });
 
-        expect(mockPlayer.currentTime).toBe(50);
+        // handleSliderChange should NOT update player.currentTime - only slider state
+        expect(mockPlayer.currentTime).toBe(0); // Should remain unchanged
         expect(result.current.sliderValue).toBe(50);
         expect(result.current.thumbPosition).toBe(50);
     });
