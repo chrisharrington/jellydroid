@@ -60,7 +60,6 @@ export function SelectorButton({
                 </TouchableOpacity>
             </View>
 
-            {/* Render the Selector at the root level to avoid positioning issues. */}
             <Selector
                 visible={showModal}
                 onClose={() => setShowModal(false)}

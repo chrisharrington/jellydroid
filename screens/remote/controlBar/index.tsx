@@ -1,4 +1,5 @@
 import { Spinner } from '@/components/spinner';
+import { SubtitleSelector } from '@/components/subtitleSelector';
 import { Colours } from '@/constants/colours';
 import { PlayStatus } from '@/contexts/cast';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -32,10 +33,14 @@ export type ControlBarProps = {
 export function ControlBar(props: ControlBarProps) {
     const {
             handlePlayPause,
-            handleSubtitleToggle,
+            handleSubtitleButtonPress,
+            handleSubtitleSelection,
             isSubtitleTrackEnabled,
             isSubtitleTrackAvailable,
             isForcedSubtitleTrackAvailable,
+            isSubtitleSelectorVisible,
+            setSubtitleSelectorVisible,
+            selectedSubtitleName,
         } = useControlBar(props),
         { stop, seekBackward, seekForward, status } = props;
 
@@ -79,7 +84,7 @@ export function ControlBar(props: ControlBarProps) {
                 <MaterialIcons name='forward-30' size={36} color='white' />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} activeOpacity={0.7} onPress={handleSubtitleToggle}>
+            <TouchableOpacity style={styles.button} activeOpacity={0.7} onPress={handleSubtitleButtonPress}>
                 <MaterialIcons
                     name='closed-caption'
                     size={36}
@@ -92,6 +97,13 @@ export function ControlBar(props: ControlBarProps) {
                     }
                 />
             </TouchableOpacity>
+
+            <SubtitleSelector
+                isVisible={isSubtitleSelectorVisible}
+                selectedValue={selectedSubtitleName}
+                onSelectValue={handleSubtitleSelection}
+                onClose={() => setSubtitleSelectorVisible(false)}
+            />
         </View>
     );
 }

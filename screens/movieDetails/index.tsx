@@ -11,7 +11,14 @@ import { useMovieDetails } from './hook';
 import style from './style';
 
 export function MovieDetailsScreen() {
-    const { isBusy, isForcedSubtitlesAvailable, isSubtitlesAvailable, movie, backdrop, duration } = useMovieDetails();
+    const {
+        isBusy,
+        isForcedSubtitleTrackAvailable: isForcedSubtitlesAvailable,
+        isSubtitleTrackAvailable: isSubtitlesAvailable,
+        movie,
+        backdrop,
+        duration,
+    } = useMovieDetails();
 
     return (
         <View style={{ flex: 1, backgroundColor: Colours.background }}>

@@ -11,8 +11,8 @@ export function useMovieDetails() {
         [isBusy, setBusy] = useState<boolean>(false),
         [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
         { getItem: loadItem, downloadTrickplayImages, getSubtitleTrackMetadata } = useJellyfin(),
-        [isForcedSubtitlesAvailable, setForcedSubtitlesAvailable] = useState<boolean>(false),
-        [isSubtitlesAvailable, setSubtitlesAvailable] = useState<boolean>(false),
+        [isForcedSubtitleTrackAvailable, setForcedSubtitleTrackAvailable] = useState<boolean>(false),
+        [isSubtitleTrackAvailable, setSubtitleTrackAvailable] = useState<boolean>(false),
         toast = useToast();
 
     useAsyncEffect(async () => {
@@ -33,8 +33,8 @@ export function useMovieDetails() {
 
             // Determine available subtitle tracks.
             const subtitles = getSubtitleTrackMetadata(localMovie).filter(sub => sub.language === 'eng');
-            setSubtitlesAvailable(subtitles.length > 0);
-            setForcedSubtitlesAvailable(subtitles.some(sub => sub.isForced));
+            setSubtitleTrackAvailable(subtitles.length > 0);
+            setForcedSubtitleTrackAvailable(subtitles.some(sub => sub.isForced));
         } catch (error) {
             toast.error('Failed to fetch movie details. Try again later.', error);
         } finally {
@@ -46,8 +46,8 @@ export function useMovieDetails() {
         movie: selectedItem,
         duration: useMemo(() => formatDuration(selectedItem?.RunTimeTicks || 0), [selectedItem]),
         isBusy,
-        isForcedSubtitlesAvailable,
-        isSubtitlesAvailable,
+        isForcedSubtitleTrackAvailable,
+        isSubtitleTrackAvailable,
         backdrop: useMemo(
             () => `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${selectedItem?.Id}/Images/Backdrop/0`,
             [selectedItem]

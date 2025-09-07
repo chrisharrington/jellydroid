@@ -77,6 +77,9 @@ type CastContextType = {
 
     /** Sets the active subtitle track for the current cast session or clears it when given null. */
     setSubtitleTrack: (track: (MediaTrack & SubtitleMetadata) | null) => void;
+
+    /** The currently active subtitle track, if any. */
+    currentSubtitleTrack: (MediaTrack & SubtitleMetadata) | null;
 };
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -109,7 +112,8 @@ export function CastProvider({ children }: CastProviderProps) {
             maxPosition: 0,
         }),
         toast = useToast(),
-        { getStreamUrl, getSubtitleTrackMetadata: getJellyfinSubtitleTrackMetadata } = useJellyfin();
+        { getStreamUrl, getSubtitleTrackMetadata: getJellyfinSubtitleTrackMetadata } = useJellyfin(),
+        [currentSubtitleTrack, setCurrentSubtitleTrack] = useState<(MediaTrack & SubtitleMetadata) | null>(null);
 
     // Set up event listeners for media status updates.
     useEffect(() => {
@@ -183,6 +187,9 @@ export function CastProvider({ children }: CastProviderProps) {
 
                 // Retrieve Jellyfin subtitle metadata for later use.
                 setJellyfinSubtitleTrackMetadata(getJellyfinSubtitleTrackMetadata(item));
+
+                // Clear the selected subtitle for new casts.
+                setCurrentSubtitleTrack(null);
             } catch (e) {
                 toast.error('Failed to cast media. Please try again later.', e);
             }
@@ -381,12 +388,34 @@ export function CastProvider({ children }: CastProviderProps) {
             try {
                 const client = getCastClient();
                 client.setActiveTrackIds(track ? [track.id] : []);
+                setCurrentSubtitleTrack(track);
             } catch (error) {
                 toast.error('Failed to set subtitle track.', error);
             }
         },
         [client]
     );
+
+    /**
+     * Retrieves the currently active subtitle track from the cast client's media status.
+     * @returns {Promise<MediaTrack | null>} A promise that resolves to the active subtitle track if found, null otherwise.
+     * @throws {Error} When there's an error retrieving the media status, which is caught and displayed as a toast error.
+     */
+    const getCurrentSubtitleTrack = useCallback(async () => {
+        try {
+            const client = getCastClient(),
+                status = await client.getMediaStatus(),
+                tracks = status?.mediaInfo?.mediaTracks || [],
+                activeTrackids = status?.activeTrackIds || [];
+
+            return (
+                tracks.filter(track => activeTrackids.includes(track.id)).find(track => track.type === 'text') || null
+            );
+        } catch (error) {
+            toast.error('Failed to retrieve current subtitle track.', error);
+            return null;
+        }
+    }, [client]);
 
     /**
      * Handles device selection for casting operations.
@@ -452,6 +481,7 @@ export function CastProvider({ children }: CastProviderProps) {
             selectedDeviceId: selectedDeviceId || 'local',
             getSubtitleTrackMetadata,
             setSubtitleTrack,
+            currentSubtitleTrack,
         }),
         [
             cast,
@@ -469,6 +499,8 @@ export function CastProvider({ children }: CastProviderProps) {
             selectedDeviceId,
             getSubtitleTrackMetadata,
             setSubtitleTrack,
+            getCurrentSubtitleTrack,
+            currentSubtitleTrack,
         ]
     );
 

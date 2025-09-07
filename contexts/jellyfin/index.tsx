@@ -344,17 +344,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     }, []);
 
     /**
-     * Gets external subtitle URL for a specific subtitle stream.
-     * Used when subtitles need to be loaded separately (e.g., SRT files).
-     * @param item - The Jellyfin BaseItemDto object containing media information
-     * @param subtitleStreamIndex - The index of the subtitle stream
-     * @returns URL to the subtitle file
-     */
-    const getSubtitleUrl = useCallback((item: BaseItemDto, subtitleStreamIndex: number) => {
-        return `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/${item.MediaSources?.[0].Id}/Subtitles/${subtitleStreamIndex}/Stream.vtt?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
-    }, []);
-
-    /**
      * Gets the resume position for a media item in seconds.
      * @param item - The Jellyfin BaseItemDto object containing user data
      * @returns The resume position in seconds, or 0 if no resume position is available
