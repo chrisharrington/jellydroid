@@ -1,5 +1,5 @@
 export type LabelValue = {
-    value: string | null;
+    value: string | number | null;
     label: string;
 };
 

@@ -8,7 +8,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 export function useMovieDetails() {
     const { id, name } = useRoute().params as { id: string; name: string },
-        [selectedSubtitle, setSelectedSubtitle] = useState<string | null>(null),
+        [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<number | null>(null),
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         [isBusy, setBusy] = useState<boolean>(false),
         { loadItem, item: selectedItem, downloadTrickplayImages } = useJellyfin(),
@@ -54,7 +54,7 @@ export function useMovieDetails() {
         const subtitleStreams =
             selectedItem?.MediaStreams?.filter(stream => !!stream && stream.Type === MediaStreamType.Subtitle).map(
                 subtitle => ({
-                    value: subtitle.Index?.toString() || (subtitle.DisplayTitle as string),
+                    value: subtitle.Index as number,
                     label: subtitle.DisplayTitle || 'Unknown',
                 })
             ) || [];
@@ -87,7 +87,7 @@ export function useMovieDetails() {
         movie: selectedItem,
         subtitleOptions: getSubtitleOptions(),
         audioOptions: getAudioOptions(),
-        selectedSubtitle,
+        selectedSubtitleIndex,
         selectedAudio,
         duration: useMemo(() => formatDuration(selectedItem?.RunTimeTicks || 0), [selectedItem]),
         isBusy,
@@ -95,7 +95,10 @@ export function useMovieDetails() {
             () => `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${selectedItem?.Id}/Images/Backdrop/0`,
             [selectedItem]
         ),
-        onSubtitleSelected: useCallback((subtitle: string | null) => setSelectedSubtitle(subtitle), [selectedItem]),
+        onSubtitleSelected: useCallback(
+            (subtitle: string | number | null) => setSelectedSubtitleIndex(subtitle as number | null),
+            [selectedItem]
+        ),
         onAudioSelected: useCallback((audio: string | null) => setSelectedAudio(audio), [selectedItem]),
     };
 }

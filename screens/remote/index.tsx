@@ -51,7 +51,7 @@ export function RemoteScreen() {
 
                     <SubtitleSelector
                         subtitleOptions={subtitleOptions}
-                        selectedSubtitle={selectedSubtitle}
+                        selectedSubtitleIndex={selectedSubtitle}
                         onSelectSubtitle={changeSubtitle}
                     />
                 </View>

@@ -18,7 +18,7 @@ export function MovieDetailsScreen() {
         movie,
         subtitleOptions,
         audioOptions,
-        selectedSubtitle,
+        selectedSubtitleIndex,
         selectedAudio,
         backdrop,
         duration,
@@ -93,7 +93,7 @@ export function MovieDetailsScreen() {
 
                                 <View style={style.buttonContainer}>
                                     <View style={style.playButton}>
-                                        <PlayButton item={movie} />
+                                        <PlayButton item={movie} subtitleIndex={selectedSubtitleIndex} />
                                     </View>
 
                                     <View style={style.additionalButton}>
@@ -118,7 +118,7 @@ export function MovieDetailsScreen() {
                                     <Text style={style.selectorLabel}>Subtitles</Text>
                                     <SubtitleSelector
                                         subtitleOptions={subtitleOptions}
-                                        selectedSubtitle={selectedSubtitle}
+                                        selectedSubtitleIndex={selectedSubtitleIndex}
                                         onSelectSubtitle={onSubtitleSelected}
                                     />
                                 </View>

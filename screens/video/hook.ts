@@ -2,17 +2,22 @@ import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { useLocalSearchParams } from 'expo-router';
+import { useGlobalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useVideoPlayer } from 'expo-video';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export function useVideoScreen() {
-    const params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
+    const params = useGlobalSearchParams<{ itemId: string; mediaSourceId: string; subtitleIndex?: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
+        [streamUrl, setStreamUrl] = useState<string | null>(null),
         { loadItem, getStreamUrl, getResumePositionSeconds } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
-        player = useVideoPlayer(item ? getStreamUrl(item) : null, player => {
+        subtitleIndex = useMemo(
+            () => (params.subtitleIndex ? parseInt(params.subtitleIndex) : undefined),
+            [params.subtitleIndex]
+        ),
+        player = useVideoPlayer(streamUrl, player => {
             player.play();
         }),
         toast = useToast();
@@ -51,12 +56,23 @@ export function useVideoScreen() {
             // Initialize the remote media client and fetch item details.
             setBusy(true);
 
-            // Retrieve the item details.
-            const item = await loadItem(params.itemId);
+            // Retrieve item details and media info.
+            const [item, streamUrl] = await Promise.all([
+                loadItem(params.itemId),
+                getStreamUrl(params.itemId, subtitleIndex),
+            ]);
+
+            // Throw an error if either the item or streamUrl are missing.
             if (!item) throw new Error('Item not found.');
+            if (!streamUrl) throw new Error('Stream URL not found.');
+
+            console.log('Stream URL:', streamUrl);
 
             // Set the item for the current playback.
             setItem(item);
+
+            // Set the stream URL for the video player.
+            setStreamUrl(streamUrl);
         } catch (e) {
             toast.error('Error retrieving item details.', e);
         } finally {

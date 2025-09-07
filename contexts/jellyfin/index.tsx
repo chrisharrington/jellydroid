@@ -10,7 +10,14 @@
 import { JellyfinConfig } from '@/models';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Jellyfin } from '@jellyfin/sdk';
-import { BaseItemDto, BaseItemKind, ItemSortBy, SortOrder } from '@jellyfin/sdk/lib/generated-client/models';
+import { MediaInfoApiGetPostedPlaybackInfoRequest } from '@jellyfin/sdk/lib/generated-client/api/media-info-api';
+import {
+    BaseItemDto,
+    BaseItemKind,
+    ItemSortBy,
+    SortOrder,
+    SubtitleDeliveryMethod,
+} from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
 import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
@@ -51,8 +58,8 @@ type JellyfinContextValue = {
     /** Generates image URL for a Jellyfin item. */
     getImageForId: (itemId: string) => string;
 
-    /** Gets streaming URL for a media item. */
-    getStreamUrl: (item: BaseItemDto) => string;
+    /** Gets streaming URL for a media item with optional burned-in subtitles. */
+    getStreamUrl: (item: BaseItemDto, subtitleIndex?: number) => Promise<string | null>;
 
     /** Gets resume position in seconds for a media item. */
     getResumePositionSeconds: (item: BaseItemDto) => number;
@@ -215,12 +222,13 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns A promise that resolves to the playback information data of the requested media item.
      */
     const getMediaInfo = useCallback(
-        async (itemId: string) => {
+        async (itemId: string, options?: Partial<MediaInfoApiGetPostedPlaybackInfoRequest>) => {
             await ensureAuthenticated();
 
             const mediaInfoApi = getMediaInfoApi(api);
-            const response = await mediaInfoApi.getPlaybackInfo({
+            const response = await mediaInfoApi.getPostedPlaybackInfo({
                 itemId,
+                ...options,
             });
 
             return response.data;
@@ -367,16 +375,82 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     );
 
     /**
-     * Retrieves the streaming URL for a given Jellyfin media item.
+     * Gets streaming URL for a media item with optional subtitle configuration.
      * @param item - The Jellyfin BaseItemDto object containing media information
-     * @returns The transcoding URL for streaming the media
-     * @throws {Error} When the streaming URL cannot be retrieved
+     * @param subtitleStreamIndex - Optional subtitle stream index to include in playback
+     * @returns The transcoding URL for streaming the media with burned-in subtitles
      */
     const getStreamUrl = useCallback(
-        (item: BaseItemDto) =>
-            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/main.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
-        []
+        async (item: BaseItemDto, subtitleStreamIndex?: number) => {
+            const baseUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/master.m3u8`;
+            const params = new URLSearchParams({
+                MediaSourceId: item.MediaSources?.[0].Id || '',
+                VideoCodec: 'h264',
+                AudioCodec: 'aac,mp3',
+                VideoBitrate: '15808283',
+                AudioBitrate: '384000',
+                MaxFramerate: '23.976025',
+                MaxWidth: '1024',
+                api_key: process.env.EXPO_PUBLIC_JELLYFIN_API_KEY || '',
+                TranscodingMaxAudioChannels: '2',
+                RequireAvc: 'false',
+                EnableAudioVbrEncoding: 'true',
+                SegmentContainer: 'ts',
+                MinSegments: '1',
+                BreakOnNonKeyFrames: 'False',
+                'hevc-level': '150',
+                'hevc-videobitdepth': '10',
+                'hevc-profile': 'main10',
+                'h264-profile': 'high,main,baseline,constrainedbaseline',
+                'h264-level': '41',
+                'aac-audiochannels': '2',
+                TranscodeReasons: `ContainerNotSupported, VideoCodecNotSupported, AudioCodecNotSupported ${
+                    subtitleStreamIndex !== undefined ? `, SubtitleCodecNotSupported` : ''
+                }`,
+            });
+
+            // Add subtitle parameters if subtitle stream is specified
+            if (subtitleStreamIndex !== undefined && subtitleStreamIndex >= 0) {
+                params.append('SubtitleStreamIndex', subtitleStreamIndex.toString());
+                params.append('SubtitleMethod', SubtitleDeliveryMethod.Encode);
+            }
+
+            console.log('Generated stream URL:', `${baseUrl}?${params.toString()}`);
+
+            return `${baseUrl}?${params.toString()}`;
+        },
+        [api, ensureAuthenticated, login]
     );
+
+    /**
+     * Gets available subtitle tracks for a media item.
+     * @param item - The Jellyfin BaseItemDto object containing media information
+     * @returns Array of subtitle stream objects with index, language, and display name
+     */
+    const getSubtitleTracks = useCallback((item: BaseItemDto) => {
+        if (!item.MediaStreams) return [];
+
+        return item.MediaStreams.filter(stream => stream.Type === 'Subtitle').map(stream => ({
+            index: stream.Index || 0,
+            language: stream.Language || 'Unknown',
+            displayTitle: stream.DisplayTitle || `Subtitle ${stream.Index}`,
+            codec: stream.Codec || 'Unknown',
+            isExternal: stream.IsExternal || false,
+            isDefault: stream.IsDefault || false,
+            isForced: stream.IsForced || false,
+        }));
+    }, []);
+
+    /**
+     * Gets external subtitle URL for a specific subtitle stream.
+     * Used when subtitles need to be loaded separately (e.g., SRT files).
+     * @param item - The Jellyfin BaseItemDto object containing media information
+     * @param subtitleStreamIndex - The index of the subtitle stream
+     * @returns URL to the subtitle file
+     */
+    const getSubtitleUrl = useCallback((item: BaseItemDto, subtitleStreamIndex: number) => {
+        return `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/${item.MediaSources?.[0].Id}/Subtitles/${subtitleStreamIndex}/Stream.vtt?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
+    }, []);
 
     /**
      * Gets the resume position for a media item in seconds.
@@ -386,7 +460,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     const getResumePositionSeconds = useCallback((item: BaseItemDto) => {
         if (!item.UserData?.PlaybackPositionTicks) return 0;
         // Convert ticks to seconds (1 tick = 100 nanoseconds)
-        return item.UserData.PlaybackPositionTicks / 10000000;
+        return item.UserData.PlaybackPositionTicks / 10_000_000;
     }, []);
 
     /**

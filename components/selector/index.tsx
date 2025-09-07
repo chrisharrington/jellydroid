@@ -1,14 +1,10 @@
 import { Colours } from '@/constants/colours';
+import { LabelValue } from '@/models';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Animated, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Portal } from 'react-native-portalize';
 import { useSelector } from './hook';
 import { styles as style } from './style';
-
-export type SelectorOption = {
-    label: string;
-    value: string | null;
-};
 
 type SelectorProps = {
     /** Required. Controls the visibility of the selector modal. */
@@ -24,13 +20,13 @@ type SelectorProps = {
     icon?: keyof typeof MaterialIcons.glyphMap;
 
     /** Required. Array of selectable options to display in the selector. */
-    options: SelectorOption[];
+    options: LabelValue[];
 
     /** Required. The currently selected value, or null if no selection. */
-    selectedValue: string | null;
+    selectedValue: string | number | null;
 
     /** Required. Callback function invoked when a new value is selected. */
-    onSelectValue: (value: string | null) => void;
+    onSelectValue: (value: string | number | null) => void;
 };
 
 export function Selector({ visible, onClose, title, icon, options, selectedValue, onSelectValue }: SelectorProps) {
