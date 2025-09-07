@@ -25,7 +25,7 @@ import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api'
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as FileSystem from 'expo-file-system';
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react';
 
 /**
  * Type defining the Jellyfin context value with all available API methods.
@@ -36,9 +36,6 @@ type JellyfinContextValue = {
 
     /** Retrieves the item using the given ID and stores it in `selectedItem`. */
     loadItem: (id: string) => Promise<BaseItemDto | null>;
-
-    /** The currently selected media item. Null if no item is selected. */
-    item: BaseItemDto | null;
 
     /** Finds a movie by name and year. */
     findMovieByName: (year: number, name: string) => Promise<BaseItemDto | undefined>;
@@ -131,7 +128,6 @@ type JellyfinProviderProps = {
  */
 export function JellyfinProvider({ children }: JellyfinProviderProps) {
     const api = useMemo(createApi, []),
-        [item, setItem] = useState<BaseItemDto | null>(null),
         config = useRef<JellyfinConfig | null>(null),
         { user, setAuth, clearAuth } = useAuthStore();
 
@@ -292,7 +288,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     const loadItem = useCallback(
         async (itemId: string) => {
             const item = await getItem(itemId);
-            setItem(item);
+            // setItem(item);
             return item;
         },
         [api, user]
@@ -334,11 +330,8 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 itemId,
                 updateUserItemDataDto: itemToUpdate.UserData,
             });
-
-            // If we've updated the currently loaded item, update it in state, too.
-            if (itemToUpdate.Id === item?.Id) setItem(itemToUpdate);
         },
-        [api, user, item]
+        [api, user]
     );
 
     /**
@@ -668,7 +661,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         login,
         loadItem,
         updateItem,
-        item,
         findMovieByName,
         getMediaInfo,
         getRecentlyAddedMovies,

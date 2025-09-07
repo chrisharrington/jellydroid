@@ -93,7 +93,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
      */
     const showToast = useCallback(
         (message: string, type: ToastType) => {
-            // Clear any existing dismiss timer
+            // Clear any existing dismiss timer.
             if (dismissTimeoutRef.current) {
                 clearTimeout(dismissTimeoutRef.current);
                 dismissTimeoutRef.current = null;
@@ -105,7 +105,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
             };
 
             if (isToastVisibleRef.current) {
-                // If a toast is currently visible, fade out with subtle slide, update content, then fade back in
+                // If a toast is currently visible, fade out with subtle slide, update content, then fade back in.
                 Animated.parallel([
                     Animated.timing(opacity, {
                         toValue: 0, // Fade out
@@ -118,9 +118,10 @@ export function ToastProvider({ children }: ToastProviderProps) {
                         useNativeDriver: true,
                     }),
                 ]).start(() => {
-                    // Update the toast content while it's invisible (opacity = 0)
+                    // Update the toast content while it's invisible (opacity = 0).
                     setCurrentToast(newToast);
-                    // Fade back in with slide up
+
+                    // Fade back in with slide up.
                     Animated.parallel([
                         Animated.timing(opacity, {
                             toValue: 1, // Fade in
@@ -135,7 +136,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
                     ]).start();
                 });
             } else {
-                // No toast currently visible, just show the new one
+                // No toast currently visible, just show the new one.
                 setCurrentToast(newToast);
                 isToastVisibleRef.current = true;
                 // Fade in with slide up animation
@@ -153,7 +154,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
                 ]).start();
             }
 
-            // Auto dismiss after 5 seconds
+            // Auto dismiss after 5 seconds.
             dismissTimeoutRef.current = setTimeout(() => {
                 Animated.parallel([
                     Animated.timing(opacity, {
@@ -190,12 +191,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
      * success('Profile updated successfully!');
      * ```
      */
-    const success = useCallback(
-        (message: string) => {
-            showToast(message, 'success');
-        },
-        [showToast]
-    );
+    const success = useCallback((message: string) => showToast(message, 'success'), [showToast]);
 
     /**
      * Displays an error toast notification with a red background.
@@ -215,6 +211,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     const error = useCallback(
         (message: string, error: any) => {
             showToast(message, 'error');
+            if (error) console.error(error.stack ? error.stack : error);
         },
         [showToast]
     );
@@ -274,8 +271,13 @@ export function ToastProvider({ children }: ToastProviderProps) {
 }
 
 type ToastProps = {
+    /** Required. The toast message and type to display. */
     toast: ToastMessage;
+
+    /** Required. Animated value for vertical translation of the toast. */
     translateY: Animated.Value;
+
+    /** Required. Animated value for the opacity of the toast. */
     opacity: Animated.Value;
 };
 

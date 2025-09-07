@@ -3,7 +3,7 @@ import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { LabelValue } from '@/models';
 import { formatDuration } from '@/shared/formatDuration';
-import { MediaStreamType } from '@jellyfin/sdk/lib/generated-client/models';
+import { BaseItemDto, MediaStreamType } from '@jellyfin/sdk/lib/generated-client/models';
 import { useRoute } from '@react-navigation/native';
 import { Parser } from 'm3u8-parser';
 import { useCallback, useMemo, useState } from 'react';
@@ -14,10 +14,13 @@ export function useMovieDetails() {
         [selectedAudio, setSelectedAudio] = useState<string | null>(null),
         [subtitleOptions, setSubtitleOptions] = useState<Array<LabelValue>>([]),
         [isBusy, setBusy] = useState<boolean>(false),
-        { loadItem, item: selectedItem, downloadTrickplayImages, getStreamUrlFromItemId } = useJellyfin(),
+        [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
+        { loadItem, downloadTrickplayImages, getStreamUrlFromItemId } = useJellyfin(),
         toast = useToast();
 
     useAsyncEffect(async () => {
+        if (!id || !name) return;
+
         try {
             setBusy(true);
 
@@ -25,8 +28,11 @@ export function useMovieDetails() {
             const localMovie = await loadItem(id);
             if (!localMovie) throw new Error('Movie not found.');
 
+            // Set the item for the screen.
+            setSelectedItem(localMovie);
+
             // Download trickplay images and parse subtitle options from the HLS manifest.
-            await Promise.all([downloadTrickplayImages(localMovie), getSubtitleOptions()]);
+            await downloadTrickplayImages(localMovie);
 
             // Set the default audio stream.
             setSelectedAudio(
@@ -38,7 +44,7 @@ export function useMovieDetails() {
         } finally {
             setBusy(false);
         }
-    }, [name]);
+    }, [id, name]);
 
     /**
      * Retrieves an array of subtitle options for a movie.
