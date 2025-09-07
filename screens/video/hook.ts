@@ -22,27 +22,6 @@ export function useVideoScreen() {
         }),
         toast = useToast();
 
-    // Add comprehensive event listeners for debugging subtitle tracks and source loading.
-    useEffect(() => {
-        if (!player) return;
-
-        const subtitleListener = player.addListener('availableSubtitleTracksChange', event => {
-            console.log('✅ Subtitle Tracks Changed:', {
-                tracks: event.availableSubtitleTracks,
-                count: event.availableSubtitleTracks?.length || 0,
-                trackDetails: event.availableSubtitleTracks?.map(track => ({
-                    id: track.id,
-                    language: track.language,
-                    label: track.label || 'Unknown',
-                })),
-            });
-
-            player.subtitleTrack = event.availableSubtitleTracks?.[0] || null;
-        });
-
-        return () => subtitleListener?.remove();
-    }, [player]);
-
     // Handle resume position when video is ready and item is loaded.
     useEffect(() => {
         if (!player || !item) return;

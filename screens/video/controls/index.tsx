@@ -21,6 +21,8 @@ export function VideoControls(props: VideoControlsProps) {
         isVisible,
         isPlaying,
         isBusy,
+        isClosedCaptionsEnabled,
+        isSubtitlesEnabled,
         currentTime,
         duration,
         isSliding,
@@ -33,6 +35,8 @@ export function VideoControls(props: VideoControlsProps) {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
+        handleClosedCaptionsToggle,
+        handleSubtitlesToggle,
         getSeekBarProgress,
     } = useVideoControls(props);
 

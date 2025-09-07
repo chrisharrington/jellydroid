@@ -1,4 +1,5 @@
 import { useJellyfin } from '@/contexts/jellyfin';
+import { SubtitleTrack } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 import { VideoControlsProps } from '.';
@@ -50,7 +51,10 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         [sliderValue, setSliderValue] = useState(0),
         [thumbPosition, setThumbPosition] = useState(0),
         playbackProgressCounter = useRef<number>(0),
-        { updatePlaybackProgress } = useJellyfin();
+        { updatePlaybackProgress } = useJellyfin(),
+        [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<SubtitleTrack[]>([]),
+        [isClosedCaptionsEnabled, setClosedCaptionsEnabled] = useState<boolean>(false),
+        [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false);
 
     // Compute playing state directly from player to avoid duplicate state.
     const isPlaying = useMemo(() => {
@@ -65,6 +69,18 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
     const fadeAnim = useRef(new Animated.Value(0)).current,
         hideTimeoutRef = useRef<NodeJS.Timeout | null>(null),
         isAnimatingRef = useRef(false);
+
+    // Add a listener to the video player to track available subtitle tracks.
+    useEffect(() => {
+        if (!player) return;
+
+        const listener = player.addListener('availableSubtitleTracksChange', event => {
+            setAvailableSubtitleTracks(event.availableSubtitleTracks || []);
+            console.log('✅ Subtitle Tracks Changed:', event.availableSubtitleTracks);
+        });
+
+        return () => listener?.remove();
+    }, [player]);
 
     // Show controls initially when component mounts.
     useEffect(() => {
@@ -325,6 +341,16 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         return (currentTime / playerDuration) * 100;
     }, [currentTime, player]);
 
+    const handleClosedCaptionsToggle = useCallback((isEnabled: boolean) => {
+        setClosedCaptionsEnabled(isEnabled);
+        if (isEnabled) setSubtitlesEnabled(false);
+    }, []);
+
+    const handleSubtitlesToggle = useCallback((isEnabled: boolean) => {
+        setSubtitlesEnabled(isEnabled);
+        if (isEnabled) setClosedCaptionsEnabled(false);
+    }, []);
+
     // Auto-hide controls when video finishes loading and starts playing.
     useEffect(() => {
         if (!isBusy && isPlaying && isVisible && !isSliding) setAutoHideTimer();
@@ -334,6 +360,8 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         isVisible,
         isPlaying,
         isBusy,
+        isClosedCaptionsEnabled,
+        isSubtitlesEnabled,
         currentTime,
         isSliding,
         sliderValue,
@@ -347,6 +375,8 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
+        handleClosedCaptionsToggle,
+        handleSubtitlesToggle,
         getSeekBarProgress,
     };
 }
