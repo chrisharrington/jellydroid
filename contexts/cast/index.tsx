@@ -4,67 +4,79 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import {
     CastContext as GoogleCastContext,
     MediaPlayerState,
+    MediaTrack,
     useCastSession,
     useDevices,
     useRemoteMediaClient,
 } from 'react-native-google-cast';
+import { useJellyfin } from '../jellyfin';
+import { SubtitleMetadata } from '../jellyfin/models';
 
 export type PlayStatus = {
-    /** Required. Indicates whether media is currently playing. */
+    /** Indicates whether media is currently playing. */
     isPlaying: boolean;
 
-    /** Required. Indicates if the player is in a loading or buffering state. */
+    /** Indicates if the player is in a loading or buffering state. */
     isBusy: boolean;
 
-    /** Required. Indicates if playback has been stopped or ended. */
+    /** Indicates if playback has been stopped or ended. */
     isStopped: boolean;
 
-    /** Required. Current playback position in seconds. */
+    /** Indicates that media track info is available. */
+    isMediaTrackInfoAvailable: boolean;
+
+    /** Current playback position in seconds. */
     streamPosition: number;
 
-    /** Required. Total duration of the media in seconds. */
+    /** Total duration of the media in seconds. */
     maxPosition: number;
 };
 
 type CastContextType = {
-    /** Required. Initiates casting of a media item to the connected device. */
+    /** Initiates casting of a media item to the connected device. */
     cast: (item: BaseItemDto, resumePlayback?: boolean) => void;
 
-    /** Required. Pauses the current media playback. */
+    /** Pauses the current media playback. */
     pause: () => Promise<void>;
 
-    /** Required. Resumes the current media playback. */
+    /** Resumes the current media playback. */
     resume: () => Promise<void>;
 
-    /** Required. Stops the current media playback and ends the casting session. */
-    stop: () => Promise<void>;
+    /** Stops the current media playback and ends the casting session. */
+    stop: () => void;
 
-    /** Required. Seeks backward in the current media by specified seconds. Defaults to 10 seconds. */
+    /** Seeks backward in the current media by specified seconds. Defaults to 10 seconds. */
     seekBackward: (seconds?: number) => Promise<void>;
 
-    /** Required. Seeks forward in the current media by specified seconds. Defaults to 30 seconds. */
+    /** Seeks forward in the current media by specified seconds. Defaults to 30 seconds. */
     seekForward: (seconds?: number) => Promise<void>;
 
-    /** Required. Seeks to a specific position in seconds in the current media. */
+    /** Seeks to a specific position in seconds in the current media. */
     seekToPosition: (position: number) => Promise<void>;
 
-    /** Required. Current playback status including position, duration, and player state. */
+    /** Current playback status including position, duration, and player state. */
     status: PlayStatus;
 
-    /** Required. List of available casting devices including the local device. */
+    /** List of available casting devices including the local device. */
     devices: Array<{ label: string; value: string }>;
 
-    /** Required. Handles device selection and connection management. */
+    /** Handles device selection and connection management. */
     onDeviceSelected: (deviceId: string | null) => Promise<void>;
 
-    /** Required. Indicates if connected to a casting device. */
+    /** Indicates if connected to a casting device. */
     isConnected: boolean;
 
-    /** Required. ID of the currently selected casting device. */
+    /** ID of the currently selected casting device. */
     selectedDeviceId: string;
 
-    /** Optional. Unique identifier for the current playback session. */
+    /** Unique identifier for the current playback session. */
     playbackSessionId: string | null;
+
+    /** Returns the loaded subtitle tracks for the current session. */
+    getSubtitleTrackMetadata: () => Promise<Array<MediaTrack & SubtitleMetadata>>;
+
+    /** Sets the active subtitle track for the current cast session or clears it when given null. */
+    setSubtitleTrack: (track: (MediaTrack & SubtitleMetadata) | null) => void;
 };
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -85,16 +97,19 @@ export function CastProvider({ children }: CastProviderProps) {
         client = useRemoteMediaClient(),
         session = useCastSession(),
         [selectedDeviceId, setSelectedDeviceId] = useState<string | null>('local'),
+        [jellyfinSubtitleTrackMetadata, setJellyfinSubtitleTrackMetadata] = useState<SubtitleMetadata[]>([]),
         devices = useDevices(),
         statusCallback = useRef<((status: PlayStatus) => void) | null>(null),
         [status, setStatus] = useState<PlayStatus>({
             isPlaying: false,
             isBusy: false,
             isStopped: false,
+            isMediaTrackInfoAvailable: false,
             streamPosition: 0,
             maxPosition: 0,
         }),
-        toast = useToast();
+        toast = useToast(),
+        { getStreamUrl, getSubtitleTrackMetadata: getJellyfinSubtitleTrackMetadata } = useJellyfin();
 
     // Set up event listeners for media status updates.
     useEffect(() => {
@@ -118,6 +133,7 @@ export function CastProvider({ children }: CastProviderProps) {
                 isPlaying: currentPlayerState === MediaPlayerState.PLAYING,
                 isBusy: currentPlayerState === MediaPlayerState.BUFFERING || !currentPlayerState,
                 isStopped: currentPlayerState === MediaPlayerState.IDLE,
+                isMediaTrackInfoAvailable: (mediaStatus.mediaInfo?.mediaTracks?.length || 0) > 0,
             }));
         });
 
@@ -144,7 +160,7 @@ export function CastProvider({ children }: CastProviderProps) {
 
                 // Generate stream and poster URLs.
                 let itemId = item.Id,
-                    streamUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${itemId}/master.m3u8?MediaSourceId=${item.MediaSources?.[0].Id}&VideoCodec=h264&AudioCodec=aac,mp3&VideoBitrate=15808283&AudioBitrate=384000&MaxFramerate=23.976025&MaxWidth=1024&api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}&TranscodingMaxAudioChannels=2&RequireAvc=false&EnableAudioVbrEncoding=true&SegmentContainer=ts&MinSegments=1&BreakOnNonKeyFrames=False&hevc-level=150&hevc-videobitdepth=10&hevc-profile=main10&h264-profile=high,main,baseline,constrainedbaseline&h264-level=41&aac-audiochannels=2&TranscodeReasons=ContainerNotSupported,%20VideoCodecNotSupported,%20AudioCodecNotSupported`,
+                    streamUrl = await getStreamUrl(item),
                     posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
 
                 // Cast media to the connected device.
@@ -164,6 +180,9 @@ export function CastProvider({ children }: CastProviderProps) {
                 // Seek to the last known position, if necessary.
                 const lastKnownPosition = item.UserData?.PlaybackPositionTicks || 0;
                 if (lastKnownPosition > 0) seekToPosition(lastKnownPosition / 10_000_000);
+
+                // Retrieve Jellyfin subtitle metadata for later use.
+                setJellyfinSubtitleTrackMetadata(getJellyfinSubtitleTrackMetadata(item));
             } catch (e) {
                 toast.error('Failed to cast media. Please try again later.', e);
             }
@@ -256,7 +275,7 @@ export function CastProvider({ children }: CastProviderProps) {
                     return;
                 }
                 const newPosition = Math.max(0, mediaStatus.streamPosition - seconds);
-                await availableClient.seek({ position: newPosition });
+                availableClient.seek({ position: newPosition });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
                 toast.error('Failed to seek backward.', error);
@@ -281,7 +300,7 @@ export function CastProvider({ children }: CastProviderProps) {
                     isBusy: true,
                     streamPosition: position,
                 }));
-                await availableClient.seek({ position });
+                availableClient.seek({ position });
                 setStatus(prev => ({ ...prev, isBusy: false }));
             } catch (error) {
                 toast.error('Failed to seek to position.', error);
@@ -296,9 +315,9 @@ export function CastProvider({ children }: CastProviderProps) {
      * Clears the selected item state to reset the casting session.
      * @returns A promise that resolves when the stop operation completes.
      */
-    const stop = useCallback(async () => {
+    const stop = useCallback(() => {
         try {
-            await getCastClient().stop();
+            getCastClient().stop();
         } catch (error) {
             toast.error('Failed to stop the casting session.', error);
         }
@@ -321,6 +340,53 @@ export function CastProvider({ children }: CastProviderProps) {
                 })),
         ];
     }, [devices]);
+
+    /**
+     * Retrieves and combines subtitle track metadata from both the Cast client and Jellyfin.
+     * @returns {Promise<Array<MediaTrack & SubtitleMetadata>>} A promise that resolves to an array of merged subtitle track objects containing both Cast and Jellyfin metadata.
+     * Only returns English language tracks.
+     * @throws {Error} When unable to find matching Jellyfin subtitle metadata for a Cast track.
+     */
+    const getSubtitleTrackMetadata = useCallback(async () => {
+        try {
+            const client = getCastClient(),
+                status = await client.getMediaStatus(),
+                tracks = status?.mediaInfo?.mediaTracks || [];
+
+            return tracks
+                .filter(track => !!track.name)
+                .map(track => {
+                    const jellyfinTrack = jellyfinSubtitleTrackMetadata.find(t => t.displayTitle === track.name);
+                    if (!jellyfinTrack) throw new Error('Unable to find matching Jellyfin subtitle metadata.');
+                    return {
+                        ...track,
+                        ...jellyfinTrack,
+                    };
+                })
+                .filter(track => track.language === 'eng');
+        } catch (error) {
+            toast.error('Failed to retrieve subtitle metadata.', error);
+            return [];
+        }
+    }, [client, status]);
+
+    /**
+     * Sets the active subtitle track for the current cast session.
+     * @param track - The subtitle track to set as active, or null to disable subtitles.
+     * Track must include both MediaTrack properties and SubtitleMetadata.
+     * @throws {Error} When setting the subtitle track fails
+     */
+    const setSubtitleTrack = useCallback(
+        async (track: (MediaTrack & SubtitleMetadata) | null) => {
+            try {
+                const client = getCastClient();
+                client.setActiveTrackIds(track ? [track.id] : []);
+            } catch (error) {
+                toast.error('Failed to set subtitle track.', error);
+            }
+        },
+        [client]
+    );
 
     /**
      * Handles device selection for casting operations.
@@ -384,6 +450,8 @@ export function CastProvider({ children }: CastProviderProps) {
             onDeviceSelected,
             isConnected: !!client,
             selectedDeviceId: selectedDeviceId || 'local',
+            getSubtitleTrackMetadata,
+            setSubtitleTrack,
         }),
         [
             cast,
@@ -399,6 +467,8 @@ export function CastProvider({ children }: CastProviderProps) {
             onDeviceSelected,
             session,
             selectedDeviceId,
+            getSubtitleTrackMetadata,
+            setSubtitleTrack,
         ]
     );
 

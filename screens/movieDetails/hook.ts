@@ -10,7 +10,7 @@ export function useMovieDetails() {
     const { id, name } = useRoute().params as { id: string; name: string },
         [isBusy, setBusy] = useState<boolean>(false),
         [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
-        { loadItem, downloadTrickplayImages, getSubtitleTrackMetadata } = useJellyfin(),
+        { getItem: loadItem, downloadTrickplayImages, getSubtitleTrackMetadata } = useJellyfin(),
         [isForcedSubtitlesAvailable, setForcedSubtitlesAvailable] = useState<boolean>(false),
         [isSubtitlesAvailable, setSubtitlesAvailable] = useState<boolean>(false),
         toast = useToast();

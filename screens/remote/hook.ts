@@ -7,10 +7,14 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
 export function useRemoteScreen() {
-    const { loadItem, getImageForId } = useJellyfin(),
+    const { getItem, getImageForId } = useJellyfin(),
         { status } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
+        [isForcedSubtitlesAvailable, setForcedSubtitlesAvailable] = useState<boolean>(false),
+        [isForcedSubtitlesEnabled, setForcedSubtitlesEnabled] = useState<boolean>(false),
+        [isSubtitlesAvailable, setSubtitlesAvailable] = useState<boolean>(false),
+        [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false),
         [dragTime, setDragTime] = useState<number>(0),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
@@ -25,7 +29,7 @@ export function useRemoteScreen() {
             setBusy(true);
 
             // Ensure the client is available before proceeding.
-            const item = await loadItem(params.itemId);
+            const item = await getItem(params.itemId);
             if (!item) throw new Error('Item not found.');
 
             // Set the item and poster for the current playback.
@@ -85,8 +89,14 @@ export function useRemoteScreen() {
         handleSliderStart: () => setDragging(true),
         handleSliderChange,
         handleSliderComplete,
+        handleSubtitleToggle: () => setSubtitlesEnabled(v => !v),
+        handleForcedSubtitleToggle: () => setForcedSubtitlesEnabled(v => !v),
         currentTime: formatTimeFromSeconds(isDragging ? dragTime : status.streamPosition),
         maxTime: useMemo(() => formatTimeFromSeconds(status.maxPosition), [item]),
         isBusy,
+        isSubtitlesAvailable,
+        isSubtitlesEnabled,
+        isForcedSubtitlesAvailable,
+        isForcedSubtitlesEnabled,
     };
 }

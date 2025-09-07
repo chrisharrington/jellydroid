@@ -12,7 +12,7 @@ export function useVideoScreen() {
     const params = useGlobalSearchParams<{ itemId: string; mediaSourceId: string; subtitleIndex?: string }>(),
         [isBusy, setBusy] = useState<boolean>(false),
         [streamUrl, setStreamUrl] = useState<string | null>(null),
-        { loadItem, getStreamUrlFromItemId, getResumePositionSeconds } = useJellyfin(),
+        { getItem: loadItem, getStreamUrlFromItemId, getResumePositionSeconds } = useJellyfin(),
         [item, setItem] = useState<BaseItemDto | null>(null),
         subtitleIndex = useMemo(
             () => (params.subtitleIndex ? parseInt(params.subtitleIndex) : undefined),

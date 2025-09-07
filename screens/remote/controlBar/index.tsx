@@ -1,4 +1,5 @@
 import { Spinner } from '@/components/spinner';
+import { Colours } from '@/constants/colours';
 import { PlayStatus } from '@/contexts/cast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
@@ -29,7 +30,13 @@ export type ControlBarProps = {
 };
 
 export function ControlBar(props: ControlBarProps) {
-    const { handlePlayPause } = useControlBar(props),
+    const {
+            handlePlayPause,
+            handleSubtitleToggle,
+            isSubtitleTrackEnabled,
+            isSubtitleTrackAvailable,
+            isForcedSubtitleTrackAvailable,
+        } = useControlBar(props),
         { stop, seekBackward, seekForward, status } = props;
 
     return (
@@ -72,8 +79,18 @@ export function ControlBar(props: ControlBarProps) {
                 <MaterialIcons name='forward-30' size={36} color='white' />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} activeOpacity={0.7}>
-                <MaterialIcons name='skip-next' size={36} color='white' />
+            <TouchableOpacity style={styles.button} activeOpacity={0.7} onPress={handleSubtitleToggle}>
+                <MaterialIcons
+                    name='closed-caption'
+                    size={36}
+                    color={
+                        isSubtitleTrackEnabled
+                            ? Colours.primary
+                            : isSubtitleTrackAvailable || isForcedSubtitleTrackAvailable
+                            ? Colours.text
+                            : Colours.subtext
+                    }
+                />
             </TouchableOpacity>
         </View>
     );

@@ -208,21 +208,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     }, [api, user]);
 
     /**
-     * Retrieves detailed information about a movie item from the Jellyfin API.
-     *
-     * @param id - The unique identifier of the movie item to fetch.
-     * @returns A promise that resolves to the movie item's data.
-     */
-    const loadItem = useCallback(
-        async (itemId: string) => {
-            const item = await getItem(itemId);
-            // setItem(item);
-            return item;
-        },
-        [api, user]
-    );
-
-    /**
      * Retrieves a specific item from the Jellyfin user library
      * @param itemId - The unique identifier of the item to retrieve
      * @returns Promise that resolves to the BaseItemDto representing the requested item
@@ -288,9 +273,9 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * the appropriate streaming URL with optional subtitle selection.
      */
     const getStreamUrlFromItemId = useCallback(
-        async (itemId: string, subtitleStreamIndex?: number) => {
-            const item = await loadItem(itemId);
-            return getStreamUrl(item, subtitleStreamIndex);
+        async (itemId: string) => {
+            const item = await getItem(itemId);
+            return getStreamUrl(item);
         },
         [api]
     );
@@ -302,7 +287,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns The transcoding URL for streaming the media with burned-in subtitles
      */
     const getStreamUrl = useCallback(
-        async (item: BaseItemDto, subtitleStreamIndex?: number) => {
+        async (item: BaseItemDto) => {
             const baseUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/master.m3u8`;
             const params = new URLSearchParams({
                 MediaSourceId: item.MediaSources?.[0].Id || '',
@@ -325,17 +310,9 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 'h264-profile': 'high,main,baseline,constrainedbaseline',
                 'h264-level': '41',
                 'aac-audiochannels': '2',
-                TranscodeReasons: `ContainerNotSupported, VideoCodecNotSupported, AudioCodecNotSupported ${
-                    subtitleStreamIndex !== undefined ? `, SubtitleCodecNotSupported` : ''
-                }`,
+                TranscodeReasons: 'ContainerNotSupported, VideoCodecNotSupported, AudioCodecNotSupported',
                 SubtitleMethod: SubtitleDeliveryMethod.Hls,
             });
-
-            // Add subtitle parameters if subtitle stream is specified
-            if (subtitleStreamIndex !== undefined && subtitleStreamIndex >= 0) {
-                params.append('SubtitleStreamIndex', subtitleStreamIndex.toString());
-                params.append('SubtitleMethod', SubtitleDeliveryMethod.Hls);
-            }
 
             // console.log('Stream URL:', `${baseUrl}?${params.toString()}`);
 
@@ -589,7 +566,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
 
     const contextValue: JellyfinContextValue = {
         login,
-        loadItem,
+        getItem,
         updateItem,
         findMovieByName,
         getMediaInfo,

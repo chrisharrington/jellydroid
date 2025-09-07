@@ -32,8 +32,8 @@ export type JellyfinContextValue = {
     /** Authenticates user with stored credentials. */
     login: () => Promise<MinimalUser>;
 
-    /** Retrieves the item using the given ID and stores it in `selectedItem`. */
-    loadItem: (id: string) => Promise<BaseItemDto | null>;
+    /** Retrieves the item using the given ID. */
+    getItem: (id: string) => Promise<BaseItemDto | null>;
 
     /** Finds a movie by name and year. */
     findMovieByName: (year: number, name: string) => Promise<BaseItemDto | undefined>;
@@ -54,10 +54,10 @@ export type JellyfinContextValue = {
     getImageForId: (itemId: string) => string;
 
     /** Gets streaming URL for a media item by its ID. */
-    getStreamUrlFromItemId: (itemId: string, subtitleStreamIndex?: number) => Promise<string | null>;
+    getStreamUrlFromItemId: (itemId: string, subtitleStreamIndex?: number) => Promise<string>;
 
     /** Gets streaming URL for a media item with optional burned-in subtitles. */
-    getStreamUrl: (item: BaseItemDto, subtitleIndex?: number) => Promise<string | null>;
+    getStreamUrl: (item: BaseItemDto, subtitleIndex?: number) => Promise<string>;
 
     /** Gets resume position in seconds for a media item. */
     getResumePositionSeconds: (item: BaseItemDto) => number;
