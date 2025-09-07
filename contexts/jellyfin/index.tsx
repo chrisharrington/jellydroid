@@ -346,25 +346,6 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
     );
 
     /**
-     * Gets available subtitle tracks for a media item.
-     * @param item - The Jellyfin BaseItemDto object containing media information
-     * @returns Array of subtitle stream objects with index, language, and display name
-     */
-    const getSubtitleTracks = useCallback((item: BaseItemDto) => {
-        if (!item.MediaStreams) return [];
-
-        return item.MediaStreams.filter(stream => stream.Type === 'Subtitle').map(stream => ({
-            index: stream.Index || 0,
-            language: stream.Language || 'Unknown',
-            displayTitle: stream.DisplayTitle || `Subtitle ${stream.Index}`,
-            codec: stream.Codec || 'Unknown',
-            isExternal: stream.IsExternal || false,
-            isDefault: stream.IsDefault || false,
-            isForced: stream.IsForced || false,
-        }));
-    }, []);
-
-    /**
      * Gets subtitle track metadata including default, forced, and other properties.
      * @param item - The Jellyfin BaseItemDto object containing media information
      * @returns Array of subtitle track metadata objects

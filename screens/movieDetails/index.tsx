@@ -11,7 +11,7 @@ import { useMovieDetails } from './hook';
 import style from './style';
 
 export function MovieDetailsScreen() {
-    const { isBusy, movie, backdrop, duration } = useMovieDetails();
+    const { isBusy, isForcedSubtitlesAvailable, isSubtitlesAvailable, movie, backdrop, duration } = useMovieDetails();
 
     return (
         <View style={{ flex: 1, backgroundColor: Colours.background }}>
@@ -68,10 +68,15 @@ export function MovieDetailsScreen() {
                                                 <Text style={style.subHeaderEntry}>
                                                     {movie.CriticRating.toFixed(1)}
                                                 </Text>
+                                                <Text style={style.divider}>/</Text>
+                                            </>
+                                        )}
+                                        {movie.OfficialRating && (
+                                            <>
+                                                <Text style={style.subHeaderEntry}>{movie.OfficialRating}</Text>
                                             </>
                                         )}
                                     </View>
-                                    {movie.OfficialRating && <Text style={style.rating}>{movie.OfficialRating}</Text>}
                                 </View>
 
                                 <Text style={style.title}>{movie.Name}</Text>
@@ -95,7 +100,11 @@ export function MovieDetailsScreen() {
                                 <CastList item={movie} />
                             </View>
 
-                            <InfoTable item={movie} />
+                            <InfoTable
+                                item={movie}
+                                isForcedSubtitlesAvailable={isForcedSubtitlesAvailable}
+                                isSubtitlesAvailable={isSubtitlesAvailable}
+                            />
                         </View>
                     </ScrollView>
                 )

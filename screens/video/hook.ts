@@ -50,7 +50,6 @@ export function useVideoScreen() {
 
         // Hide the navigation bar.
         NavigationBar.setVisibilityAsync('hidden');
-        NavigationBar.setBehaviorAsync('overlay-swipe');
 
         // Cleanup: restore to default orientation when component unmounts.
         return () => {

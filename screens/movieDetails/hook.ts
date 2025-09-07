@@ -10,7 +10,9 @@ export function useMovieDetails() {
     const { id, name } = useRoute().params as { id: string; name: string },
         [isBusy, setBusy] = useState<boolean>(false),
         [selectedItem, setSelectedItem] = useState<BaseItemDto | null>(null),
-        { loadItem, downloadTrickplayImages, getStreamUrlFromItemId } = useJellyfin(),
+        { loadItem, downloadTrickplayImages, getSubtitleTrackMetadata } = useJellyfin(),
+        [isForcedSubtitlesAvailable, setForcedSubtitlesAvailable] = useState<boolean>(false),
+        [isSubtitlesAvailable, setSubtitlesAvailable] = useState<boolean>(false),
         toast = useToast();
 
     useAsyncEffect(async () => {
@@ -28,6 +30,11 @@ export function useMovieDetails() {
 
             // Download trickplay images and parse subtitle options from the HLS manifest.
             await downloadTrickplayImages(localMovie);
+
+            // Determine available subtitle tracks.
+            const subtitles = getSubtitleTrackMetadata(localMovie).filter(sub => sub.language === 'eng');
+            setSubtitlesAvailable(subtitles.length > 0);
+            setForcedSubtitlesAvailable(subtitles.some(sub => sub.isForced));
         } catch (error) {
             toast.error('Failed to fetch movie details. Try again later.', error);
         } finally {
@@ -39,6 +46,8 @@ export function useMovieDetails() {
         movie: selectedItem,
         duration: useMemo(() => formatDuration(selectedItem?.RunTimeTicks || 0), [selectedItem]),
         isBusy,
+        isForcedSubtitlesAvailable,
+        isSubtitlesAvailable,
         backdrop: useMemo(
             () => `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${selectedItem?.Id}/Images/Backdrop/0`,
             [selectedItem]
