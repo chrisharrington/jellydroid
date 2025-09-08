@@ -7,7 +7,7 @@ import { useVideoScreen } from './hook';
 import style from './style';
 
 export function VideoScreen() {
-    const { isBusy, player, item } = useVideoScreen();
+    const { isBusy, player, item, playbackSessionId } = useVideoScreen();
 
     useEffect(() => {
         StatusBar.setHidden(true);
@@ -29,7 +29,7 @@ export function VideoScreen() {
                 allowsPictureInPicture={false}
                 nativeControls={false}
             />
-            {item && <VideoControls player={player} item={item} />}
+            {item && <VideoControls player={player} item={item} playbackSessionId={playbackSessionId} />}
         </View>
     );
 }

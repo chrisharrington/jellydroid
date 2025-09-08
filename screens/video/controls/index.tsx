@@ -12,8 +12,14 @@ import { useVideoControls } from './hook';
 import style from './style';
 
 export type VideoControlsProps = {
+    /** Required. The Jellyfin media item being played. */
     item: BaseItemDto;
+
+    /** Required. Reference to the video player instance. */
     player: VideoPlayer;
+
+    /** Required. Unique identifier for the current playback session. */
+    playbackSessionId: string | null;
 };
 
 export function VideoControls(props: VideoControlsProps) {

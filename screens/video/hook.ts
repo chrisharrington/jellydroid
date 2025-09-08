@@ -6,7 +6,8 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { useGlobalSearchParams } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useVideoPlayer } from 'expo-video';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 export function useVideoScreen() {
     const params = useGlobalSearchParams<{ itemId: string; mediaSourceId: string; subtitleIndex?: string }>(),
@@ -21,11 +22,15 @@ export function useVideoScreen() {
         player = useVideoPlayer(streamUrl, player => {
             player.play();
         }),
+        playbackSessionId = useRef<string | null>(null),
         toast = useToast();
 
     // Handle resume position when video is ready and item is loaded.
     useEffect(() => {
         if (!player || !item) return;
+
+        // Generate a new playback session ID when playback commences.
+        playbackSessionId.current = uuidv4();
 
         // Retrieve the resume position in seconds, if available.
         const resumeSeconds = getResumePositionSeconds(item);
@@ -42,7 +47,7 @@ export function useVideoScreen() {
         return () => {
             resumeListener?.remove();
         };
-    }, [player, item, getResumePositionSeconds]);
+    }, [player, item]);
 
     useEffect(() => {
         // Lock screen to landscape orientation when component mounts.
@@ -87,6 +92,7 @@ export function useVideoScreen() {
     return {
         player,
         item,
+        playbackSessionId: playbackSessionId.current,
         isBusy,
     };
 }

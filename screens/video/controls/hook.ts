@@ -45,7 +45,7 @@ import { VideoControlsProps } from '.';
  * - handleSliderComplete: Handler for seek bar drag completion
  * - getSeekBarProgress: Function to calculate current progress percentage
  */
-export function useVideoControls({ item, player }: VideoControlsProps) {
+export function useVideoControls({ item, player, playbackSessionId }: VideoControlsProps) {
     const [isVisible, setIsVisible] = useState<boolean>(false),
         [isSliding, setSliding] = useState<boolean>(false),
         [isBusy, setBusy] = useState<boolean>(false),
@@ -120,7 +120,7 @@ export function useVideoControls({ item, player }: VideoControlsProps) {
             if (playbackProgressCounter.current >= 4) {
                 if (!item.Id || !item.MediaSources?.[0].Id) return;
 
-                updatePlaybackProgress(item.Id, item.MediaSources?.[0].Id, null, payload.currentTime || 0);
+                updatePlaybackProgress(item.Id, item.MediaSources?.[0].Id, playbackSessionId, payload.currentTime || 0);
                 playbackProgressCounter.current = 0;
             }
         });
