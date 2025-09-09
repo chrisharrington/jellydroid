@@ -6,7 +6,7 @@
     "start": "bunx expo start",
     "build:dev": "bunx dotenv -- eas build --profile development --platform android --local --output dev-build.apk && qrcp dev-build.apk",
     "test": "bunx jest",
-    "type-check": "bunx tsc --noEmit",
+    "type-check": "bunx tsc --noEmit --watch",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },
@@ -62,6 +62,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@testing-library/react-native": "^13.2.2",
+    "@types/jest": "^30.0.0",
     "@types/m3u8-parser": "^7.2.3",
     "@types/react": "~19.0.10",
     "@types/uuid": "^10.0.0",

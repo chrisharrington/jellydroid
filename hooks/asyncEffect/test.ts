@@ -33,7 +33,7 @@ describe('useAsyncEffect', () => {
     });
 
     it('should call the callback when dependencies change', async () => {
-        const { rerender } = renderHook(({ deps }) => useAsyncEffect(mockCallback, deps), {
+        const { rerender } = renderHook<void, { deps: any[] }>(({ deps }) => useAsyncEffect(mockCallback, deps), {
             initialProps: { deps: [1] },
         });
 
@@ -50,7 +50,7 @@ describe('useAsyncEffect', () => {
     });
 
     it('should not call the callback when dependencies stay the same', async () => {
-        const { rerender } = renderHook(({ deps }) => useAsyncEffect(mockCallback, deps), {
+        const { rerender } = renderHook<void, { deps: any[] }>(({ deps }) => useAsyncEffect(mockCallback, deps), {
             initialProps: { deps: [1] },
         });
 
@@ -130,7 +130,7 @@ describe('useAsyncEffect', () => {
     });
 
     it('should call callback multiple times when dependencies change multiple times', async () => {
-        const { rerender } = renderHook(({ value }) => useAsyncEffect(mockCallback, [value]), {
+        const { rerender } = renderHook<void, { value: string }>(({ value }) => useAsyncEffect(mockCallback, [value]), {
             initialProps: { value: 'a' },
         });
 
@@ -166,9 +166,12 @@ describe('useAsyncEffect', () => {
     it('should work with undefined dependencies (no dependency array)', async () => {
         // Note: This tests the behavior when no dependency array is provided
         // In the current implementation, this would cause the effect to run on every render
-        const { rerender } = renderHook(({ forceRender }) => useAsyncEffect(mockCallback, undefined as any), {
-            initialProps: { forceRender: 0 },
-        });
+        const { rerender } = renderHook<void, { forceRender: number }>(
+            ({ forceRender }) => useAsyncEffect(mockCallback, undefined as any),
+            {
+                initialProps: { forceRender: 0 },
+            }
+        );
 
         await waitFor(() => {
             expect(mockCallback).toHaveBeenCalledTimes(1);
@@ -183,9 +186,12 @@ describe('useAsyncEffect', () => {
     });
 
     it('should handle rapid dependency changes', async () => {
-        const { rerender } = renderHook(({ counter }) => useAsyncEffect(mockCallback, [counter]), {
-            initialProps: { counter: 0 },
-        });
+        const { rerender } = renderHook<void, { counter: number }>(
+            ({ counter }) => useAsyncEffect(mockCallback, [counter]),
+            {
+                initialProps: { counter: 0 },
+            }
+        );
 
         // Rapidly change dependencies
         for (let i = 1; i <= 5; i++) {
