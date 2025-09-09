@@ -9,7 +9,10 @@
             "*": true
         },
         "jest.jestCommandLine": "bunx jest",
-        "jest.rootPath": "."
+        "jest.rootPath": ".",
+        "jest.runMode": {
+            "type": "on-demand"
+        }
     },
     "extensions": {
         "recommendations": ["github.copilot", "github.copilot-chat", "esbenp.prettier-vscode"]
