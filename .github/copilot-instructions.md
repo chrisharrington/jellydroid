@@ -12,6 +12,9 @@ Included below are guidelines and instructions for Copilot agents.
 -   In a similar vein, tests should verify expectations by examining changes in the user interface and _never_ by examining the internal state of a component.
 -   Tests can be run using `bunx jest` from Swyfft.Web/Client. Include the relative path.
 -   Always use `jest.mock` to mock dependencies.
+-   Always use one `describe` block per file. The text for the describe block should be the name of the component or hook being tested.
+-   Always use one `it` block per behavior.
+-   Always use `beforeEach` to reset mocks and clear state.
 
 Here's an example of a well written test file:
 
