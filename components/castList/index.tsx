@@ -16,7 +16,6 @@ export function CastList(props: CastListProps) {
             itemSubtext={actor => actor.Name!}
             itemPosterUrl={actor => actor.Id!}
             keyExtractor={actor => actor.Id!}
-            onPressItem={actor => {}}
         />
     );
 }

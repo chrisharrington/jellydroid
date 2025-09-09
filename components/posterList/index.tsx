@@ -21,8 +21,8 @@ export type PosterListProps<TListItem> = PropsWithChildren & {
     /** Required. Function to extract a unique key for each item in the list. */
     keyExtractor: (item: TListItem) => string;
 
-    /** Required. Callback function triggered when a poster item is pressed. */
-    onPressItem: (item: TListItem) => void;
+    /** Optional. Callback function triggered when a poster item is pressed. */
+    onPressItem?: (item: TListItem) => void;
 };
 
 export function PosterList<TListItem>(props: PosterListProps<TListItem>) {
@@ -44,7 +44,7 @@ export function PosterList<TListItem>(props: PosterListProps<TListItem>) {
                 renderItem={({ item, index }) => (
                     <Pressable
                         style={[style.poster, { marginRight: index === props.items.length - 1 ? 0 : 18 }]}
-                        onPress={() => props.onPressItem(item)}
+                        onPress={() => props.onPressItem?.(item)}
                     >
                         <Poster url={getImageForId(props.itemPosterUrl(item))} />
                         <Text style={style.label}>{props.itemSubtext(item)}</Text>
