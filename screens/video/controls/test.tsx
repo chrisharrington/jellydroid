@@ -109,7 +109,9 @@ describe('useVideoControls', () => {
     });
 
     it('initializes with correct default state', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         expect(result.current.isVisible).toBe(true);
         expect(result.current.isPlaying).toBe(false);
@@ -122,7 +124,7 @@ describe('useVideoControls', () => {
     it('shows controls with fade-in animation on mount', () => {
         const { Animated } = require('react-native');
 
-        renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null }));
 
         expect(Animated.timing).toHaveBeenCalledWith(expect.any(Object), {
             toValue: 1,
@@ -132,14 +134,16 @@ describe('useVideoControls', () => {
     });
 
     it('sets up player listeners when player becomes available', () => {
-        renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null }));
 
         expect(mockPlayer.addListener).toHaveBeenCalledWith('timeUpdate', expect.any(Function));
         expect(mockPlayer.addListener).toHaveBeenCalledWith('statusChange', expect.any(Function));
     });
 
     it('handles missing player gracefully', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: null as any }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: null as any, playbackSessionId: null })
+        );
 
         expect(result.current.isPlaying).toBe(false);
         expect(result.current.currentTime).toBe(0);
@@ -150,7 +154,9 @@ describe('useVideoControls', () => {
         const mockRemove = jest.fn();
         mockPlayer.addListener.mockReturnValue({ remove: mockRemove });
 
-        const { unmount } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { unmount } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         unmount();
 
@@ -159,7 +165,9 @@ describe('useVideoControls', () => {
 
     it('updates current time from timeUpdate events when not sliding', () => {
         mockPlayer.currentTime = 25;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Trigger time update event.
         act(() => {
@@ -174,7 +182,9 @@ describe('useVideoControls', () => {
     });
 
     it('does not update current time from timeUpdate events when sliding', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Start sliding.
         act(() => {
@@ -197,7 +207,7 @@ describe('useVideoControls', () => {
     });
 
     it('updates playback progress with Jellyfin every second', () => {
-        renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null }));
 
         // Trigger four time update events to simulate one second.
         act(() => {
@@ -221,7 +231,7 @@ describe('useVideoControls', () => {
 
     it('does not update playback progress when item data is missing', () => {
         const itemWithoutId = { ...mockItem, Id: undefined };
-        renderHook(() => useVideoControls({ item: itemWithoutId, player: mockPlayer }));
+        renderHook(() => useVideoControls({ item: itemWithoutId, player: mockPlayer, playbackSessionId: null }));
 
         // Trigger time update events.
         act(() => {
@@ -238,7 +248,9 @@ describe('useVideoControls', () => {
     });
 
     it('updates busy state from statusChange events', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Trigger statusChange.
         act(() => {
@@ -262,20 +274,26 @@ describe('useVideoControls', () => {
     });
 
     it('computes playing state from player', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         expect(result.current.isPlaying).toBe(false);
 
         // Update player state.
         mockPlayer.playing = true;
-        const { result: newResult } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result: newResult } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         expect(newResult.current.isPlaying).toBe(true);
     });
 
     it('toggles video controls visibility on video press', () => {
         const { Animated } = require('react-native');
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Controls start visible and not busy, so first tap should hide them
         act(() => {
@@ -302,7 +320,9 @@ describe('useVideoControls', () => {
     });
 
     it('handles play/pause button press correctly', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Player starts paused (playing: false), so pressing should call play.
         act(() => {
@@ -314,7 +334,9 @@ describe('useVideoControls', () => {
 
         // Update player state to playing and create new hook instance.
         mockPlayer.playing = true;
-        const { result: newResult } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result: newResult } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             newResult.current.handlePlayPause();
@@ -325,7 +347,9 @@ describe('useVideoControls', () => {
 
     it('handles backward seek correctly', () => {
         mockPlayer.currentTime = 30;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             result.current.handleSeekBackward();
@@ -336,7 +360,9 @@ describe('useVideoControls', () => {
 
     it('clamps backward seek to minimum of 0', () => {
         mockPlayer.currentTime = 5;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             result.current.handleSeekBackward();
@@ -347,7 +373,9 @@ describe('useVideoControls', () => {
 
     it('handles forward seek correctly', () => {
         mockPlayer.currentTime = 30;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             result.current.handleSeekForward();
@@ -359,7 +387,9 @@ describe('useVideoControls', () => {
     it('does not forward seek when player has no duration', () => {
         mockPlayer.duration = undefined;
         mockPlayer.currentTime = 30;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             result.current.handleSeekForward();
@@ -372,7 +402,9 @@ describe('useVideoControls', () => {
     it('handles slider start correctly', () => {
         mockPlayer.currentTime = 25;
         mockPlayer.duration = 100;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             result.current.handleSliderStart();
@@ -384,7 +416,9 @@ describe('useVideoControls', () => {
     });
 
     it('handles slider changes during sliding', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Start sliding first.
         act(() => {
@@ -402,7 +436,9 @@ describe('useVideoControls', () => {
     });
 
     it('does not handle slider changes when not sliding', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         const originalTime = mockPlayer.currentTime;
 
@@ -415,7 +451,9 @@ describe('useVideoControls', () => {
     });
 
     it('handles slider completion correctly', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         act(() => {
             result.current.handleSliderComplete(75);
@@ -430,7 +468,9 @@ describe('useVideoControls', () => {
     it('calculates seek bar progress correctly', () => {
         mockPlayer.currentTime = 25;
         mockPlayer.duration = 100;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         const progress = result.current.getSeekBarProgress();
         expect(progress).toBe(25);
@@ -438,7 +478,9 @@ describe('useVideoControls', () => {
 
     it('returns 0 progress when duration is 0', () => {
         mockPlayer.duration = 0;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         const progress = result.current.getSeekBarProgress();
         expect(progress).toBe(0);
@@ -446,7 +488,9 @@ describe('useVideoControls', () => {
 
     it('computes duration from player', () => {
         mockPlayer.duration = 150;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         expect(result.current.duration).toBe(150);
     });
@@ -456,7 +500,9 @@ describe('useVideoControls', () => {
 
         // Create a new instance with playing state from the start
         mockPlayer.playing = true;
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Set up conditions for auto-hide: not busy, playing, visible, not sliding.
         act(() => {
@@ -486,7 +532,9 @@ describe('useVideoControls', () => {
 
     it('does not auto-hide controls when video is busy', () => {
         const { Animated } = require('react-native');
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Video remains busy.
         mockPlayer.playing = true;
@@ -504,7 +552,9 @@ describe('useVideoControls', () => {
     });
 
     it('clears hide timer when video becomes busy', () => {
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Set up auto-hide timer by making video not busy and playing.
         act(() => {
@@ -538,7 +588,9 @@ describe('useVideoControls', () => {
 
     it('handles rapid control toggle calls', () => {
         const { Animated } = require('react-native');
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Make video not busy so controls can be hidden.
         act(() => {
@@ -564,7 +616,9 @@ describe('useVideoControls', () => {
     });
     it('does not hide controls when already hidden', () => {
         const { Animated } = require('react-native');
-        const { result } = renderHook(() => useVideoControls({ item: mockItem, player: mockPlayer }));
+        const { result } = renderHook(() =>
+            useVideoControls({ item: mockItem, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Make video not busy so controls can be hidden.
         act(() => {
@@ -596,7 +650,9 @@ describe('useVideoControls', () => {
 
     it('handles item without MediaSources gracefully', () => {
         const itemWithoutMediaSources = { ...mockItem, MediaSources: undefined };
-        renderHook(() => useVideoControls({ item: itemWithoutMediaSources, player: mockPlayer }));
+        renderHook(() =>
+            useVideoControls({ item: itemWithoutMediaSources, player: mockPlayer, playbackSessionId: null })
+        );
 
         // Trigger time update events.
         act(() => {

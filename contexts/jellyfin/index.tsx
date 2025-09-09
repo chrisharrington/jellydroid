@@ -25,7 +25,7 @@ import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api'
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as FileSystem from 'expo-file-system';
-import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { JellyfinContextValue } from './models';
 
 /**
@@ -65,7 +65,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      *
      * @returns A promise that resolves when the authentication process is complete.
      */
-    const login = useCallback(async () => {
+    async function login() {
         try {
             const response = await api.authenticateUserByName(
                 process.env.EXPO_PUBLIC_JELLYFIN_USERNAME || '',
@@ -82,7 +82,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             clearAuth();
             throw error;
         }
-    }, [api, setAuth, clearAuth]);
+    }
 
     /**
      * Retrieves the current user or performs a login if no user is authenticated.
@@ -91,34 +91,31 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * If a user is already authenticated, returns the existing user.
      * Otherwise, initiates the login process and returns the newly authenticated user.
      */
-    const getUser = useCallback(() => {
+    function getUser() {
         return new Promise<MinimalUser>(async resolve => {
             if (user) resolve(user);
             else resolve(await login());
         });
-    }, [api]);
+    }
 
     /**
      * Finds a movie by its name (title).
      * @param name - The movie name to search for.
      * @returns The first matching movie item, or undefined if not found.
      */
-    const findMovieByName = useCallback(
-        async (year: number, name: string) => {
-            const itemsApi = getItemsApi(api);
-            const response = await itemsApi.getItems({
-                searchTerm: name,
-                years: [year],
-                includeItemTypes: ['Movie'],
-                recursive: true,
-                limit: 1,
-            });
+    async function findMovieByName(year: number, name: string) {
+        const itemsApi = getItemsApi(api);
+        const response = await itemsApi.getItems({
+            searchTerm: name,
+            years: [year],
+            includeItemTypes: ['Movie'],
+            recursive: true,
+            limit: 1,
+        });
 
-            const items = response.data.Items;
-            return items && items.length > 0 ? items[0] : undefined;
-        },
-        [api]
-    );
+        const items = response.data.Items;
+        return items && items.length > 0 ? items[0] : undefined;
+    }
 
     /**
      * Retrieves playback information for a specific media item from the Jellyfin API.
@@ -126,18 +123,15 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param itemId - The unique identifier of the media item to fetch playback info for.
      * @returns A promise that resolves to the playback information data of the requested media item.
      */
-    const getMediaInfo = useCallback(
-        async (itemId: string, options?: Partial<MediaInfoApiGetPostedPlaybackInfoRequest>) => {
-            const mediaInfoApi = getMediaInfoApi(api);
-            const response = await mediaInfoApi.getPostedPlaybackInfo({
-                itemId,
-                ...options,
-            });
+    async function getMediaInfo(itemId: string, options?: Partial<MediaInfoApiGetPostedPlaybackInfoRequest>) {
+        const mediaInfoApi = getMediaInfoApi(api);
+        const response = await mediaInfoApi.getPostedPlaybackInfo({
+            itemId,
+            ...options,
+        });
 
-            return response.data;
-        },
-        [api]
-    );
+        return response.data;
+    }
 
     /**
      * Retrieves the 10 most recently added movies from the Jellyfin server.
@@ -146,7 +140,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      *
      * @returns {Promise<Item[]>} A promise that resolves to an array of recently added movie items.
      */
-    const getRecentlyAddedMovies = useCallback(async () => {
+    async function getRecentlyAddedMovies() {
         const itemsApi = getItemsApi(api);
         const response = await itemsApi.getItems({
             sortBy: [ItemSortBy.DateCreated],
@@ -158,7 +152,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
 
         if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
-    }, [api]);
+    }
 
     /**
      * Retrieves the shows of the 30 most recently added episodes.
@@ -169,7 +163,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @throws {Error} When the API response contains no items
      * @returns {Promise<BaseItemDto[]>} A promise that resolves to an array of episode items
      */
-    const getRecentlyAddedEpisodes = useCallback(async () => {
+    async function getRecentlyAddedEpisodes() {
         const itemsApi = getItemsApi(api);
         const response = await itemsApi.getItems({
             sortBy: [ItemSortBy.DateCreated],
@@ -181,7 +175,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
 
         if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
-    }, [api]);
+    }
 
     /**
      * Retrieves a list of movies that can be resumed/continued watching.
@@ -195,7 +189,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * - Only includes items of type 'Movie'
      * - Searches recursively through all libraries
      */
-    const getContinueWatchingItems = useCallback(async () => {
+    async function getContinueWatchingItems() {
         const itemsApi = getItemsApi(api);
         const response = await itemsApi.getResumeItems({
             userId: (await getUser())!.Id,
@@ -205,7 +199,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         });
         if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
-    }, [api, user]);
+    }
 
     /**
      * Retrieves a specific item from the Jellyfin user library
@@ -213,18 +207,15 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns Promise that resolves to the BaseItemDto representing the requested item
      * @throws Will throw an error if the API call fails or if user is not authenticated
      */
-    const getItem = useCallback(
-        async (itemId: string) => {
-            const userLibraryApi = getUserLibraryApi(api),
-                user = await getUser(),
-                response = await userLibraryApi.getItem({ itemId, userId: user!.Id }),
-                item = response.data;
+    async function getItem(itemId: string) {
+        const userLibraryApi = getUserLibraryApi(api),
+            user = await getUser(),
+            response = await userLibraryApi.getItem({ itemId, userId: user!.Id }),
+            item = response.data;
 
-            // Return the item data.
-            return item as BaseItemDto;
-        },
-        [api, user]
-    );
+        // Return the item data.
+        return item as BaseItemDto;
+    }
 
     /**
      * Updates item user data in Jellyfin.
@@ -232,20 +223,17 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param item - The item data containing user data to update
      * @returns Promise that resolves when the update is complete
      */
-    const updateItem = useCallback(
-        async (itemId: string, itemToUpdate: BaseItemDto) => {
-            if (!itemToUpdate.UserData) return;
+    async function updateItem(itemId: string, itemToUpdate: BaseItemDto) {
+        if (!itemToUpdate.UserData) return;
 
-            // Update the item with the Jellyfin API.
-            const itemsApi = getItemsApi(api);
-            itemsApi.updateItemUserData({
-                userId: user!.Id,
-                itemId,
-                updateUserItemDataDto: itemToUpdate.UserData,
-            });
-        },
-        [api, user]
-    );
+        // Update the item with the Jellyfin API.
+        const itemsApi = getItemsApi(api);
+        itemsApi.updateItemUserData({
+            userId: user!.Id,
+            itemId,
+            updateUserItemDataDto: itemToUpdate.UserData,
+        });
+    }
 
     /**
      * Generates a URL for retrieving the primary image of a Jellyfin item.
@@ -255,11 +243,9 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * const imageUrl = getImageForId("123456");
      * // Returns: "http://your-jellyfin-server/Items/123456/Images/Primary?api_key=your-api-key"
      */
-    const getImageForId = useCallback(
-        (itemId: string) =>
-            `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
-        []
-    );
+    function getImageForId(itemId: string) {
+        return `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
+    }
 
     /**
      * Retrieves the streaming URL for a given item ID.
@@ -272,13 +258,10 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * This function first loads the item details using the itemId, then generates
      * the appropriate streaming URL with optional subtitle selection.
      */
-    const getStreamUrlFromItemId = useCallback(
-        async (itemId: string) => {
-            const item = await getItem(itemId);
-            return getStreamUrl(item);
-        },
-        [api]
-    );
+    async function getStreamUrlFromItemId(itemId: string) {
+        const item = await getItem(itemId);
+        return getStreamUrl(item);
+    }
 
     /**
      * Gets streaming URL for a media item with optional subtitle configuration.
@@ -286,48 +269,45 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param subtitleStreamIndex - Optional subtitle stream index to include in playback
      * @returns The transcoding URL for streaming the media with burned-in subtitles
      */
-    const getStreamUrl = useCallback(
-        async (item: BaseItemDto) => {
-            const baseUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/master.m3u8`;
-            const params = new URLSearchParams({
-                MediaSourceId: item.MediaSources?.[0].Id || '',
-                VideoCodec: 'h264',
-                AudioCodec: 'aac,mp3',
-                VideoBitrate: '15808283',
-                AudioBitrate: '384000',
-                MaxFramerate: '23.976025',
-                MaxWidth: '1024',
-                api_key: process.env.EXPO_PUBLIC_JELLYFIN_API_KEY || '',
-                TranscodingMaxAudioChannels: '2',
-                RequireAvc: 'false',
-                EnableAudioVbrEncoding: 'true',
-                SegmentContainer: 'ts',
-                MinSegments: '1',
-                BreakOnNonKeyFrames: 'False',
-                'hevc-level': '150',
-                'hevc-videobitdepth': '10',
-                'hevc-profile': 'main10',
-                'h264-profile': 'high,main,baseline,constrainedbaseline',
-                'h264-level': '41',
-                'aac-audiochannels': '2',
-                TranscodeReasons: 'ContainerNotSupported, VideoCodecNotSupported, AudioCodecNotSupported',
-                SubtitleMethod: SubtitleDeliveryMethod.Hls,
-            });
+    async function getStreamUrl(item: BaseItemDto) {
+        const baseUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/master.m3u8`;
+        const params = new URLSearchParams({
+            MediaSourceId: item.MediaSources?.[0].Id || '',
+            VideoCodec: 'h264',
+            AudioCodec: 'aac,mp3',
+            VideoBitrate: '15808283',
+            AudioBitrate: '384000',
+            MaxFramerate: '23.976025',
+            MaxWidth: '1024',
+            api_key: process.env.EXPO_PUBLIC_JELLYFIN_API_KEY || '',
+            TranscodingMaxAudioChannels: '2',
+            RequireAvc: 'false',
+            EnableAudioVbrEncoding: 'true',
+            SegmentContainer: 'ts',
+            MinSegments: '1',
+            BreakOnNonKeyFrames: 'False',
+            'hevc-level': '150',
+            'hevc-videobitdepth': '10',
+            'hevc-profile': 'main10',
+            'h264-profile': 'high,main,baseline,constrainedbaseline',
+            'h264-level': '41',
+            'aac-audiochannels': '2',
+            TranscodeReasons: 'ContainerNotSupported, VideoCodecNotSupported, AudioCodecNotSupported',
+            SubtitleMethod: SubtitleDeliveryMethod.Hls,
+        });
 
-            // console.log('Stream URL:', `${baseUrl}?${params.toString()}`);
+        // console.log('Stream URL:', `${baseUrl}?${params.toString()}`);
 
-            return `${baseUrl}?${params.toString()}`;
-            // return 'https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
-        },
-        [api, login]
-    );
+        return `${baseUrl}?${params.toString()}`;
+        // return 'https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
+    }
 
     /**
      * Gets subtitle track metadata including default, forced, and other properties.
      * @param item - The Jellyfin BaseItemDto object containing media information
      * @returns Array of subtitle track metadata objects
      */
-    const getSubtitleTrackMetadata = useCallback((item: BaseItemDto) => {
+    function getSubtitleTrackMetadata(item: BaseItemDto) {
         const mediaSource = item.MediaSources?.[0];
         if (!mediaSource?.MediaStreams) return [];
 
@@ -341,18 +321,18 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             deliveryMethod: stream.DeliveryMethod,
             isExternal: stream.IsExternal || false,
         }));
-    }, []);
+    }
 
     /**
      * Gets the resume position for a media item in seconds.
      * @param item - The Jellyfin BaseItemDto object containing user data
      * @returns The resume position in seconds, or 0 if no resume position is available
      */
-    const getResumePositionSeconds = useCallback((item: BaseItemDto) => {
+    function getResumePositionSeconds(item: BaseItemDto) {
         if (!item.UserData?.PlaybackPositionTicks) return 0;
         // Convert ticks to seconds (1 tick = 100 nanoseconds)
         return item.UserData.PlaybackPositionTicks / 10_000_000;
-    }, []);
+    }
 
     /**
      * Updates the playback progress for a media item, allowing Jellyfin to track viewing position.
@@ -363,27 +343,24 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param isPaused - Whether playback is currently paused. Defaults to false.
      * @returns A promise that resolves when the progress has been reported.
      */
-    const updatePlaybackProgress = useCallback(
-        async (
-            itemId: string,
-            mediaSourceId: string,
-            playSessionId: string | null,
-            position: number,
-            isPaused: boolean = false
-        ) => {
-            const playstateApi = getPlaystateApi(api);
-            await playstateApi.reportPlaybackProgress({
-                playbackProgressInfo: {
-                    ItemId: itemId,
-                    MediaSourceId: mediaSourceId,
-                    PositionTicks: position * 10_000_000,
-                    IsPaused: isPaused,
-                    PlaySessionId: playSessionId,
-                },
-            });
-        },
-        [api]
-    );
+    async function updatePlaybackProgress(
+        itemId: string,
+        mediaSourceId: string,
+        playSessionId: string | null,
+        position: number,
+        isPaused: boolean = false
+    ) {
+        const playstateApi = getPlaystateApi(api);
+        await playstateApi.reportPlaybackProgress({
+            playbackProgressInfo: {
+                ItemId: itemId,
+                MediaSourceId: mediaSourceId,
+                PositionTicks: position * 10_000_000,
+                IsPaused: isPaused,
+                PlaySessionId: playSessionId,
+            },
+        });
+    }
 
     /**
      * Reports the start of a playback session to Jellyfin.
@@ -392,21 +369,18 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param itemId - The unique identifier of the media item being played.
      * @returns A promise that resolves when the playback start has been reported.
      */
-    const startPlaybackSession = useCallback(
-        async (itemId: string, mediaSourceId: string, playSessionId: string | null) => {
-            const playstateApi = getPlaystateApi(api);
-            await playstateApi.reportPlaybackStart({
-                playbackStartInfo: {
-                    ItemId: itemId,
-                    IsPaused: false,
-                    MediaSourceId: mediaSourceId,
-                    PlayMethod: 'Transcode',
-                    PlaySessionId: playSessionId,
-                },
-            });
-        },
-        [api]
-    );
+    async function startPlaybackSession(itemId: string, mediaSourceId: string, playSessionId: string | null) {
+        const playstateApi = getPlaystateApi(api);
+        await playstateApi.reportPlaybackStart({
+            playbackStartInfo: {
+                ItemId: itemId,
+                IsPaused: false,
+                MediaSourceId: mediaSourceId,
+                PlayMethod: 'Transcode',
+                PlaySessionId: playSessionId,
+            },
+        });
+    }
 
     /**
      * Reports the end of a playback session to Jellyfin.
@@ -416,20 +390,22 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param positionTicks - The final playback position in ticks when stopping.
      * @returns A promise that resolves when the playback stop has been reported.
      */
-    const stopPlaybackSession = useCallback(
-        async (itemId: string, mediaSourceId: string, playSessionId: string | null, positionTicks: number) => {
-            const playstateApi = getPlaystateApi(api);
-            await playstateApi.reportPlaybackStopped({
-                playbackStopInfo: {
-                    ItemId: itemId,
-                    MediaSourceId: mediaSourceId,
-                    PositionTicks: positionTicks,
-                    PlaySessionId: playSessionId,
-                },
-            });
-        },
-        [api]
-    );
+    async function stopPlaybackSession(
+        itemId: string,
+        mediaSourceId: string,
+        playSessionId: string | null,
+        positionTicks: number
+    ) {
+        const playstateApi = getPlaystateApi(api);
+        await playstateApi.reportPlaybackStopped({
+            playbackStopInfo: {
+                ItemId: itemId,
+                MediaSourceId: mediaSourceId,
+                PositionTicks: positionTicks,
+                PlaySessionId: playSessionId,
+            },
+        });
+    }
 
     /**
      * Downloads trickplay images for a given media item. Trickplay images are sprite sheets used
@@ -449,39 +425,36 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * - Downloads multiple sprite sheets in parallel
      * - Creates a directory structure for storing the downloaded images
      */
-    const downloadTrickplayImages = useCallback(
-        async (item: BaseItemDto) => {
-            if (!config.current) config.current = await getSystemConfig();
+    async function downloadTrickplayImages(item: BaseItemDto) {
+        if (!config.current) config.current = await getSystemConfig();
 
-            // Check for the existence of the trickplay folder. If it's there, trickplay images have already been downloaded.
-            const trickplayFolder = getTrickplayFolderUri(item),
-                folderInfo = await FileSystem.getInfoAsync(trickplayFolder);
-            if (folderInfo.exists) return;
+        // Check for the existence of the trickplay folder. If it's there, trickplay images have already been downloaded.
+        const trickplayFolder = getTrickplayFolderUri(item),
+            folderInfo = await FileSystem.getInfoAsync(trickplayFolder);
+        if (folderInfo.exists) return;
 
-            // Create download folder as it doesn't exist.
-            await FileSystem.makeDirectoryAsync(trickplayFolder, { intermediates: true });
+        // Create download folder as it doesn't exist.
+        await FileSystem.makeDirectoryAsync(trickplayFolder, { intermediates: true });
 
-            // Pull the interval, tile width and tile height configuration parameters.
-            const interval = config.current.TrickplayOptions.Interval,
-                tileWidth = config.current.TrickplayOptions.TileWidth,
-                tileHeight = config.current.TrickplayOptions.TileHeight;
+        // Pull the interval, tile width and tile height configuration parameters.
+        const interval = config.current.TrickplayOptions.Interval,
+            tileWidth = config.current.TrickplayOptions.TileWidth,
+            tileHeight = config.current.TrickplayOptions.TileHeight;
 
-            // Calculate the number of trickplay images based on the length of the given item.
-            const numImages = Math.ceil((item.RunTimeTicks || 0) / 10_000_000 / (interval / 1_000)),
-                numSpriteSheets = Math.ceil(numImages / (tileWidth * tileHeight));
+        // Calculate the number of trickplay images based on the length of the given item.
+        const numImages = Math.ceil((item.RunTimeTicks || 0) / 10_000_000 / (interval / 1_000)),
+            numSpriteSheets = Math.ceil(numImages / (tileWidth * tileHeight));
 
-            // Download all trickplay images in parallel.
-            await Promise.all(
-                Array.from({ length: numSpriteSheets }, (_, index) =>
-                    FileSystem.downloadAsync(
-                        `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
-                        getTrickplayTileFileUri(item, index)
-                    )
+        // Download all trickplay images in parallel.
+        await Promise.all(
+            Array.from({ length: numSpriteSheets }, (_, index) =>
+                FileSystem.downloadAsync(
+                    `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Videos/${item.Id}/TrickPlay/320/${index}.jpg?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`,
+                    getTrickplayTileFileUri(item, index)
                 )
-            );
-        },
-        [api]
-    );
+            )
+        );
+    }
 
     /**
      * Creates a file URI for a trickplay tile image in the local cache directory.
@@ -492,20 +465,18 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @param index - The index of the trickplay tile image
      * @returns The local file system URI path for the cached trickplay tile image
      */
-    const getTrickplayTileFileUri = useCallback(
-        (item: BaseItemDto, index: number) => `${getTrickplayFolderUri(item)}/${index}.jpg`,
-        []
-    );
+    function getTrickplayTileFileUri(item: BaseItemDto, index: number) {
+        return `${getTrickplayFolderUri(item)}/${index}.jpg`;
+    }
 
     /**
      * Returns the URI for the trickplay folder of a specific Jellyfin item.
      * @param item - The Jellyfin item for which to get the trickplay folder URI
      * @returns A string representing the full path to the trickplay folder for the given item
      */
-    const getTrickplayFolderUri = useCallback(
-        (item: BaseItemDto) => `${FileSystem.cacheDirectory}trickplay/${item.Id}`,
-        []
-    );
+    function getTrickplayFolderUri(item: BaseItemDto) {
+        return `${FileSystem.cacheDirectory}trickplay/${item.Id}`;
+    }
 
     /**
      * Retrieves the Jellyfin system configuration.
@@ -517,7 +488,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @returns A promise that resolves to the Jellyfin system configuration object
      * @throws {Error} When the API request fails or returns a non-ok response
      */
-    const getSystemConfig = useCallback(async () => {
+    async function getSystemConfig() {
         if (config.current) return config.current;
 
         const response = await fetch(
@@ -529,7 +500,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         const localConfig = (await response.json()) as JellyfinConfig;
         config.current = localConfig;
         return config.current;
-    }, [api]);
+    }
 
     /**
      * Toggles the watched status of a Jellyfin media item.
@@ -538,20 +509,17 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * @throws Will throw an error if the user is not logged in and login attempt fails
      * @returns Promise that resolves when the watched status has been updated
      */
-    const toggleItemWatched = useCallback(
-        async (item: BaseItemDto, isWatched: boolean) => {
-            if (!item.Id) throw new Error('Item ID is required');
+    async function toggleItemWatched(item: BaseItemDto, isWatched: boolean) {
+        if (!item.Id) throw new Error('Item ID is required');
 
-            const playstateApi = getPlaystateApi(api),
-                parameters = { itemId: item.Id, userId: (await getUser()).Id };
+        const playstateApi = getPlaystateApi(api),
+            parameters = { itemId: item.Id, userId: (await getUser()).Id };
 
-            if (isWatched) await playstateApi.markUnplayedItem(parameters);
-            else await playstateApi.markPlayedItem(parameters);
+        if (isWatched) await playstateApi.markUnplayedItem(parameters);
+        else await playstateApi.markPlayedItem(parameters);
 
-            return !isWatched;
-        },
-        [api, getUser]
-    );
+        return !isWatched;
+    }
 
     const contextValue: JellyfinContextValue = {
         login,

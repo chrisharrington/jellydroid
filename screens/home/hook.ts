@@ -2,13 +2,12 @@ import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useFocusEffect } from '@react-navigation/native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 export function useHome() {
     const { getRecentlyAddedMovies, getRecentlyAddedEpisodes, getContinueWatchingItems } = useJellyfin(),
         toast = useToast(),
-        { navigate } = useNavigation(),
         { push } = useRouter(),
         [isBusy, setBusy] = useState<boolean>(false),
         [recentlyAddedMovies, setRecentlyAddedMovies] = useState<BaseItemDto[]>([]),
