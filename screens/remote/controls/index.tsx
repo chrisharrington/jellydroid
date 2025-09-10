@@ -4,10 +4,10 @@ import { Colours } from '@/constants/colours';
 import { PlayStatus } from '@/contexts/cast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
-import { useControlBar } from './hook';
+import { useRemoteControls } from './hook';
 import styles from './style';
 
-export type ControlBarProps = {
+export type RemoteControlsProps = {
     /** Required. Function to stop playback. */
     stop: () => void;
 
@@ -30,7 +30,7 @@ export type ControlBarProps = {
     status: PlayStatus;
 };
 
-export function ControlBar(props: ControlBarProps) {
+export function RemoteControls(props: RemoteControlsProps) {
     const {
             handlePlayPause,
             handleSubtitleButtonPress,
@@ -41,7 +41,7 @@ export function ControlBar(props: ControlBarProps) {
             isSubtitleSelectorVisible,
             setSubtitleSelectorVisible,
             selectedSubtitleName,
-        } = useControlBar(props),
+        } = useRemoteControls(props),
         { stop, seekBackward, seekForward, status } = props;
 
     return (

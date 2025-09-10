@@ -2,7 +2,7 @@ import { Spinner } from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import Slider from '@react-native-community/slider';
 import { Image, Text, View } from 'react-native';
-import { ControlBar } from './controlBar';
+import { RemoteControls } from './controls';
 import { useRemoteScreen } from './hook';
 import style from './style';
 
@@ -54,7 +54,7 @@ export function RemoteScreen() {
                     />
                 </View>
 
-                <ControlBar
+                <RemoteControls
                     stop={stop}
                     seekBackward={seekBackward}
                     pause={pause}

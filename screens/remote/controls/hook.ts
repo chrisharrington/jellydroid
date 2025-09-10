@@ -3,11 +3,11 @@ import { SubtitleMetadata } from '@/contexts/jellyfin/models';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useMemo, useState } from 'react';
 import { MediaTrack } from 'react-native-google-cast';
-import { ControlBarProps } from '.';
+import { RemoteControlsProps } from '.';
 
 export type SubtitleType = 'none' | 'all' | 'translate';
 
-export function useControlBar({ pause, resume, status }: ControlBarProps) {
+export function useRemoteControls({ pause, resume, status }: RemoteControlsProps) {
     const { getSubtitleTrackMetadata, setSubtitleTrack, currentSubtitleTrack } = useCast(),
         [subtitleTracks, setSubtitleTracks] = useState<(SubtitleMetadata & MediaTrack)[]>([]),
         [isSubtitleSelectorVisible, setSubtitleSelectorVisible] = useState<boolean>(false),
