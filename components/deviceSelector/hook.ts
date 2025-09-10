@@ -1,9 +1,17 @@
 import { useCast } from '@/contexts/cast';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 export function useCastSelector() {
     const [isVisible, setVisible] = useState(false),
         { selectedDeviceId, onDeviceSelected } = useCast();
+
+    return {
+        isVisible,
+        selectedDeviceId,
+        handleCastButtonPress: () => setVisible(true),
+        hideSelector: () => setVisible(false),
+        handleDeviceSelect,
+    };
 
     /**
      * Handles the selection of a cast device by its ID.
@@ -14,16 +22,7 @@ export function useCastSelector() {
      * @param deviceId - The unique identifier of the selected cast device, or "local" for this device
      * @returns A promise that resolves when the device connection/disconnection is complete
      */
-    const handleDeviceSelect = useCallback(
-        async (deviceId: string | null) => onDeviceSelected(deviceId),
-        [onDeviceSelected]
-    );
-
-    return {
-        isVisible,
-        selectedDeviceId,
-        handleCastButtonPress: () => setVisible(true),
-        hideSelector: () => setVisible(false),
-        handleDeviceSelect,
-    };
+    async function handleDeviceSelect(deviceId: string | null) {
+        await onDeviceSelected(deviceId);
+    }
 }

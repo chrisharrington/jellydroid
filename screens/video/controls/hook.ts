@@ -1,7 +1,7 @@
 import { useJellyfin } from '@/contexts/jellyfin';
 import { SubtitleMetadata } from '@/contexts/jellyfin/models';
 import { SubtitleTrack } from 'expo-video';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated } from 'react-native';
 import { VideoControlsProps } from '.';
 
@@ -172,247 +172,6 @@ export function useVideoControls({ item, player, playbackSessionId }: VideoContr
         };
     }, [isBusy]);
 
-    /**
-     * Sets auto-hide timer to hide controls after 2 seconds of inactivity.
-     * Clears any existing timer before setting new one.
-     */
-    const setAutoHideTimer = useCallback(() => {
-        if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-
-        hideTimeoutRef.current = setTimeout(() => {
-            if (!isAnimatingRef.current && !isBusy) hideControls();
-        }, 2000);
-    }, [isBusy]);
-
-    /**
-     * Shows video controls with fade-in animation.
-     * Sets auto-hide timer and prevents multiple rapid calls.
-     */
-    const showControls = useCallback(() => {
-        // Prevent multiple rapid calls.
-        if (isAnimatingRef.current || isVisible) {
-            setAutoHideTimer();
-            return;
-        }
-
-        isAnimatingRef.current = true;
-        setIsVisible(true);
-
-        // Animate controls to visible with fade-in.
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-        }).start(() => {
-            isAnimatingRef.current = false;
-        });
-
-        setAutoHideTimer();
-    }, [fadeAnim, isVisible, setAutoHideTimer]);
-
-    /**
-     * Hides video controls with fade-out animation.
-     * Respects busy state and prevents hiding during loading.
-     */
-    const hideControls = useCallback(() => {
-        // Don't hide controls if video is busy or already animating/hidden.
-        if (isBusy || isAnimatingRef.current || !isVisible) return;
-
-        isAnimatingRef.current = true;
-
-        // Clear any pending auto-hide timer.
-        if (hideTimeoutRef.current) {
-            clearTimeout(hideTimeoutRef.current);
-            hideTimeoutRef.current = null;
-        }
-
-        // Animate controls to hidden with fade-out.
-        Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-        }).start(() => {
-            setIsVisible(false);
-            isAnimatingRef.current = false;
-        });
-    }, [fadeAnim, isVisible, isBusy]);
-
-    /**
-     * Handles video area press to toggle control visibility.
-     * Shows controls if hidden, hides if visible.
-     */
-    const handleVideoPress = useCallback(() => {
-        if (isVisible) hideControls();
-        else showControls();
-    }, [isVisible, showControls, hideControls]);
-
-    /**
-     * Handles play/pause button press to toggle playback state.
-     * Updates local state and resets auto-hide timer.
-     */
-    const handlePlayPause = useCallback(() => {
-        if (!player) return;
-
-        if (isPlaying) player.pause();
-        else player.play();
-
-        showControls();
-    }, [player, isPlaying, showControls]);
-
-    /**
-     * Handles backward seek button to jump back 10 seconds.
-     * Clamps to minimum of 0 seconds and resets auto-hide timer.
-     */
-    const handleSeekBackward = useCallback(() => {
-        if (!player) return;
-
-        // Seek to the current time minus 10 seconds.
-        player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
-
-        // Show controls after seeking.
-        showControls();
-    }, [player, showControls]);
-
-    /**
-     * Handles forward seek button to jump ahead 10 seconds.
-     * Clamps to maximum of video duration and resets auto-hide timer.
-     */
-    const handleSeekForward = useCallback(() => {
-        if (!player || !player.duration) return;
-
-        // Seek to the current time plus 30 seconds.
-        player.currentTime = Math.max(0, (player.currentTime || 0) + 30);
-
-        // Show controls after seeking.
-        showControls();
-    }, [player, showControls]);
-
-    /**
-     * Handles seek bar drag start to begin interactive seeking.
-     * Pauses playback, calculates initial thumb position, and clears auto-hide timer.
-     */
-    const handleSliderStart = useCallback(() => {
-        setSliding(true);
-
-        // Calculate current progress percentage for thumb positioning.
-        const playerDuration = player?.duration || 0;
-        const currentProgress = playerDuration > 0 ? (currentTime / playerDuration) * 100 : 0;
-        setThumbPosition(currentProgress);
-
-        // Clear auto-hide timer during seeking.
-        if (hideTimeoutRef.current) {
-            clearTimeout(hideTimeoutRef.current);
-            hideTimeoutRef.current = null;
-        }
-
-        // Pause playback while seeking.
-        player?.pause();
-    }, [currentTime, player]);
-
-    /**
-     * Handles seek bar drag updates during interactive seeking.
-     * Updates time preview without committing to player until drag completes.
-     */
-    const handleSliderChange = useCallback(
-        (value: number) => {
-            if (!player || !isSliding) return;
-
-            // Update slider state values.
-            setSliderValue(value);
-            setThumbPosition(value);
-        },
-        [player, isSliding]
-    );
-
-    /**
-     * Handles seek bar drag completion to finalize seeking.
-     * Commits time to player, resumes playback, and resets auto-hide timer.
-     */
-    const handleSliderComplete = useCallback(
-        (value: number) => {
-            if (!player) return;
-
-            // Reset seeking state.
-            setSliding(false);
-            setSliderValue(value);
-            setThumbPosition(0);
-
-            // Seek to the new time based on the slider value.
-            player.currentTime = (value / 100) * (player.duration || 0);
-
-            // Resume playback and reset auto-hide timer.
-            showControls();
-            player.play();
-        },
-        [player, showControls]
-    );
-    /**
-     * Calculates current playback progress as percentage.
-     * Returns 0 if no duration available to prevent division by zero.
-     */
-    const getSeekBarProgress = useCallback((): number => {
-        const playerDuration = player?.duration || 0;
-        if (playerDuration === 0) return 0;
-        return (currentTime / playerDuration) * 100;
-    }, [currentTime, player]);
-
-    /**
-     * Toggles forced subtitles on/off and updates the player's subtitle track accordingly.
-     * When forced subtitles are enabled, regular subtitles are disabled and the first forced subtitle track is selected.
-     * When forced subtitles are disabled, the subtitle track is cleared.
-     * Controls are shown after the toggle.
-     *
-     * @param isEnabled - Boolean indicating whether forced subtitles should be enabled
-     */
-    const handleForcedSubtitlesToggle = useCallback(
-        (isEnabled: boolean) => {
-            // Update forced subtitles enabled state.
-            setForcedSubtitlesEnabled(isEnabled);
-
-            if (isEnabled) {
-                // Disable regular subtitles and find the first forced subtitle track.
-                setSubtitlesEnabled(false);
-                player.subtitleTrack = availableSubtitleTracks.find(track => track.isForced) || null;
-            } else {
-                // Clear the subtitle track when forced subtitles are disabled.
-                player.subtitleTrack = null;
-            }
-
-            // Show controls after toggle.
-            showControls();
-        },
-        [showControls]
-    );
-
-    /**
-     * Handles the toggling of subtitles in the video player.
-     * When enabled, it sets the subtitle track to the default track if available.
-     * When disabled, it removes the subtitle track.
-     * Also disables forced subtitles when regular subtitles are enabled.
-     *
-     * @param isEnabled - Boolean indicating whether subtitles should be enabled
-     * @returns void
-     */
-    const handleSubtitlesToggle = useCallback(
-        (isEnabled: boolean) => {
-            // Update regular subtitles enabled state.
-            setSubtitlesEnabled(isEnabled);
-
-            if (isEnabled) {
-                // Disable forced subtitles and set the default subtitle track.
-                setForcedSubtitlesEnabled(false);
-                player.subtitleTrack = availableSubtitleTracks.filter(track => !track.isForced)[0] || null;
-            } else {
-                // Clear the subtitle track when subtitles are disabled.
-                player.subtitleTrack = null;
-            }
-
-            // Show controls after toggle.
-            showControls();
-        },
-        [showControls]
-    );
-
     // Auto-hide controls when video finishes loading and starts playing.
     useEffect(() => {
         if (!isBusy && isPlaying && isVisible && !isSliding) setAutoHideTimer();
@@ -446,4 +205,234 @@ export function useVideoControls({ item, player, playbackSessionId }: VideoContr
         handleSubtitlesToggle,
         getSeekBarProgress,
     };
+
+    /**
+     * Sets auto-hide timer to hide controls after 2 seconds of inactivity.
+     * Clears any existing timer before setting new one.
+     */
+    function setAutoHideTimer() {
+        if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+
+        hideTimeoutRef.current = setTimeout(() => {
+            if (!isAnimatingRef.current && !isBusy) hideControls();
+        }, 2000);
+    }
+
+    /**
+     * Shows video controls with fade-in animation.
+     * Sets auto-hide timer and prevents multiple rapid calls.
+     */
+    function showControls() {
+        // Prevent multiple rapid calls.
+        if (isAnimatingRef.current || isVisible) {
+            setAutoHideTimer();
+            return;
+        }
+
+        isAnimatingRef.current = true;
+        setIsVisible(true);
+
+        // Animate controls to visible with fade-in.
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => {
+            isAnimatingRef.current = false;
+        });
+
+        setAutoHideTimer();
+    }
+
+    /**
+     * Hides video controls with fade-out animation.
+     * Respects busy state and prevents hiding during loading.
+     */
+    function hideControls() {
+        // Don't hide controls if video is busy or already animating/hidden.
+        if (isBusy || isAnimatingRef.current || !isVisible) return;
+
+        isAnimatingRef.current = true;
+
+        // Clear any pending auto-hide timer.
+        if (hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+
+        // Animate controls to hidden with fade-out.
+        Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => {
+            setIsVisible(false);
+            isAnimatingRef.current = false;
+        });
+    }
+
+    /**
+     * Handles video area press to toggle control visibility.
+     * Shows controls if hidden, hides if visible.
+     */
+    function handleVideoPress() {
+        if (isVisible) hideControls();
+        else showControls();
+    }
+
+    /**
+     * Handles play/pause button press to toggle playback state.
+     * Updates local state and resets auto-hide timer.
+     */
+    function handlePlayPause() {
+        if (!player) return;
+
+        if (isPlaying) player.pause();
+        else player.play();
+
+        showControls();
+    }
+
+    /**
+     * Handles backward seek button to jump back 10 seconds.
+     * Clamps to minimum of 0 seconds and resets auto-hide timer.
+     */
+    function handleSeekBackward() {
+        if (!player) return;
+
+        // Seek to the current time minus 10 seconds.
+        player.currentTime = Math.max(0, (player.currentTime || 0) - 10);
+
+        // Show controls after seeking.
+        showControls();
+    }
+
+    /**
+     * Handles forward seek button to jump ahead 10 seconds.
+     * Clamps to maximum of video duration and resets auto-hide timer.
+     */
+    function handleSeekForward() {
+        if (!player || !player.duration) return;
+
+        // Seek to the current time plus 30 seconds.
+        player.currentTime = Math.max(0, (player.currentTime || 0) + 30);
+
+        // Show controls after seeking.
+        showControls();
+    }
+
+    /**
+     * Handles seek bar drag start to begin interactive seeking.
+     * Pauses playback, calculates initial thumb position, and clears auto-hide timer.
+     */
+    function handleSliderStart() {
+        setSliding(true);
+
+        // Calculate current progress percentage for thumb positioning.
+        const playerDuration = player?.duration || 0;
+        const currentProgress = playerDuration > 0 ? (currentTime / playerDuration) * 100 : 0;
+        setThumbPosition(currentProgress);
+
+        // Clear auto-hide timer during seeking.
+        if (hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+
+        // Pause playback while seeking.
+        player?.pause();
+    }
+
+    /**
+     * Handles seek bar drag updates during interactive seeking.
+     * Updates time preview without committing to player until drag completes.
+     */
+    function handleSliderChange(value: number) {
+        if (!player || !isSliding) return;
+
+        // Update slider state values.
+        setSliderValue(value);
+        setThumbPosition(value);
+    }
+
+    /**
+     * Handles seek bar drag completion to finalize seeking.
+     * Commits time to player, resumes playback, and resets auto-hide timer.
+     */
+    function handleSliderComplete(value: number) {
+        if (!player) return;
+
+        // Reset seeking state.
+        setSliding(false);
+        setSliderValue(value);
+        setThumbPosition(0);
+
+        // Seek to the new time based on the slider value.
+        player.currentTime = (value / 100) * (player.duration || 0);
+
+        // Resume playback and reset auto-hide timer.
+        showControls();
+        player.play();
+    }
+
+    /**
+     * Calculates current playback progress as percentage.
+     * Returns 0 if no duration available to prevent division by zero.
+     */
+    function getSeekBarProgress(): number {
+        const playerDuration = player?.duration || 0;
+        if (playerDuration === 0) return 0;
+        return (currentTime / playerDuration) * 100;
+    }
+
+    /**
+     * Toggles forced subtitles on/off and updates the player's subtitle track accordingly.
+     * When forced subtitles are enabled, regular subtitles are disabled and the first forced subtitle track is selected.
+     * When forced subtitles are disabled, the subtitle track is cleared.
+     * Controls are shown after the toggle.
+     *
+     * @param isEnabled - Boolean indicating whether forced subtitles should be enabled
+     */
+    function handleForcedSubtitlesToggle(isEnabled: boolean) {
+        // Update forced subtitles enabled state.
+        setForcedSubtitlesEnabled(isEnabled);
+
+        if (isEnabled) {
+            // Disable regular subtitles and find the first forced subtitle track.
+            setSubtitlesEnabled(false);
+            player.subtitleTrack = availableSubtitleTracks.find(track => track.isForced) || null;
+        } else {
+            // Clear the subtitle track when forced subtitles are disabled.
+            player.subtitleTrack = null;
+        }
+
+        // Show controls after toggle.
+        showControls();
+    }
+
+    /**
+     * Handles the toggling of subtitles in the video player.
+     * When enabled, it sets the subtitle track to the default track if available.
+     * When disabled, it removes the subtitle track.
+     * Also disables forced subtitles when regular subtitles are enabled.
+     *
+     * @param isEnabled - Boolean indicating whether subtitles should be enabled
+     * @returns void
+     */
+    function handleSubtitlesToggle(isEnabled: boolean) {
+        // Update regular subtitles enabled state.
+        setSubtitlesEnabled(isEnabled);
+
+        if (isEnabled) {
+            // Disable forced subtitles and set the default subtitle track.
+            setForcedSubtitlesEnabled(false);
+            player.subtitleTrack = availableSubtitleTracks.filter(track => !track.isForced)[0] || null;
+        } else {
+            // Clear the subtitle track when subtitles are disabled.
+            player.subtitleTrack = null;
+        }
+
+        // Show controls after toggle.
+        showControls();
+    }
 }

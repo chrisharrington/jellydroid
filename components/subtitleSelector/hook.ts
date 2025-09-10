@@ -1,5 +1,5 @@
 import { LabelValue } from '@/models';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { SubtitleSelectorProps } from '.';
 
 /**
@@ -16,7 +16,7 @@ import { SubtitleSelectorProps } from '.';
  * - subtitleOptions: Available subtitle options (All, Translate)
  * - handleSelectValue: Handler for subtitle option selection
  */
-export function useSubtitleSelector({ isVisible, selectedValue, onSelectValue, onClose }: SubtitleSelectorProps) {
+export function useSubtitleSelector({ onSelectValue, onClose }: SubtitleSelectorProps) {
     // Define the available subtitle options.
     const subtitleOptions: LabelValue[] = useMemo(
         () => [
@@ -27,20 +27,17 @@ export function useSubtitleSelector({ isVisible, selectedValue, onSelectValue, o
         []
     );
 
-    /**
-     * Handles subtitle option selection.
-     * Updates the selected value and closes the selector.
-     */
-    const handleSelectValue = useCallback(
-        (value: string | null) => {
-            onSelectValue(value);
-            onClose();
-        },
-        [onSelectValue, onClose]
-    );
-
     return {
         subtitleOptions,
         handleSelectValue,
     };
+
+    /**
+     * Handles subtitle option selection.
+     * Updates the selected value and closes the selector.
+     */
+    function handleSelectValue(value: string | null) {
+        onSelectValue(value);
+        onClose();
+    }
 }

@@ -1,6 +1,6 @@
 import { useToast } from '@/components/toast';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import {
     CastContext as GoogleCastContext,
     MediaPlayerState,
@@ -151,51 +151,73 @@ export function CastProvider({ children }: CastProviderProps) {
         statusCallback.current && statusCallback.current(status);
     }, [status]);
 
+    return (
+        <CastContext.Provider
+            value={{
+                cast,
+                pause,
+                resume,
+                stop,
+                seekBackward,
+                seekForward,
+                seekToPosition,
+                status,
+                devices: getDevices(),
+                playbackSessionId: playbackSessionId.current,
+                onDeviceSelected,
+                isConnected: !!client,
+                selectedDeviceId: selectedDeviceId || 'local',
+                getSubtitleTrackMetadata,
+                setSubtitleTrack,
+                currentSubtitleTrack,
+            }}
+        >
+            {children}
+        </CastContext.Provider>
+    );
+
     /**
      * Initiates casting of a media item to the connected Google Cast device.
      * Updates the selected item state which triggers the media loading process.
      * @param item - The Jellyfin media item to be cast to the device.
      * @param resumePlayback - Whether to resume playback if the item is already playing.
      */
-    const cast = useCallback(
-        async (item: BaseItemDto) => {
-            try {
-                if (!client) throw new Error('Cannot cast; no client available.');
+    async function cast(item: BaseItemDto) {
+        try {
+            if (!client) throw new Error('Cannot cast; no client available.');
 
-                // Generate stream and poster URLs.
-                let itemId = item.Id,
-                    streamUrl = await getStreamUrl(item),
-                    posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
+            // Generate stream and poster URLs.
+            let itemId = item.Id,
+                streamUrl = await getStreamUrl(item),
+                posterUrl = `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${itemId}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`;
 
-                // Cast media to the connected device.
-                await client.loadMedia({
-                    autoplay: true,
-                    mediaInfo: {
-                        contentUrl: streamUrl,
-                        contentType: 'application/x-mpegURL',
-                        metadata: {
-                            type: 'movie',
-                            title: item.Name || 'Unknown Movie',
-                            images: [{ url: posterUrl }],
-                        },
+            // Cast media to the connected device.
+            await client.loadMedia({
+                autoplay: true,
+                mediaInfo: {
+                    contentUrl: streamUrl,
+                    contentType: 'application/x-mpegURL',
+                    metadata: {
+                        type: 'movie',
+                        title: item.Name || 'Unknown Movie',
+                        images: [{ url: posterUrl }],
                     },
-                });
+                },
+            });
 
-                // Seek to the last known position, if necessary.
-                const lastKnownPosition = item.UserData?.PlaybackPositionTicks || 0;
-                if (lastKnownPosition > 0) seekToPosition(lastKnownPosition / 10_000_000);
+            // Seek to the last known position, if necessary.
+            const lastKnownPosition = item.UserData?.PlaybackPositionTicks || 0;
+            if (lastKnownPosition > 0) seekToPosition(lastKnownPosition / 10_000_000);
 
-                // Retrieve Jellyfin subtitle metadata for later use.
-                setJellyfinSubtitleTrackMetadata(getJellyfinSubtitleTrackMetadata(item));
+            // Retrieve Jellyfin subtitle metadata for later use.
+            setJellyfinSubtitleTrackMetadata(getJellyfinSubtitleTrackMetadata(item));
 
-                // Clear the selected subtitle for new casts.
-                setCurrentSubtitleTrack(null);
-            } catch (e) {
-                toast.error('Failed to cast media. Please try again later.', e);
-            }
-        },
-        [client]
-    );
+            // Clear the selected subtitle for new casts.
+            setCurrentSubtitleTrack(null);
+        } catch (e) {
+            toast.error('Failed to cast media. Please try again later.', e);
+        }
+    }
 
     /**
      * Pauses the current media playback on the connected Google Cast device.
@@ -203,7 +225,7 @@ export function CastProvider({ children }: CastProviderProps) {
      * If the operation fails, the UI state is reverted to its previous state.
      * @returns A promise that resolves when the pause operation completes.
      */
-    const pause = useCallback(async () => {
+    async function pause() {
         try {
             const availableClient = getCastClient(),
                 position = (await availableClient.getStreamPosition()) || 0;
@@ -215,7 +237,7 @@ export function CastProvider({ children }: CastProviderProps) {
             toast.error('Failed to pause.', error);
             setStatus(prev => ({ ...prev, isPlaying: true, isBusy: false }));
         }
-    }, [client]);
+    }
 
     /**
      * Resumes media playback on the connected Google Cast device.
@@ -223,7 +245,7 @@ export function CastProvider({ children }: CastProviderProps) {
      * If the operation fails, the UI state is reverted to its previous state.
      * @returns A promise that resolves when the resume operation completes.
      */
-    const resume = useCallback(async () => {
+    async function resume() {
         try {
             const availableClient = getCastClient(),
                 position = (await availableClient.getStreamPosition()) || 0;
@@ -235,7 +257,7 @@ export function CastProvider({ children }: CastProviderProps) {
             toast.error('Failed to resume.', error);
             setStatus(prev => ({ ...prev, isPlaying: false, isBusy: false }));
         }
-    }, [client]);
+    }
 
     /**
      * Seeks forward in the current media playback by a specified number of seconds.
@@ -243,26 +265,23 @@ export function CastProvider({ children }: CastProviderProps) {
      * @param seconds - The number of seconds to seek forward. Defaults to 30 seconds.
      * @returns A promise that resolves when the seek operation completes.
      */
-    const seekForward = useCallback(
-        async (seconds: number = 30) => {
-            try {
-                const availableClient = getCastClient();
-                setStatus(prev => ({ ...prev, isBusy: true }));
-                const mediaStatus = await availableClient.getMediaStatus();
-                if (!mediaStatus) {
-                    setStatus(prev => ({ ...prev, isBusy: false }));
-                    return;
-                }
-                const newPosition = mediaStatus.streamPosition + seconds;
-                await availableClient.seek({ position: newPosition });
+    async function seekForward(seconds: number = 30) {
+        try {
+            const availableClient = getCastClient();
+            setStatus(prev => ({ ...prev, isBusy: true }));
+            const mediaStatus = await availableClient.getMediaStatus();
+            if (!mediaStatus) {
                 setStatus(prev => ({ ...prev, isBusy: false }));
-            } catch (error) {
-                toast.error('Failed to seek forward.', error);
-                setStatus(prev => ({ ...prev, isBusy: false }));
+                return;
             }
-        },
-        [client]
-    );
+            const newPosition = mediaStatus.streamPosition + seconds;
+            await availableClient.seek({ position: newPosition });
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        } catch (error) {
+            toast.error('Failed to seek forward.', error);
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        }
+    }
 
     /**
      * Seeks backward in the current media playback by a specified number of seconds.
@@ -271,26 +290,23 @@ export function CastProvider({ children }: CastProviderProps) {
      * @param seconds - The number of seconds to seek backward. Defaults to 10 seconds.
      * @returns A promise that resolves when the seek operation completes.
      */
-    const seekBackward = useCallback(
-        async (seconds: number = 10) => {
-            try {
-                const availableClient = getCastClient();
-                setStatus(prev => ({ ...prev, isBusy: true }));
-                const mediaStatus = await availableClient.getMediaStatus();
-                if (!mediaStatus) {
-                    setStatus(prev => ({ ...prev, isBusy: false }));
-                    return;
-                }
-                const newPosition = Math.max(0, mediaStatus.streamPosition - seconds);
-                availableClient.seek({ position: newPosition });
+    async function seekBackward(seconds: number = 10) {
+        try {
+            const availableClient = getCastClient();
+            setStatus(prev => ({ ...prev, isBusy: true }));
+            const mediaStatus = await availableClient.getMediaStatus();
+            if (!mediaStatus) {
                 setStatus(prev => ({ ...prev, isBusy: false }));
-            } catch (error) {
-                toast.error('Failed to seek backward.', error);
-                setStatus(prev => ({ ...prev, isBusy: false }));
+                return;
             }
-        },
-        [client]
-    );
+            const newPosition = Math.max(0, mediaStatus.streamPosition - seconds);
+            availableClient.seek({ position: newPosition });
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        } catch (error) {
+            toast.error('Failed to seek backward.', error);
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        }
+    }
 
     /**
      * Seeks to a specific position in the current media playback.
@@ -298,44 +314,41 @@ export function CastProvider({ children }: CastProviderProps) {
      * @param position - The position in seconds to seek to.
      * @returns A promise that resolves when the seek operation completes.
      */
-    const seekToPosition = useCallback(
-        async (position: number) => {
-            try {
-                const availableClient = getCastClient();
-                setStatus(prev => ({
-                    ...prev,
-                    isBusy: true,
-                    streamPosition: position,
-                }));
-                availableClient.seek({ position });
-                setStatus(prev => ({ ...prev, isBusy: false }));
-            } catch (error) {
-                toast.error('Failed to seek to position.', error);
-                setStatus(prev => ({ ...prev, isBusy: false }));
-            }
-        },
-        [client]
-    );
+    async function seekToPosition(position: number) {
+        try {
+            const availableClient = getCastClient();
+            setStatus(prev => ({
+                ...prev,
+                isBusy: true,
+                streamPosition: position,
+            }));
+            availableClient.seek({ position });
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        } catch (error) {
+            toast.error('Failed to seek to position.', error);
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        }
+    }
 
     /**
      * Stops the current media playback on the connected Google Cast device.
      * Clears the selected item state to reset the casting session.
      * @returns A promise that resolves when the stop operation completes.
      */
-    const stop = useCallback(() => {
+    function stop() {
         try {
             getCastClient().stop();
         } catch (error) {
             toast.error('Failed to stop the casting session.', error);
         }
-    }, [client]);
+    }
 
     /**
      * Returns a list of available casting devices, including the local device option.
      * Filters devices to include only those with video output capabilities and sorts them alphabetically.
      * @returns An array of device objects with label and value properties.
      */
-    const getDevices = useCallback(() => {
+    function getDevices() {
         return [
             { label: 'This Device', value: 'local' },
             ...devices
@@ -346,7 +359,7 @@ export function CastProvider({ children }: CastProviderProps) {
                     value: device.deviceId,
                 })),
         ];
-    }, [devices]);
+    }
 
     /**
      * Retrieves and combines subtitle track metadata from both the Cast client and Jellyfin.
@@ -354,7 +367,7 @@ export function CastProvider({ children }: CastProviderProps) {
      * Only returns English language tracks.
      * @throws {Error} When unable to find matching Jellyfin subtitle metadata for a Cast track.
      */
-    const getSubtitleTrackMetadata = useCallback(async () => {
+    async function getSubtitleTrackMetadata() {
         try {
             const client = getCastClient(),
                 status = await client.getMediaStatus(),
@@ -375,7 +388,7 @@ export function CastProvider({ children }: CastProviderProps) {
             toast.error('Failed to retrieve subtitle metadata.', error);
             return [];
         }
-    }, [client, status]);
+    }
 
     /**
      * Sets the active subtitle track for the current cast session.
@@ -383,25 +396,22 @@ export function CastProvider({ children }: CastProviderProps) {
      * Track must include both MediaTrack properties and SubtitleMetadata.
      * @throws {Error} When setting the subtitle track fails
      */
-    const setSubtitleTrack = useCallback(
-        async (track: (MediaTrack & SubtitleMetadata) | null) => {
-            try {
-                const client = getCastClient();
-                client.setActiveTrackIds(track ? [track.id] : []);
-                setCurrentSubtitleTrack(track);
-            } catch (error) {
-                toast.error('Failed to set subtitle track.', error);
-            }
-        },
-        [client]
-    );
+    async function setSubtitleTrack(track: (MediaTrack & SubtitleMetadata) | null) {
+        try {
+            const client = getCastClient();
+            client.setActiveTrackIds(track ? [track.id] : []);
+            setCurrentSubtitleTrack(track);
+        } catch (error) {
+            toast.error('Failed to set subtitle track.', error);
+        }
+    }
 
     /**
      * Retrieves the currently active subtitle track from the cast client's media status.
      * @returns {Promise<MediaTrack | null>} A promise that resolves to the active subtitle track if found, null otherwise.
      * @throws {Error} When there's an error retrieving the media status, which is caught and displayed as a toast error.
      */
-    const getCurrentSubtitleTrack = useCallback(async () => {
+    async function getCurrentSubtitleTrack() {
         try {
             const client = getCastClient(),
                 status = await client.getMediaStatus(),
@@ -415,7 +425,7 @@ export function CastProvider({ children }: CastProviderProps) {
             toast.error('Failed to retrieve current subtitle track.', error);
             return null;
         }
-    }, [client]);
+    }
 
     /**
      * Handles device selection for casting operations.
@@ -424,35 +434,32 @@ export function CastProvider({ children }: CastProviderProps) {
      * @param deviceId - The ID of the device to connect to, or null to disconnect.
      * @returns A promise that resolves when the operation completes.
      */
-    const onDeviceSelected = useCallback(
-        async (deviceId: string | null) => {
-            try {
-                setStatus(prev => ({ ...prev, isBusy: true }));
-                setSelectedDeviceId(deviceId);
+    async function onDeviceSelected(deviceId: string | null) {
+        try {
+            setStatus(prev => ({ ...prev, isBusy: true }));
+            setSelectedDeviceId(deviceId);
 
-                if (deviceId === null || deviceId === 'local') {
-                    const sessionManager = GoogleCastContext.getSessionManager();
-                    await sessionManager.endCurrentSession();
-                } else {
-                    const device = devices.find(d => d.deviceId === deviceId);
-                    if (!device) {
-                        setStatus(prev => ({ ...prev, isBusy: false }));
-                        return;
-                    }
-
-                    const sessionManager = GoogleCastContext.getSessionManager();
-                    await sessionManager.startSession(deviceId);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+            if (deviceId === null || deviceId === 'local') {
+                const sessionManager = GoogleCastContext.getSessionManager();
+                await sessionManager.endCurrentSession();
+            } else {
+                const device = devices.find(d => d.deviceId === deviceId);
+                if (!device) {
+                    setStatus(prev => ({ ...prev, isBusy: false }));
+                    return;
                 }
 
-                setStatus(prev => ({ ...prev, isBusy: false }));
-            } catch (error) {
-                toast.error('Failed to handle device selection.', error);
-                setStatus(prev => ({ ...prev, isBusy: false }));
+                const sessionManager = GoogleCastContext.getSessionManager();
+                await sessionManager.startSession(deviceId);
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
-        },
-        [devices]
-    );
+
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        } catch (error) {
+            toast.error('Failed to handle device selection.', error);
+            setStatus(prev => ({ ...prev, isBusy: false }));
+        }
+    }
 
     /**
      * Retrieves the Google Cast client instance and validates its availability.
@@ -463,48 +470,6 @@ export function CastProvider({ children }: CastProviderProps) {
         if (!client) throw new Error('No Google Cast client available.');
         return client;
     }
-
-    const contextValue: CastContextType = useMemo(
-        () => ({
-            cast,
-            pause,
-            resume,
-            stop,
-            seekBackward,
-            seekForward,
-            seekToPosition,
-            status,
-            devices: getDevices(),
-            playbackSessionId: playbackSessionId.current,
-            onDeviceSelected,
-            isConnected: !!client,
-            selectedDeviceId: selectedDeviceId || 'local',
-            getSubtitleTrackMetadata,
-            setSubtitleTrack,
-            currentSubtitleTrack,
-        }),
-        [
-            cast,
-            pause,
-            resume,
-            stop,
-            seekBackward,
-            seekForward,
-            seekToPosition,
-            status,
-            getDevices,
-            selectedDeviceId,
-            onDeviceSelected,
-            session,
-            selectedDeviceId,
-            getSubtitleTrackMetadata,
-            setSubtitleTrack,
-            getCurrentSubtitleTrack,
-            currentSubtitleTrack,
-        ]
-    );
-
-    return <CastContext.Provider value={contextValue}>{children}</CastContext.Provider>;
 }
 
 /**

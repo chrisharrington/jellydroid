@@ -1,6 +1,6 @@
 import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { TogglePlayedButtonProps } from '.';
 
 export function useTogglePlayedButton(props: TogglePlayedButtonProps) {
@@ -9,13 +9,19 @@ export function useTogglePlayedButton(props: TogglePlayedButtonProps) {
         { toggleItemWatched } = useJellyfin(),
         toast = useToast();
 
+    return {
+        isToggling,
+        isPlayed: isPlayed,
+        handleTogglePlayed,
+    };
+
     /**
      * Toggles the played status of the provided item and displays a success toast.
      * If the item has any playback progress, it will be marked as played.
      * @throws {Error} If the toggle operation fails
      * @returns {Promise<void>}
      */
-    const handleTogglePlayed = useCallback(async () => {
+    async function handleTogglePlayed() {
         if (!props.item || isToggling) return;
 
         try {
@@ -44,11 +50,5 @@ export function useTogglePlayedButton(props: TogglePlayedButtonProps) {
         } finally {
             setToggling(false);
         }
-    }, [props.item, props.onToggleComplete, toast, isToggling, toggleItemWatched]);
-
-    return {
-        isToggling,
-        isPlayed: isPlayed,
-        handleTogglePlayed,
-    };
+    }
 }

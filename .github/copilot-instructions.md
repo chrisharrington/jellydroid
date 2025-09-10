@@ -163,10 +163,10 @@ Here's an example of a function header comment:
 
 -   Use spaces over tabs.
 -   Use four spaces for a tab.
--   Make liberal use of useMemo and useCallback where appropriate for memoization.
+-   Make liberal use of useMemo where appropriate for memoization.
 -   Structure:
     -   index.tsx: Contains the main component TSX.
-    -   hook.ts: Contains any logic including additional hooks, variable declarations, etc. The name of the hook should be derived from the folder in which hook.ts resides. Functions here should always be const functions and always be wrapped in useCallback.
+    -   hook.ts: Contains any logic including additional hooks, variable declarations, etc. The name of the hook should be derived from the folder in which hook.ts resides. Functions here should never be const functions and never be wrapped in useCallback. Returned values should come before all function declarations.
     -   test.tsx: Contains tests for the component defined in index.tsx.
 -   Favour a higher number of small components instead of a single large component.
 -   If a component is too large, split it up into separate components. Those separate components should exist within a sub folder following the file structure detailed above.

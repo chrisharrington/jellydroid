@@ -1,5 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, BackHandler, Dimensions, Easing } from 'react-native';
 import { useToast } from '../toast';
 
@@ -7,23 +7,17 @@ const { height: screenHeight } = Dimensions.get('window');
 
 /**
  * A hook that manages the animation and visibility state of a selector component.
+ * This hook manages two parallel animations: a slide animation that moves the selector
+ * from the bottom of the screen and a fade animation that controls the opacity.
  *
- * @param visible - Boolean flag indicating whether the selector should be visible
- * @param onSelectValue - Optional callback function called when a value is selected
- * @param onClose - Optional callback function called when the selector is closed
- * @returns An object containing:
+ * @param {boolean} visible - Boolean flag indicating whether the selector should be visible
+ * @param {(value: string | null) => void} [onSelectValue] - Optional callback function called when a value is selected
+ * @param {() => void} [onClose] - Optional callback function called when the selector is closed
+ * @returns {Object} Object containing:
  * - slideAnim: Animated.Value for slide animation
  * - fadeAnim: Animated.Value for fade animation
  * - isVisible: Boolean indicating if selector is currently visible
  * - handleSelectValue: Callback function to handle value selection
- *
- * @remarks
- * This hook manages two parallel animations:
- * 1. A slide animation that moves the selector from the bottom of the screen
- * 2. A fade animation that controls the opacity
- *
- * When the selector becomes visible, it slides up from the bottom and fades in.
- * When hidden, it slides down and fades out.
  */
 export function useSelector(visible: boolean, onSelectValue?: (value: string | null) => void, onClose?: () => void) {
     const slideAnim = useRef(new Animated.Value(screenHeight)).current,
@@ -31,31 +25,27 @@ export function useSelector(visible: boolean, onSelectValue?: (value: string | n
         [isVisible, setIsVisible] = useState(false),
         toast = useToast();
 
-    // Handle hardware back button to close selector instead of navigating back
-    useFocusEffect(
-        useCallback(() => {
-            const onBackPress = () => {
-                if (visible && isVisible) {
-                    // Selector is visible, close it instead of going back
-                    if (onClose) onClose();
-                    return true; // Prevent default back behavior
-                }
-                return false; // Allow default back behavior
-            };
-
-            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-            return () => subscription.remove();
-        }, [visible, isVisible, onClose])
-    );
+    // Handle hardware back button to close selector instead of navigating back.
+    useFocusEffect(() => {
+        const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+            if (visible && isVisible) {
+                // Close selector instead of going back.
+                if (onClose) onClose();
+                return true; // Prevent default back behavior.
+            }
+            return false; // Allow default back behavior.
+        });
+        return () => subscription.remove();
+    });
 
     useEffect(() => {
         if (visible) {
             // Show the selector.
             setIsVisible(true);
 
-            // Run slide up and fade in animations in parallel with optimized easing.
+            // Run slide up and fade in animations in parallel.
             Animated.parallel([
-                // Animate selector sliding up from bottom with spring-like easing.
+                // Animate selector sliding up from bottom.
                 Animated.timing(slideAnim, {
                     toValue: 0,
                     duration: 350,
@@ -63,7 +53,7 @@ export function useSelector(visible: boolean, onSelectValue?: (value: string | n
                     useNativeDriver: true,
                 }),
 
-                // Animate selector fading in with smooth easing.
+                // Animate selector fading in.
                 Animated.timing(fadeAnim, {
                     toValue: 1,
                     duration: 300,
@@ -75,9 +65,9 @@ export function useSelector(visible: boolean, onSelectValue?: (value: string | n
             // Hide any toasts that may be visible.
             toast.hide();
 
-            // Run slide down and fade out animations in parallel with optimized easing.
+            // Run slide down and fade out animations in parallel.
             Animated.parallel([
-                // Animate selector sliding down to bottom with smooth easing.
+                // Animate selector sliding down to bottom.
                 Animated.timing(slideAnim, {
                     toValue: screenHeight,
                     duration: 280,
@@ -85,7 +75,7 @@ export function useSelector(visible: boolean, onSelectValue?: (value: string | n
                     useNativeDriver: true,
                 }),
 
-                // Animate selector fading out with smooth easing.
+                // Animate selector fading out.
                 Animated.timing(fadeAnim, {
                     toValue: 0,
                     duration: 250,
@@ -98,29 +88,21 @@ export function useSelector(visible: boolean, onSelectValue?: (value: string | n
         }
     }, [visible, slideAnim, fadeAnim, isVisible, toast]);
 
-    /**
-     * Handles the selection of a value from a selector component.
-     *
-     * @param value - The selected value, which can be either a string or null
-     * @returns void
-     *
-     * @remarks
-     * This callback function performs two operations:
-     * 1. Calls the onSelectValue handler with the selected value if it exists
-     * 2. Calls the onClose handler if it exists
-     */
-    const handleSelectValue = useCallback(
-        (value: string | null) => {
-            if (onSelectValue) onSelectValue(value);
-            if (onClose) onClose();
-        },
-        [onSelectValue, onClose]
-    );
-
     return {
         slideAnim,
         fadeAnim,
         isVisible,
         handleSelectValue,
     };
+
+    /**
+     * Handles the selection of a value from a selector component.
+     * Calls the onSelectValue handler with the selected value and closes the selector.
+     *
+     * @param {string | null} value - The selected value, which can be either a string or null
+     */
+    function handleSelectValue(value: string | null) {
+        if (onSelectValue) onSelectValue(value);
+        if (onClose) onClose();
+    }
 }

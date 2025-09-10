@@ -42,47 +42,12 @@ export function useRemoteScreen() {
         }
     }, []);
 
-    /**
-     * Formats seconds into H:MM:SS format (always shows hours with single digit).
-     */
-    const formatTimeFromSeconds = useCallback((seconds: number): string => {
-        if (!seconds || seconds < 0) return '0:00:00';
-
-        const hours = Math.floor(seconds / 3600),
-            minutes = Math.floor((seconds % 3600) / 60),
-            secs = Math.floor(seconds % 60);
-
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }, []);
-
-    /**
-     * Handles slider position changes during dragging.
-     * Updates both the drag position and the corresponding time.
-     * @param value - The new slider position value
-     */
-    const handleSliderChange = useCallback((value: number) => {
-        setDragTime(value);
-    }, []);
-
-    /**
-     * Handles the completion of slider movement by updating dragging state and seeking to a new position.
-     * @param value - The position value to seek to, represented as a number
-     * @returns void
-     */
-    const handleSliderComplete = useCallback(
-        (value: number) => {
-            setDragging(false);
-            playback.seekToPosition(value);
-        },
-        [playback]
-    );
-
     return {
         ...playback,
-        stop: () => {
+        stop: useCallback(() => {
             playback.stop();
             navigation.goBack();
-        },
+        }, [navigation, playback]),
         item,
         poster,
         status,
@@ -99,4 +64,36 @@ export function useRemoteScreen() {
         isForcedSubtitlesAvailable,
         isForcedSubtitlesEnabled,
     };
+
+    /**
+     * Formats seconds into H:MM:SS format (always shows hours with single digit).
+     */
+    function formatTimeFromSeconds(seconds: number): string {
+        if (!seconds || seconds < 0) return '0:00:00';
+
+        const hours = Math.floor(seconds / 3600),
+            minutes = Math.floor((seconds % 3600) / 60),
+            secs = Math.floor(seconds % 60);
+
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Handles slider position changes during dragging.
+     * Updates both the drag position and the corresponding time.
+     * @param value - The new slider position value
+     */
+    function handleSliderChange(value: number) {
+        setDragTime(value);
+    }
+
+    /**
+     * Handles the completion of slider movement by updating dragging state and seeking to a new position.
+     * @param value - The position value to seek to, represented as a number
+     * @returns void
+     */
+    function handleSliderComplete(value: number) {
+        setDragging(false);
+        playback.seekToPosition(value);
+    }
 }
