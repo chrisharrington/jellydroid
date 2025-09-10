@@ -59,7 +59,7 @@ export function useVideoControls({ item, player, playbackSessionId }: VideoContr
         [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false),
         currentTime = useMemo(() => player?.currentTime || 0, [player?.currentTime]),
         fadeAnim = useRef(new Animated.Value(0)).current,
-        hideTimeoutRef = useRef<NodeJS.Timeout | null>(null),
+        hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null),
         isAnimatingRef = useRef(false);
 
     // Add a listener to the video player to track available subtitle tracks.
