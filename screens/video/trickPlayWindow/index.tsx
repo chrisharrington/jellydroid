@@ -5,8 +5,13 @@ import { useTrickPlayWindow } from './hook';
 import style from './style';
 
 export type TrickPlayWindowProps = {
+    /** Required. Controls the visibility of the trick play window. */
     isVisible: boolean;
+
+    /** Required. Media item containing metadata for the current video. */
     item: BaseItemDto;
+
+    /** Required. Current playback position as a percentage (0-100). */
     percentagePosition: number;
 };
 

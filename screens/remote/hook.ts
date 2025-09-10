@@ -11,10 +11,6 @@ export function useRemoteScreen() {
         { status } = useCast(),
         [isBusy, setBusy] = useState<boolean>(false),
         [isDragging, setDragging] = useState<boolean>(false),
-        [isForcedSubtitlesAvailable, setForcedSubtitlesAvailable] = useState<boolean>(false),
-        [isForcedSubtitlesEnabled, setForcedSubtitlesEnabled] = useState<boolean>(false),
-        [isSubtitlesAvailable, setSubtitlesAvailable] = useState<boolean>(false),
-        [isSubtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false),
         [dragTime, setDragTime] = useState<number>(0),
         [item, setItem] = useState<BaseItemDto | null>(null),
         [poster, setPoster] = useState<string | null>(null),
@@ -54,15 +50,9 @@ export function useRemoteScreen() {
         handleSliderStart: () => setDragging(true),
         handleSliderChange,
         handleSliderComplete,
-        handleSubtitleToggle: () => setSubtitlesEnabled(v => !v),
-        handleForcedSubtitleToggle: () => setForcedSubtitlesEnabled(v => !v),
         currentTime: formatTimeFromSeconds(isDragging ? dragTime : status.streamPosition),
         maxTime: useMemo(() => formatTimeFromSeconds(status.maxPosition), [item]),
         isBusy,
-        isSubtitlesAvailable,
-        isSubtitlesEnabled,
-        isForcedSubtitlesAvailable,
-        isForcedSubtitlesEnabled,
     };
 
     /**

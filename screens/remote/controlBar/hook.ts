@@ -55,10 +55,17 @@ export function useControlBar({ pause, resume, status }: ControlBarProps) {
      * @returns {void}
      */
     function handleSubtitleButtonPress() {
-        if (subtitleTracks.length === 0) return;
-        if (currentSubtitleTrack) setSubtitleTrack(null);
-        if (isSubtitleTrackAvailable && !isForcedSubtitleTrackAvailable) setSubtitleTrack(subtitleTracks[0]);
-        if (isSubtitleTrackAvailable && isForcedSubtitleTrackAvailable) setSubtitleSelectorVisible(true);
+        // If a subtitle track is currently active, disable it and return.
+        if (currentSubtitleTrack) {
+            setSubtitleTrack(null);
+            return;
+        }
+
+        // If subtitle tracks are available, either select the first non-forced track or show the selector for forced tracks.
+        if (isSubtitleTrackAvailable) {
+            if (isForcedSubtitleTrackAvailable) setSubtitleSelectorVisible(true);
+            else setSubtitleTrack(subtitleTracks[0]);
+        }
     }
 
     /**

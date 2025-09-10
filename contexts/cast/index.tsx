@@ -374,10 +374,12 @@ export function CastProvider({ children }: CastProviderProps) {
                 tracks = status?.mediaInfo?.mediaTracks || [];
 
             return tracks
-                .filter(track => !!track.name)
                 .map(track => {
-                    const jellyfinTrack = jellyfinSubtitleTrackMetadata.find(t => t.displayTitle === track.name);
-                    if (!jellyfinTrack) throw new Error('Unable to find matching Jellyfin subtitle metadata.');
+                    let jellyfinTrack = jellyfinSubtitleTrackMetadata.find(t => t.displayTitle === track.name);
+                    if (!jellyfinTrack && !track.name)
+                        jellyfinTrack = jellyfinSubtitleTrackMetadata.find(t => t.isForced);
+                    if (!jellyfinTrack)
+                        throw new Error('No matching Jellyfin subtitle metadata found for track: ' + track.name);
                     return {
                         ...track,
                         ...jellyfinTrack,

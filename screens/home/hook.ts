@@ -1,8 +1,7 @@
 import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 /**
@@ -27,10 +26,13 @@ export function useHome() {
         [recentlyAddedEpisodes, setRecentlyAddedEpisodes] = useState<BaseItemDto[]>([]),
         [continueWatchingItems, setContinueWatchingItems] = useState<BaseItemDto[]>([]);
 
-    // Load data when screen gains focus.
-    useFocusEffect(() => {
-        loadData();
-    });
+    // Load data whenever the screen comes into focus.
+    useFocusEffect(
+        useCallback(() => {
+            console.log('focus');
+            loadData();
+        }, [])
+    );
 
     /**
      * Navigates to the movies screen.
