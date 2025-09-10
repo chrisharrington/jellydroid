@@ -35,7 +35,7 @@ export function usePlayButton(props: PlayButtonProps) {
     };
 
     return {
-        isResumable: useMemo(() => (props.item.UserData?.PlaybackPositionTicks || 0) > 0, [props.item]),
+        isResumable: useMemo(() => (props.item?.UserData?.PlaybackPositionTicks || 0) > 0, [props.item]),
         onPress,
     };
 }

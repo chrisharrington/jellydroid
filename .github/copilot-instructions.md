@@ -181,6 +181,14 @@ Here's an example of a function header comment:
         thirdVar = value;
 ```
 
+-   Never do this:
+
+```
+    const firstVar = value;
+    const secondVar = value;
+    const thirdVar = value;
+```
+
 -   When creating a component inside an index.tsx file, declare and export a props file named similarly to the component: "BalloonPopper" should have "BalloonPopperProps".
 -   When creating a component's hook inside hook.ts, ensure the hook name follows the pattern `use<ComponentName>`. The hook should take one parameter: the `props` provided to the component inside index.tsx. Do not generate an additional type for the props.
 -   `console.log` and `console.error` outputs are ok while debugging a particularly problematic issue, but final code should contain no debugging statements.
