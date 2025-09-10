@@ -35,7 +35,7 @@ export function Selector({ visible, onClose, title, icon, options, selectedValue
     return !isVisible ? null : (
         <Portal>
             <Animated.View style={[style.overlay, { opacity: fadeAnim }]}>
-                <TouchableOpacity style={style.backdrop} activeOpacity={1} onPress={onClose} />
+                <TouchableOpacity style={style.backdrop} activeOpacity={1} onPress={onClose} testID='backdrop' />
                 <Animated.View
                     style={[
                         style.slideUpContainer,
