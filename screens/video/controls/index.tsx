@@ -1,9 +1,9 @@
+import { PositionSlider } from '@/components/positionSlider';
 import Spinner from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import { formatTime } from '@/shared/formatTime';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
-import Slider from '@react-native-community/slider';
 import { VideoPlayer } from 'expo-video';
 import React from 'react';
 import { Animated, Text, TouchableOpacity, View } from 'react-native';
@@ -116,18 +116,12 @@ export function VideoControls(props: VideoControlsProps) {
                         </View>
 
                         <View style={style.bottomContainer}>
-                            <TrickplayWindow
-                                percentagePosition={thumbPosition}
-                                item={props.item}
-                                isVisible={isSliding}
-                            />
-
                             <View style={style.timeContainer}>
                                 <Text style={[style.timeText, { marginLeft: 15 }]}>{formatTime(currentTime)}</Text>
                                 <Text style={[style.timeText, { marginRight: 15 }]}>{formatTime(duration)}</Text>
                             </View>
 
-                            <Slider
+                            <PositionSlider
                                 style={style.slider}
                                 minimumValue={0}
                                 maximumValue={100}
@@ -138,7 +132,30 @@ export function VideoControls(props: VideoControlsProps) {
                                 minimumTrackTintColor={Colours.primary}
                                 maximumTrackTintColor={Colours.subtext}
                                 thumbTintColor={Colours.primary}
-                            />
+                            >
+                                {({ pixelThumbPosition, maxPixelThumbPosition }) => (
+                                    <View style={{ position: 'relative' }}>
+                                        <View
+                                            style={[
+                                                style.trickplayContainer,
+                                                {
+                                                    left: Math.min(
+                                                        maxPixelThumbPosition - 160,
+                                                        Math.max(160, pixelThumbPosition)
+                                                    ),
+                                                },
+                                            ]}
+                                        >
+                                            <TrickplayWindow
+                                                percentagePosition={thumbPosition}
+                                                item={props.item}
+                                                isVisible={isSliding}
+                                                width={320}
+                                            />
+                                        </View>
+                                    </View>
+                                )}
+                            </PositionSlider>
                         </View>
                     </TouchableOpacity>
                 </Animated.View>

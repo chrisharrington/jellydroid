@@ -166,8 +166,55 @@ Here's an example of a function header comment:
 -   Make liberal use of useMemo where appropriate for memoization.
 -   Structure:
     -   index.tsx: Contains the main component TSX.
-    -   hook.ts: Contains any logic including additional hooks, variable declarations, etc. The name of the hook should be derived from the folder in which hook.ts resides. Functions here should never be const functions and never be wrapped in useCallback. Returned values should come before all function declarations.
+    -   hook.ts: Contains any logic including additional hooks, variable declarations, etc. The name of the hook should be derived from the folder in which hook.ts resides. Always use regular functions and never use `useCallback` in main function declarations. Returned values should come before all function declarations. Here's an example of a well defined hook:
+
+```
+/**
+ * Custom hook for managing CustomSlider state and behavior.
+ * Handles slider value changes, thumb position calculation, and event forwarding.
+ *
+ * @param props - The CustomSlider props containing slider configuration and event handlers
+ * @returns Object containing thumb position and event handlers
+ */
+export function useCustomSlider(props: CustomSliderProps) {
+    const { minimumValue = 0, maximumValue = 100, value = 0, onValueChange, onSlidingStart, onSlidingComplete } = props,
+        [thumbPosition, setThumbPosition] = useState<number>(0);
+
+    // Calculate current thumb position based on value.
+    const currentThumbPosition = useMemo(() => {
+        return calculateThumbPosition(value);
+    }, [value, minimumValue, maximumValue]);
+
+    // Update internal thumb position state when value changes.
+    useEffect(() => {
+        setThumbPosition(currentThumbPosition);
+    }, [currentThumbPosition]);
+
+    return {
+        thumbPosition: currentThumbPosition,
+        handleValueChange,
+        handleSlidingStart,
+        handleSlidingComplete,
+    };
+
+    /**
+     * Calculate thumb position as percentage (0-100).
+     * Normalizes the slider value to a percentage based on min/max range.
+     */
+    function calculateThumbPosition(sliderValue: number) {
+        // Calculate the total range of the slider.
+        const range = maximumValue - minimumValue;
+        if (range === 0) return 0;
+
+        // Normalize the value relative to the minimum.
+        const normalizedValue = sliderValue - minimumValue;
+        return (normalizedValue / range) * 100;
+    }
+}
+```
+
     -   test.tsx: Contains tests for the component defined in index.tsx.
+
 -   Favour a higher number of small components instead of a single large component.
 -   If a component is too large, split it up into separate components. Those separate components should exist within a sub folder following the file structure detailed above.
 -   A component over 200 lines is too large and should be split up.

@@ -10,11 +10,9 @@ export default StyleSheet.create({
         borderColor: 'rgba(255, 255, 255, 0.3)',
         overflow: 'hidden',
         zIndex: 12,
-        width: 320,
     },
 
     trickPlayImage: {
-        width: 3200,
         transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
     },
 

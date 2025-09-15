@@ -139,4 +139,11 @@ export default StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+
+    trickplayContainer: {
+        position: 'absolute',
+        top: -30,
+        width: 320,
+        transform: [{ translateX: -160 }],
+    },
 });

@@ -1,7 +1,7 @@
 import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { useState } from 'react';
-import { Image, useWindowDimensions } from 'react-native';
+import { Image } from 'react-native';
 import { TrickPlayWindowProps } from '.';
 
 const TICKS_PER_SECOND = 10_000_000;
@@ -11,7 +11,6 @@ export function useTrickPlayWindow(props: TrickPlayWindowProps) {
         [horizontalOffset, setHorizontalOffset] = useState<number>(0),
         [verticalOffset, setVerticalOffset] = useState<number>(0),
         [imageUri, setImageUri] = useState<string | null>(null),
-        { width } = useWindowDimensions(),
         [spriteSheetSize, setSpriteSheetSize] = useState<{ width: number; height: number } | null>(null);
 
     useAsyncEffect(async () => {
@@ -64,7 +63,6 @@ export function useTrickPlayWindow(props: TrickPlayWindowProps) {
         imageUri,
         horizontalOffset,
         verticalOffset,
-        screenWidth: width,
         spriteSheetSize,
     };
 }

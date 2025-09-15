@@ -29,7 +29,6 @@ export function useHome() {
     // Load data whenever the screen comes into focus.
     useFocusEffect(
         useCallback(() => {
-            console.log('focus');
             loadData();
         }, [])
     );

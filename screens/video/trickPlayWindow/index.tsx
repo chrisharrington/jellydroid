@@ -13,29 +13,21 @@ export type TrickPlayWindowProps = {
 
     /** Required. Current playback position as a percentage (0-100). */
     percentagePosition: number;
+
+    /** Required. The width of the trickplay window. */
+    width: number;
 };
 
 export function TrickplayWindow(props: TrickPlayWindowProps) {
-    const { imageUri, horizontalOffset, verticalOffset, screenWidth, spriteSheetSize } = useTrickPlayWindow(props);
+    const { imageUri, horizontalOffset, verticalOffset, spriteSheetSize } = useTrickPlayWindow(props);
 
     return (
         props.isVisible && (
             <View
                 style={[
                     style.thumbPanel,
-                    {
-                        // The magic numbers here are based on the position of the Slider used to seek.
-                        left: Math.max(
-                            55,
-                            Math.min(screenWidth - 320 - 94, (props.percentagePosition / 100) * (screenWidth - 140))
-                        ),
-                        transform: [
-                            {
-                                translateX: -40,
-                            },
-                        ],
-                    },
                     spriteSheetSize && { aspectRatio: spriteSheetSize.width / spriteSheetSize.height },
+                    { width: props.width },
                 ]}
             >
                 {imageUri && (
@@ -51,6 +43,7 @@ export function TrickplayWindow(props: TrickPlayWindowProps) {
                                     { translateX: `${horizontalOffset}%` },
                                     { translateY: `${verticalOffset}%` },
                                 ],
+                                width: props.width * 10,
                             },
                         ]}
                     />
