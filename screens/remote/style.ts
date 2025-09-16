@@ -80,4 +80,12 @@ export default StyleSheet.create({
     timeRight: {
         textAlign: 'right',
     },
+
+    trickplayContainer: {
+        position: 'absolute',
+        bottom: 240,
+        width: '100%',
+        height: 180,
+        zIndex: 10,
+    },
 });

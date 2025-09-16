@@ -1,13 +1,16 @@
 import { Spinner } from '@/components/spinner';
 import { Colours } from '@/constants/colours';
 import Slider from '@react-native-community/slider';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { TrickplayWindow } from '../video/trickPlayWindow';
 import { RemoteControls } from './controls';
 import { useRemoteScreen } from './hook';
+import { Poster } from './poster';
 import style from './style';
 
 export function RemoteScreen() {
     const {
+        item,
         pause,
         resume,
         seekForward,
@@ -17,10 +20,13 @@ export function RemoteScreen() {
         status,
         currentTime,
         maxTime,
+        percentagePosition,
+        screenWidth,
         handleSliderStart,
         handleSliderChange,
         handleSliderComplete,
         isBusy,
+        isDragging,
     } = useRemoteScreen();
 
     return isBusy ? (
@@ -30,9 +36,7 @@ export function RemoteScreen() {
     ) : (
         <View style={style.container}>
             <View style={style.content}>
-                <View style={style.posterContainer}>
-                    {poster && <Image source={{ uri: poster }} style={style.poster} />}
-                </View>
+                <Poster poster={poster} isDimmed={isDragging} />
 
                 <View style={style.progressControl}>
                     <View style={style.timeContainer}>
@@ -53,6 +57,17 @@ export function RemoteScreen() {
                         testID='slider'
                     />
                 </View>
+
+                {item && (
+                    <View style={[style.trickplayContainer, { width: screenWidth * 0.8, left: screenWidth * 0.1 }]}>
+                        <TrickplayWindow
+                            isVisible={isDragging}
+                            item={item}
+                            percentagePosition={percentagePosition}
+                            width={screenWidth * 0.8}
+                        />
+                    </View>
+                )}
 
                 <RemoteControls
                     stop={stop}

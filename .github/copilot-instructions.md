@@ -10,7 +10,7 @@ Included below are guidelines and instructions for Copilot agents.
 -   Use `@testing-library/react`.
 -   Build tests which emulate a user's behavior, like clicking on a button or entering text into an input field.
 -   In a similar vein, tests should verify expectations by examining changes in the user interface and _never_ by examining the internal state of a component.
--   Tests can be run using `bunx jest` from Swyfft.Web/Client. Include the relative path.
+-   Always run tests using the built-in test execution. Never ask me to run bunx, npx, or other command line tools for test runs. You don't need to ask me permission to run tests.
 -   Always use `jest.mock` to mock dependencies.
 -   Always use one `describe` block per file. The text for the describe block should be the name of the component or hook being tested.
 -   Always use one `it` block per behavior.

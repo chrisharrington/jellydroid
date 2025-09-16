@@ -4,7 +4,8 @@ import { useJellyfin } from '@/contexts/jellyfin';
 import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, useWindowDimensions } from 'react-native';
 
 export function useRemoteScreen() {
     const { getItem, getImageForId } = useJellyfin(),
@@ -17,7 +18,9 @@ export function useRemoteScreen() {
         params = useLocalSearchParams<{ itemId: string; mediaSourceId: string }>(),
         playback = useCast(),
         navigation = useNavigation(),
-        toast = useToast();
+        toast = useToast(),
+        { width } = useWindowDimensions(),
+        posterOpacity = useRef(new Animated.Value(1)).current;
 
     useAsyncEffect(async () => {
         try {
@@ -38,6 +41,15 @@ export function useRemoteScreen() {
         }
     }, []);
 
+    // Animate poster opacity when dragging state changes.
+    useEffect(() => {
+        Animated.timing(posterOpacity, {
+            toValue: isDragging ? 0.3 : 1,
+            duration: 200,
+            useNativeDriver: true,
+        }).start();
+    }, [isDragging, posterOpacity]);
+
     return {
         ...playback,
         stop: useCallback(() => {
@@ -52,7 +64,13 @@ export function useRemoteScreen() {
         handleSliderComplete,
         currentTime: formatTimeFromSeconds(isDragging ? dragTime : status.streamPosition),
         maxTime: useMemo(() => formatTimeFromSeconds(status.maxPosition), [item]),
+        screenWidth: width,
+        percentagePosition: useMemo(
+            () => ((isDragging ? dragTime : status.streamPosition) / status.maxPosition) * 100,
+            [isDragging, dragTime, status]
+        ),
         isBusy,
+        isDragging,
     };
 
     /**
@@ -74,6 +92,7 @@ export function useRemoteScreen() {
      * @param value - The new slider position value
      */
     function handleSliderChange(value: number) {
+        console.log('Drag Time:', value);
         setDragTime(value);
     }
 

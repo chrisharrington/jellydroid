@@ -378,14 +378,13 @@ export function CastProvider({ children }: CastProviderProps) {
                     let jellyfinTrack = jellyfinSubtitleTrackMetadata.find(t => t.displayTitle === track.name);
                     if (!jellyfinTrack && !track.name)
                         jellyfinTrack = jellyfinSubtitleTrackMetadata.find(t => t.isForced);
-                    if (!jellyfinTrack)
-                        throw new Error('No matching Jellyfin subtitle metadata found for track: ' + track.name);
+                    if (!jellyfinTrack) return null;
                     return {
                         ...track,
                         ...jellyfinTrack,
                     };
                 })
-                .filter(track => track.language === 'eng');
+                .filter(track => track && track.language === 'eng') as Array<MediaTrack & SubtitleMetadata>;
         } catch (error) {
             toast.error('Failed to retrieve subtitle metadata.', error);
             return [];
