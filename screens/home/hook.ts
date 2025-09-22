@@ -33,24 +33,34 @@ export function useHome() {
         }, [])
     );
 
-    /**
-     * Navigates to the movies screen.
-     */
-    const navigateToMovies = useCallback(() => push('/movies'), [push]);
-
-    /**
-     * Navigates to the TV shows screen.
-     */
-    const navigateToTvShows = useCallback(() => push('/tv-shows'), [push]);
-
     return {
         isBusy,
         recentlyAddedMovies,
         recentlyAddedEpisodes,
         continueWatchingItems,
-        navigateToMovies,
-        navigateToTvShows,
+        navigateToItem,
+        navigateToMovies: useCallback(() => push('/movies'), [push]),
+        navigateToTvShows: useCallback(() => push('/tv-shows'), [push]),
     };
+
+    /**
+     * Navigates to a specific media item based on its type.
+     * @param item - The media item to navigate to.
+     * @throws {Error} Displays an error toast if the item type is not supported for navigation.
+     */
+    function navigateToItem(item: BaseItemDto) {
+        switch (item.Type) {
+            case 'Movie':
+                push(`/movie/${item.Name}/${item.Id}`);
+                break;
+            case 'Episode':
+                push(`/tv-shows/${item.SeriesId}/season/${item.ParentIndexNumber}/episode/${item.Id}`);
+                break;
+            default:
+                toast.error('Navigation for this item type is not supported.');
+                break;
+        }
+    }
 
     /**
      * Loads initial data for the home screen.

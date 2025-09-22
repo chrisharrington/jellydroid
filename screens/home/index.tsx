@@ -1,4 +1,5 @@
 import { PrimaryButton } from '@/components/button';
+import { ItemSection } from '@/components/itemSection';
 import { MovieSection } from '@/components/movieSection';
 import Spinner from '@/components/spinner';
 import { TvSection } from '@/components/tvSection';
@@ -12,6 +13,7 @@ export default function HomeScreen() {
         recentlyAddedMovies,
         recentlyAddedEpisodes,
         continueWatchingItems,
+        navigateToItem,
         navigateToMovies,
         navigateToTvShows,
     } = useHome();
@@ -25,7 +27,12 @@ export default function HomeScreen() {
             ) : (
                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
                     {continueWatchingItems.length > 0 ? (
-                        <MovieSection label='Continue Watching' movies={continueWatchingItems} withProgressIndicator />
+                        <ItemSection
+                            label='Continue Watching'
+                            items={continueWatchingItems}
+                            withProgressIndicator
+                            onItemSelected={navigateToItem}
+                        />
                     ) : (
                         <></>
                     )}
