@@ -88,7 +88,7 @@ export function MovieDetailsScreen() {
 
                                 <Text style={style.title}>{movie.Name}</Text>
 
-                                {movie.Taglines?.length && <Text style={style.tagline}>{movie.Taglines[0]}</Text>}
+                                {movie.Taglines?.[0] && <Text style={style.tagline}>{movie.Taglines[0]}</Text>}
 
                                 <View style={style.buttonContainer}>
                                     <View style={style.playButton}>
