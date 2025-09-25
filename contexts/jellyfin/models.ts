@@ -50,6 +50,9 @@ export type JellyfinContextValue = {
     /** Gets items that can be resumed/continued watching. */
     getContinueWatchingItems: () => Promise<BaseItemDto[]>;
 
+    /** Gets next up episodes for the current user. */
+    getNextUp: () => Promise<BaseItemDto[]>;
+
     /** Generates image URL for a Jellyfin item. */
     getImageForId: (itemId: string) => string;
 

@@ -18,6 +18,15 @@ export type ItemSectionProps = {
 
     /** Optional. A flag indicating that each item poster should display a progress indicator. Defaults to false. */
     withProgressIndicator?: boolean;
+
+    /** Optional. Function to retrieve the poster URL for an item. If not provided, the primary image for the given item is used. */
+    getPosterUrl?: (item: BaseItemDto) => string;
+
+    /** Optional. Function to retrieve the caption text for an item poster. If not provided, the item's name is used. */
+    getPosterCaption?: (item: BaseItemDto) => string;
+
+    /** Optional. Function to retrieve the sub-caption text for an item poster. If not provided, the item's production year is shown. */
+    getPosterSubCaption?: (item: BaseItemDto) => string;
 };
 
 export function ItemSection(props: ItemSectionProps) {
@@ -36,7 +45,11 @@ export function ItemSection(props: ItemSectionProps) {
                     >
                         <View style={style.posterContainer}>
                             <Poster
-                                url={`${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${item.Id}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`}
+                                url={
+                                    props.getPosterUrl
+                                        ? props.getPosterUrl(item)
+                                        : `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${item.Id}/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`
+                                }
                             />
 
                             {props.withProgressIndicator && (
@@ -61,10 +74,12 @@ export function ItemSection(props: ItemSectionProps) {
                         </View>
 
                         <Text numberOfLines={1} style={style.title}>
-                            {item.Name}
+                            {props.getPosterCaption ? props.getPosterCaption(item) : item.Name}
                         </Text>
 
-                        <Text style={style.year}>{item.ProductionYear}</Text>
+                        <Text style={style.year}>
+                            {props.getPosterSubCaption ? props.getPosterSubCaption(item) : item.ProductionYear}
+                        </Text>
                     </TouchableOpacity>
                 )}
             />

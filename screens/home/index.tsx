@@ -12,7 +12,7 @@ export default function HomeScreen() {
         isBusy,
         recentlyAddedMovies,
         recentlyAddedEpisodes,
-        continueWatchingItems,
+        continueWatchingAndNextUpItems,
         navigateToItem,
         navigateToMovies,
         navigateToTvShows,
@@ -26,21 +26,37 @@ export default function HomeScreen() {
                 </View>
             ) : (
                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
-                    {continueWatchingItems.length > 0 ? (
+                    {continueWatchingAndNextUpItems.length > 0 ? (
                         <ItemSection
                             label='Continue Watching'
-                            items={continueWatchingItems}
+                            items={continueWatchingAndNextUpItems}
                             withProgressIndicator
                             onItemSelected={navigateToItem}
+                            getPosterUrl={item =>
+                                `${process.env.EXPO_PUBLIC_JELLYFIN_URL}/Items/${
+                                    item.SeriesId || item.Id
+                                }/Images/Primary?api_key=${process.env.EXPO_PUBLIC_JELLYFIN_API_KEY}`
+                            }
+                            getPosterCaption={item => (item.Type === 'Episode' ? item.SeriesName : item.Name) as string}
+                            getPosterSubCaption={item =>
+                                (item.Type === 'Episode'
+                                    ? `S${item.ParentIndexNumber?.toString().padStart(
+                                          2,
+                                          '0'
+                                      )} · E${item.IndexNumber?.toString().padStart(2, '0')}`
+                                    : item.ProductionYear) as string
+                            }
                         />
                     ) : (
                         <></>
                     )}
+
                     {recentlyAddedMovies.length > 0 ? (
                         <MovieSection label='Recently Added Movies' movies={recentlyAddedMovies} />
                     ) : (
                         <></>
                     )}
+
                     {recentlyAddedEpisodes.length > 0 ? (
                         <TvSection label='Recently Added Episodes' episodes={recentlyAddedEpisodes} />
                     ) : (

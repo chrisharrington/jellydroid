@@ -13,18 +13,18 @@ import { useCallback, useState } from 'react';
  * - isBusy: Loading state indicator
  * - recentlyAddedMovies: Array of recently added movie items
  * - recentlyAddedEpisodes: Array of recently added episode items
- * - continueWatchingItems: Array of items to continue watching
+ * - continueWatchingAndNextUpItems: Array of combined continue watching and next up items
  * - navigateToMovies: Function to navigate to movies screen
  * - navigateToTvShows: Function to navigate to TV shows screen
  */
 export function useHome() {
-    const { getRecentlyAddedMovies, getRecentlyAddedEpisodes, getContinueWatchingItems } = useJellyfin(),
+    const { getRecentlyAddedMovies, getRecentlyAddedEpisodes, getContinueWatchingItems, getNextUp } = useJellyfin(),
         toast = useToast(),
         { push } = useRouter(),
         [isBusy, setBusy] = useState<boolean>(false),
         [recentlyAddedMovies, setRecentlyAddedMovies] = useState<BaseItemDto[]>([]),
         [recentlyAddedEpisodes, setRecentlyAddedEpisodes] = useState<BaseItemDto[]>([]),
-        [continueWatchingItems, setContinueWatchingItems] = useState<BaseItemDto[]>([]);
+        [continueWatchingAndNextUpItems, setContinueWatchingAndNextUpItems] = useState<BaseItemDto[]>([]);
 
     // Load data whenever the screen comes into focus.
     useFocusEffect(
@@ -37,7 +37,7 @@ export function useHome() {
         isBusy,
         recentlyAddedMovies,
         recentlyAddedEpisodes,
-        continueWatchingItems,
+        continueWatchingAndNextUpItems,
         navigateToItem,
         navigateToMovies: useCallback(() => push('/movies'), [push]),
         navigateToTvShows: useCallback(() => push('/tv-shows'), [push]),
@@ -64,7 +64,8 @@ export function useHome() {
 
     /**
      * Loads initial data for the home screen.
-     * Fetches recently added movies, episodes, and continue watching items concurrently.
+     * Fetches recently added movies, episodes, continue watching items, and next up items concurrently.
+     * Combines continue watching and next up lists, prioritizing continue watching items.
      * Displays error toast if data fetching fails.
      */
     async function loadData() {
@@ -76,12 +77,38 @@ export function useHome() {
                 getRecentlyAddedMovies(),
                 getRecentlyAddedEpisodes(),
                 getContinueWatchingItems(),
+                getNextUp(),
             ]);
+
+            const continueWatchingItems = result[2];
+            const nextUpItems = result[3];
+
+            // Get series IDs from continue watching items to filter out from next up.
+            const continueWatchingSeriesIds = new Set(
+                continueWatchingItems
+                    .filter(item => item.Type === 'Episode' && item.SeriesId)
+                    .map(item => item.SeriesId)
+            );
+
+            // Filter next up items to exclude series that appear in continue watching.
+            const filteredNextUpItems = nextUpItems.filter(item => {
+                return !(item.Type === 'Episode' && item.SeriesId && continueWatchingSeriesIds.has(item.SeriesId));
+            });
+
+            // Combine continue watching and filtered next up items.
+            const combinedItems = [...continueWatchingItems, ...filteredNextUpItems];
+
+            // Sort by latest user activity descending (most recent first).
+            const sortedItems = combinedItems.sort((a, b) => {
+                const dateA = a.UserData?.LastPlayedDate ? new Date(a.UserData.LastPlayedDate) : new Date(0);
+                const dateB = b.UserData?.LastPlayedDate ? new Date(b.UserData.LastPlayedDate) : new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
 
             // Update state with fetched data.
             setRecentlyAddedMovies(result[0]);
             setRecentlyAddedEpisodes(result[1]);
-            setContinueWatchingItems(result[2]);
+            setContinueWatchingAndNextUpItems(sortedItems);
         } catch (error: any) {
             toast.error('Failed to load home screen data.', error);
         } finally {

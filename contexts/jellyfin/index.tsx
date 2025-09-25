@@ -21,6 +21,7 @@ import {
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getMediaInfoApi } from '@jellyfin/sdk/lib/utils/api/media-info-api';
 import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
+import { getTvShowsApi } from '@jellyfin/sdk/lib/utils/api/tv-shows-api';
 import { getUserLibraryApi } from '@jellyfin/sdk/lib/utils/api/user-library-api';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
@@ -195,10 +196,24 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             userId: (await getUser())!.Id,
             includeItemTypes: [BaseItemKind.Movie],
             mediaTypes: ['Video'],
-            limit: 30,
+            limit: 15,
         });
         if (!response.data.Items) throw new Error('No items found in response.');
         return response.data.Items;
+    }
+
+    /**
+     * Retrieves the next up episodes for the current user.
+     * @async
+     * @returns {Promise<Array>} A promise that resolves to an array of next up TV show episodes.
+     * @throws {Error} If the user is not authenticated or if the API request fails.
+     */
+    async function getNextUp() {
+        const user = await getUser(),
+            tvApi = getTvShowsApi(api),
+            response = await tvApi.getNextUp({ userId: user!.Id, limit: 15 });
+
+        return response.data.Items!;
     }
 
     /**
@@ -530,6 +545,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
         getRecentlyAddedMovies,
         getRecentlyAddedEpisodes,
         getContinueWatchingItems,
+        getNextUp,
         getImageForId,
         getStreamUrlFromItemId,
         getStreamUrl,
