@@ -131,7 +131,24 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             ...options,
         });
 
+        const blah = await mediaInfoApi.getPlaybackInfo({ itemId: 'blah', userId: 'blah ' });
+        blah.data.PlaySessionId;
+
         return response.data;
+    }
+
+    /**
+     * Retrieves the play session ID for a given media item.
+     *
+     * @param itemId - The unique identifier of the media item.
+     * @returns Promise that resolves to the play session ID string.
+     * @throws {Error} If user is not authenticated or if the API request fails.
+     */
+    async function getPlaySessionId(itemId: string) {
+        const user = await getUser(),
+            response = getMediaInfoApi(api).getPlaybackInfo({ itemId, userId: user!.Id });
+
+        return (await response).data.PlaySessionId!;
     }
 
     /**
@@ -311,10 +328,7 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
             SubtitleMethod: SubtitleDeliveryMethod.Hls,
         });
 
-        // console.log('Stream URL:', `${baseUrl}?${params.toString()}`);
-
         return `${baseUrl}?${params.toString()}`;
-        // return 'https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
     }
 
     /**
@@ -382,9 +396,13 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
      * This should be called when media playback begins.
      *
      * @param itemId - The unique identifier of the media item being played.
-     * @returns A promise that resolves when the playback start has been reported.
+     * @returns A promise containing the PlaySessionId.
      */
-    async function startPlaybackSession(itemId: string, mediaSourceId: string, playSessionId: string | null) {
+    async function startPlaybackSession(itemId: string, mediaSourceId: string) {
+        const user = await getUser(),
+            playSessionId = (await getMediaInfoApi(api).getPlaybackInfo({ itemId, userId: user!.Id })).data
+                .PlaySessionId as string;
+
         const playstateApi = getPlaystateApi(api);
         await playstateApi.reportPlaybackStart({
             playbackStartInfo: {
@@ -395,6 +413,8 @@ export function JellyfinProvider({ children }: JellyfinProviderProps) {
                 PlaySessionId: playSessionId,
             },
         });
+
+        return playSessionId;
     }
 
     /**

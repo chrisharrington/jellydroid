@@ -1,5 +1,6 @@
 import { useToast } from '@/components/toast';
 import { useJellyfin } from '@/contexts/jellyfin';
+import { useAsyncEffect } from '@/hooks/asyncEffect';
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -18,7 +19,8 @@ import { useCallback, useState } from 'react';
  * - navigateToTvShows: Function to navigate to TV shows screen
  */
 export function useHome() {
-    const { getRecentlyAddedMovies, getRecentlyAddedEpisodes, getContinueWatchingItems, getNextUp } = useJellyfin(),
+    const { login, getRecentlyAddedMovies, getRecentlyAddedEpisodes, getContinueWatchingItems, getNextUp } =
+            useJellyfin(),
         toast = useToast(),
         { push } = useRouter(),
         [isBusy, setBusy] = useState<boolean>(false),
@@ -32,6 +34,11 @@ export function useHome() {
             loadData();
         }, [])
     );
+
+    // Login when the app starts.
+    useAsyncEffect(async () => {
+        await login();
+    }, []);
 
     return {
         isBusy,
@@ -54,7 +61,8 @@ export function useHome() {
                 push(`/movie/${item.Name}/${item.Id}`);
                 break;
             case 'Episode':
-                push(`/tv-shows/${item.SeriesId}/season/${item.ParentIndexNumber}/episode/${item.Id}`);
+                const seasonNumber = item.ParentIndexNumber?.toString().padStart(2, '0') || '00';
+                push(`/tv-shows/${item.SeriesId}/season/${seasonNumber}/episode/${item.Id}`);
                 break;
             default:
                 toast.error('Navigation for this item type is not supported.');

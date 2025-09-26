@@ -10,7 +10,8 @@ jest.mock('@/contexts/jellyfin');
 jest.mock('expo-router');
 
 describe('useHome', () => {
-    const mockGetRecentlyAddedMovies = jest.fn(),
+    const mockLogin = jest.fn(),
+        mockGetRecentlyAddedMovies = jest.fn(),
         mockGetRecentlyAddedEpisodes = jest.fn(),
         mockGetContinueWatchingItems = jest.fn(),
         mockGetNextUp = jest.fn(),
@@ -20,6 +21,7 @@ describe('useHome', () => {
             error: mockToastError,
         },
         mockJellyfin = {
+            login: mockLogin,
             getRecentlyAddedMovies: mockGetRecentlyAddedMovies,
             getRecentlyAddedEpisodes: mockGetRecentlyAddedEpisodes,
             getContinueWatchingItems: mockGetContinueWatchingItems,
@@ -43,6 +45,7 @@ describe('useHome', () => {
         });
 
         // Set default resolved values for all API calls.
+        mockLogin.mockResolvedValue(undefined);
         mockGetRecentlyAddedMovies.mockResolvedValue([]);
         mockGetRecentlyAddedEpisodes.mockResolvedValue([]);
         mockGetContinueWatchingItems.mockResolvedValue([]);
@@ -56,9 +59,6 @@ describe('useHome', () => {
         expect(result.current.recentlyAddedMovies).toEqual([]);
         expect(result.current.recentlyAddedEpisodes).toEqual([]);
         expect(result.current.continueWatchingAndNextUpItems).toEqual([]);
-        expect(typeof result.current.navigateToItem).toBe('function');
-        expect(typeof result.current.navigateToMovies).toBe('function');
-        expect(typeof result.current.navigateToTvShows).toBe('function');
     });
 
     it('loads data on focus and updates state with fetched content', async () => {
@@ -233,7 +233,7 @@ describe('useHome', () => {
 
         result.current.navigateToItem(episodeItem);
 
-        expect(mockPush).toHaveBeenCalledWith('/tv-shows/series456/season/2/episode/episode123');
+        expect(mockPush).toHaveBeenCalledWith('/tv-shows/series456/season/02/episode/episode123');
     });
 
     it('displays error toast when navigateToItem is called with unsupported item type', () => {

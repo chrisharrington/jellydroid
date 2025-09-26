@@ -16,8 +16,6 @@ export function useTrickPlayWindow(props: TrickPlayWindowProps) {
     useAsyncEffect(async () => {
         if (!props.item.RunTimeTicks) return;
 
-        console.log('Percentage Position:', props.percentagePosition);
-
         // Pull the Jellyfin config to determine the trickplay settings.
         const config = await getSystemConfig(),
             interval = config.TrickplayOptions.Interval / 1000,

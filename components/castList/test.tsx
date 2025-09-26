@@ -27,6 +27,7 @@ describe('CastList - Cast Information Display', () => {
         Id: id,
         Name: name,
         Type: type,
+        PrimaryImageTag: `image-tag-${id}`,
     });
 
     const createMockItem = (people?: BaseItemPerson[]): BaseItemDto => ({
@@ -130,7 +131,7 @@ describe('CastList - Cast Information Display', () => {
         // Create test data with actor missing name.
         const mockActors = [
             createMockPerson('actor-1', 'John Doe', PersonKind.Actor),
-            { Id: 'actor-2', Type: PersonKind.Actor } as BaseItemPerson, // Missing Name
+            { Id: 'actor-2', Type: PersonKind.Actor, PrimaryImageTag: 'image-tag-actor-2' } as BaseItemPerson, // Missing Name
         ];
         const mockItem = createMockItem(mockActors);
 
@@ -148,7 +149,7 @@ describe('CastList - Cast Information Display', () => {
         // Create test data with actor missing ID.
         const mockActors = [
             createMockPerson('actor-1', 'John Doe', PersonKind.Actor),
-            { Name: 'Jane Smith', Type: PersonKind.Actor } as BaseItemPerson, // Missing Id
+            { Name: 'Jane Smith', Type: PersonKind.Actor, PrimaryImageTag: 'image-tag-jane' } as BaseItemPerson, // Missing Id
         ];
         const mockItem = createMockItem(mockActors);
 

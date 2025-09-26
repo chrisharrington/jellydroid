@@ -202,4 +202,66 @@ describe('useAsyncEffect', () => {
             expect(mockCallback).toHaveBeenCalledTimes(6); // Initial + 5 changes
         });
     });
+
+    it('should call cleanup function when component unmounts', async () => {
+        const mockCleanup = jest.fn();
+        const callbackWithCleanup = jest.fn(async () => {
+            return mockCleanup;
+        });
+
+        const { unmount } = renderHook(() => useAsyncEffect(callbackWithCleanup, []));
+
+        await waitFor(() => {
+            expect(callbackWithCleanup).toHaveBeenCalledTimes(1);
+        });
+
+        unmount();
+
+        expect(mockCleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call cleanup function when dependencies change', async () => {
+        const mockCleanup = jest.fn();
+        const callbackWithCleanup = jest.fn(async () => {
+            return mockCleanup;
+        });
+
+        const { rerender } = renderHook<void, { deps: any[] }>(
+            ({ deps }) => useAsyncEffect(callbackWithCleanup, deps),
+            {
+                initialProps: { deps: [1] },
+            }
+        );
+
+        await waitFor(() => {
+            expect(callbackWithCleanup).toHaveBeenCalledTimes(1);
+        });
+
+        // Change dependencies - should trigger cleanup of previous effect
+        rerender({ deps: [2] });
+
+        await waitFor(() => {
+            expect(callbackWithCleanup).toHaveBeenCalledTimes(2);
+            expect(mockCleanup).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    it('should handle async cleanup functions', async () => {
+        const mockAsyncCleanup = jest.fn(async () => {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        });
+        const callbackWithAsyncCleanup = jest.fn(async () => {
+            return mockAsyncCleanup;
+        });
+
+        const { unmount } = renderHook(() => useAsyncEffect(callbackWithAsyncCleanup, []));
+
+        await waitFor(() => {
+            expect(callbackWithAsyncCleanup).toHaveBeenCalledTimes(1);
+        });
+
+        unmount();
+
+        expect(mockAsyncCleanup).toHaveBeenCalledTimes(1);
+    });
 });

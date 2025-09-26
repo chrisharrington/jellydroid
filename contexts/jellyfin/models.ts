@@ -75,7 +75,7 @@ export type JellyfinContextValue = {
     ) => Promise<void>;
 
     /** Reports start of playback session to Jellyfin. */
-    startPlaybackSession: (itemId: string, mediaSourceId: string, playSessionId: string | null) => Promise<void>;
+    startPlaybackSession: (itemId: string, mediaSourceId: string, playSessionId: string | null) => Promise<string>;
 
     /** Reports end of playback session to Jellyfin. */
     stopPlaybackSession: (
