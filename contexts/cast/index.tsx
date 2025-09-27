@@ -5,7 +5,6 @@ import {
     CastContext as GoogleCastContext,
     MediaPlayerState,
     MediaTrack,
-    useCastSession,
     useDevices,
     useRemoteMediaClient,
 } from 'react-native-google-cast';
@@ -98,7 +97,6 @@ type CastProviderProps = {
 export function CastProvider({ children }: CastProviderProps) {
     const playbackSessionId = useRef<string | null>(null),
         client = useRemoteMediaClient(),
-        session = useCastSession(),
         [selectedDeviceId, setSelectedDeviceId] = useState<string | null>('local'),
         [jellyfinSubtitleTrackMetadata, setJellyfinSubtitleTrackMetadata] = useState<SubtitleMetadata[]>([]),
         devices = useDevices(),
@@ -404,27 +402,6 @@ export function CastProvider({ children }: CastProviderProps) {
             setCurrentSubtitleTrack(track);
         } catch (error) {
             toast.error('Failed to set subtitle track.', error);
-        }
-    }
-
-    /**
-     * Retrieves the currently active subtitle track from the cast client's media status.
-     * @returns {Promise<MediaTrack | null>} A promise that resolves to the active subtitle track if found, null otherwise.
-     * @throws {Error} When there's an error retrieving the media status, which is caught and displayed as a toast error.
-     */
-    async function getCurrentSubtitleTrack() {
-        try {
-            const client = getCastClient(),
-                status = await client.getMediaStatus(),
-                tracks = status?.mediaInfo?.mediaTracks || [],
-                activeTrackids = status?.activeTrackIds || [];
-
-            return (
-                tracks.filter(track => activeTrackids.includes(track.id)).find(track => track.type === 'text') || null
-            );
-        } catch (error) {
-            toast.error('Failed to retrieve current subtitle track.', error);
-            return null;
         }
     }
 
